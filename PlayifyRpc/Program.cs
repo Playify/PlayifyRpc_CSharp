@@ -39,7 +39,7 @@ internal class Program:WebBase{
 		// ReSharper disable once FunctionNeverReturns
 	}
 
-	public static void Main(string[] args){
+	public static async Task Main(string[] args){
 		new Thread(ConsoleThread){Name="ConsoleThread"}.Start();
 		try{
 			var server=new Program(args.Length==0?"rpc.js":args[0]);
@@ -47,7 +47,7 @@ internal class Program:WebBase{
 			
 			Rpc.ConnectLoopback();
 
-			task.RunSynchronously();
+			await task;
 		} catch(Exception e){
 			Console.WriteLine(e);
 			Environment.Exit(-1);

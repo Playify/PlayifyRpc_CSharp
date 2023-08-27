@@ -164,8 +164,6 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 							if(typeObj is not string type) return true;
 							if(!RpcServerTypes.Types.TryAdd(type,connection)) return true;
 							connection.Types.Add(type);
-							
-							if(connection.Name==null&&type.Length!=0&&type[0]=='$') connection.Name=type[1..];
 							return false;
 						}).ToArray();
 					if(failed.Length!=0){
@@ -203,6 +201,12 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 					lock(Connections) result=Connections.Select(c=>c.ToString()).ToArray();
 					break;
 				}
+				case "N":{
+					connection.Name=args.Length==0?null:(string?)args[0];
+					break;
+				}
+				default:
+					throw new Exception("Unknown server method: "+method);
 			}
 
 			await connection.Resolve(callId,result);

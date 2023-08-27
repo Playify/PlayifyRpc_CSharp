@@ -5,6 +5,8 @@
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+      <OutputPath>_run</OutputPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -15,6 +17,7 @@
 
     <ItemGroup>
       <PackageReference Include="JetBrains.Annotations" Version="2023.2.0" />
+      <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0-preview.7.23375.6" />
       <PackageReference Include="ReadLine" Version="2.0.1" />
     </ItemGroup>
 
