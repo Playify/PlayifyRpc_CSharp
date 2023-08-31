@@ -48,8 +48,8 @@ public static class DynamicData{
 				'n'=>null,
 				't'=>true,
 				'f'=>false,
-				'i'=>incoming.ReadInt(),
-				'd'=>incoming.ReadDouble(),
+				'i'=>incoming.ReadInt(),//TODO try to return smaller types
+				'd'=>incoming.ReadDouble(),//TODO try to return uint
 				'l'=>incoming.ReadLong(),
 				//'s'=>incoming.ReadString(),
 				//'a'=>already[incoming.ReadInt()],
@@ -79,10 +79,12 @@ public static class DynamicData{
 			case short:
 			case ushort:
 			case int:
+			case uint and <int.MaxValue: 
 			case Enum:
 				output.WriteLength('i');
 				output.WriteInt((int)d);
 				return;
+			case uint:
 			case float:
 			case double:
 			case decimal:

@@ -1,0 +1,87 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "PlayifyRpc/1.0.0": {
+        "dependencies": {
+          "JetBrains.Annotations": "2023.2.0",
+          "Microsoft.Bcl.AsyncInterfaces": "8.0.0-preview.7.23375.6",
+          "ReadLine": "2.0.1",
+          "PlayifyUtils": "1.0.0.0"
+        },
+        "runtime": {
+          "PlayifyRpc.dll": {}
+        }
+      },
+      "JetBrains.Annotations/2023.2.0": {
+        "runtime": {
+          "lib/netstandard2.0/JetBrains.Annotations.dll": {
+            "assemblyVersion": "4242.42.42.42",
+            "fileVersion": "2023.2.0.0"
+          }
+        }
+      },
+      "Microsoft.Bcl.AsyncInterfaces/8.0.0-preview.7.23375.6": {
+        "runtime": {
+          "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.23.37506"
+          }
+        }
+      },
+      "ReadLine/2.0.1": {
+        "runtime": {
+          "lib/netstandard2.0/ReadLine.dll": {
+            "assemblyVersion": "2.0.1.0",
+            "fileVersion": "2.0.1.0"
+          }
+        }
+      },
+      "PlayifyUtils/1.0.0.0": {
+        "runtime": {
+          "PlayifyUtils.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "PlayifyRpc/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "JetBrains.Annotations/2023.2.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-dvO//8aLmLRsCVVgoc/7qBqi2/y4BTyRcg20LCBWtK4n6E9Um06Zp7jF1n0hOE+yqBHwcrDzAjWvCaM3qH8flg==",
+      "path": "jetbrains.annotations/2023.2.0",
+      "hashPath": "jetbrains.annotations.2023.2.0.nupkg.sha512"
+    },
+    "Microsoft.Bcl.AsyncInterfaces/8.0.0-preview.7.23375.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-azVJQofBcNopmdJUWiH4AGtfwzw1RKOjma20QlaH87NzNJV6pdv4x3RTgQVhh6ZLXcB2QrQsis664LBnfQpl0g==",
+      "path": "microsoft.bcl.asyncinterfaces/8.0.0-preview.7.23375.6",
+      "hashPath": "microsoft.bcl.asyncinterfaces.8.0.0-preview.7.23375.6.nupkg.sha512"
+    },
+    "ReadLine/2.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-m3eptlV2hlZ3gWxdhvgsUpSjwyA3NCeLdbhgDt0V8rXP1E6ZbjOOExcAufHvAZepSKJvV+zZO1eYWGveShA4gw==",
+      "path": "readline/2.0.1",
+      "hashPath": "readline.2.0.1.nupkg.sha512"
+    },
+    "PlayifyUtils/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
