@@ -6,31 +6,33 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-      <OutputPath>_run</OutputPath>
+        <OutputPath>_run</OutputPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <Reference Include="PlayifyUtils">
-        <HintPath>..\..\PlayifyUtils3\bin\Debug\net48\PlayifyUtils.dll</HintPath>
-      </Reference>
+        <Reference Include="PlayifyUtils">
+            <HintPath>..\..\PlayifyUtils3\bin\Debug\net48\PlayifyUtils.dll</HintPath>
+            <HintPath>..\..\..\..\Code\CSharp\_libs\PlayifyUtils3\_run\PlayifyUtils.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="JetBrains.Annotations" Version="2023.2.0" />
-      <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0-preview.7.23375.6" />
-      <PackageReference Include="ReadLine" Version="2.0.1" />
+        <PackageReference Include="JetBrains.Annotations" Version="2023.2.0"/>
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0-preview.7.23375.6"/>
+        <PackageReference Include="ReadLine" Version="2.0.1"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="Rpc.Connection.cs">
-        <DependentUpon>Rpc.cs</DependentUpon>
-      </Compile>
-      <Compile Update="Rpc.Functions.cs">
-        <DependentUpon>Rpc.cs</DependentUpon>
-      </Compile>
-      <Compile Update="Rpc.Types.cs">
-        <DependentUpon>Rpc.cs</DependentUpon>
-      </Compile>
+        <Compile Update="Rpc.Connection.cs">
+            <DependentUpon>Rpc.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Rpc.Functions.cs">
+            <DependentUpon>Rpc.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Rpc.Types.cs">
+            <DependentUpon>Rpc.cs</DependentUpon>
+        </Compile>
     </ItemGroup>
+
 
 </Project>

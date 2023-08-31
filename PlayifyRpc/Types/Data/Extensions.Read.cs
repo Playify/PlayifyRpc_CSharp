@@ -3,7 +3,7 @@ using PlayifyUtils.Streams;
 namespace PlayifyRpc.Types.Data;
 
 public static partial class Extensions{
-	public static byte[] ReadFully(this DataInput input,int length){
+	public static byte[] ReadFully(this DataInput input,int length){//TODO move to PlayifyUtility
 		var bytes=new byte[length];
 		input.ReadFully(bytes);
 		return bytes;

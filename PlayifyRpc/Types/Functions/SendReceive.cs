@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks.Dataflow;
+using PlayifyRpc.Internal;
 using PlayifyRpc.Types.Data;
 using PlayifyUtils.Utils;
 
@@ -12,10 +13,10 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 	public abstract Task<object?> Task{get;}
 
 	public abstract void SendMessage(params object?[] args);
-	public void AddMessageListener<T1>(Action<T1> a)=>AddMessageListener(args=>a(DataTemplate.DoCast<T1>(args[0])));
-	public void AddMessageListener<T1,T2>(Action<T1,T2> a)=>AddMessageListener(args=>a(DataTemplate.DoCast<T1>(args[0]),DataTemplate.DoCast<T2>(args[1])));
-	public void AddMessageListener<T1,T2,T3>(Action<T1,T2,T3> a)=>AddMessageListener(args=>a(DataTemplate.DoCast<T1>(args[0]),DataTemplate.DoCast<T2>(args[1]),DataTemplate.DoCast<T3>(args[2])));
-	public void AddMessageListener<T1,T2,T3,T4>(Action<T1,T2,T3,T4> a)=>AddMessageListener(args=>a(DataTemplate.DoCast<T1>(args[0]),DataTemplate.DoCast<T2>(args[1]),DataTemplate.DoCast<T3>(args[2]),DataTemplate.DoCast<T4>(args[3])));
+	public void AddMessageListener<T1>(Action<T1> a)=>AddMessageListener(args=>a(StaticallyTypedUtils.DoCast<T1>(args[0])));
+	public void AddMessageListener<T1,T2>(Action<T1,T2> a)=>AddMessageListener(args=>a(StaticallyTypedUtils.DoCast<T1>(args[0]),StaticallyTypedUtils.DoCast<T2>(args[1])));
+	public void AddMessageListener<T1,T2,T3>(Action<T1,T2,T3> a)=>AddMessageListener(args=>a(StaticallyTypedUtils.DoCast<T1>(args[0]),StaticallyTypedUtils.DoCast<T2>(args[1]),StaticallyTypedUtils.DoCast<T3>(args[2])));
+	public void AddMessageListener<T1,T2,T3,T4>(Action<T1,T2,T3,T4> a)=>AddMessageListener(args=>a(StaticallyTypedUtils.DoCast<T1>(args[0]),StaticallyTypedUtils.DoCast<T2>(args[1]),StaticallyTypedUtils.DoCast<T3>(args[2]),StaticallyTypedUtils.DoCast<T4>(args[3])));
 
 	public virtual void AddMessageListener(MessageFunc a){
 		lock(_receivers){

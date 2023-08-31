@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using PlayifyRpc.Internal;
 using PlayifyRpc.Types.Data;
 using PlayifyUtils.Utils;
 
@@ -80,7 +81,7 @@ public class PendingCall<T>:PendingCall{
 	internal PendingCall(PendingCall other):base(other){
 	}
 
-	public static implicit operator Task<T>(PendingCall<T> call)=>call.Then(DataTemplate.DoCast<T>);
+	public static implicit operator Task<T>(PendingCall<T> call)=>call.Then(StaticallyTypedUtils.DoCast<T>);
 	public new TaskAwaiter<T> GetAwaiter()=>((Task<T>)this).GetAwaiter();
 	public new PendingCall<T> WithCancellation(CancellationToken token)=>(PendingCall<T>)base.WithCancellation(token);
 }
@@ -90,5 +91,5 @@ public class PendingCallCasted:PendingCall{
 
 	internal PendingCallCasted(PendingCall other,Type type):base(other)=>_type=type;
 
-	protected override Task<object?> AsTask()=>base.AsTask().Then(o=>DataTemplate.DoCast(o,_type))!;
+	protected override Task<object?> AsTask()=>base.AsTask().Then(o=>StaticallyTypedUtils.DoCast(o,_type))!;
 }

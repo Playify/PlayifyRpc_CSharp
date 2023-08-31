@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using PlayifyRpc.Internal;
 
 namespace PlayifyRpc.Types.Data;
 
@@ -179,7 +180,7 @@ public class DynamicBinder:Binder{
 
 				// now do a "classic" type check
 
-				if(!DataTemplate.CanCast(argType,pCls,args[paramOrder[i][j]])) break;
+				if(!StaticallyTypedUtils.CanCast(argType,pCls,args[paramOrder[i][j]])) break;
 				#endregion
 
 			}
@@ -189,7 +190,7 @@ public class DynamicBinder:Binder{
 				#region Check that excess arguments can be placed in the param array
 				for(;j<args.Length;j++){
 					var argType=argTypes[j];
-					if(!DataTemplate.CanCast(argType,paramArrayType,args[j])) break;
+					if(!StaticallyTypedUtils.CanCast(argType,paramArrayType,args[j])) break;
 				}
 				#endregion
 
@@ -362,7 +363,7 @@ public class DynamicBinder:Binder{
 					continue;
 				}
 
-				if(DataTemplate.CanCast(valueType,pCls,value)){
+				if(StaticallyTypedUtils.CanCast(valueType,pCls,value)){
 					candidates[curIdx++]=candidates[i];
 				}
 			}
@@ -420,7 +421,7 @@ public class DynamicBinder:Binder{
 
 
 				if(pCls.IsPrimitive){
-					if(!CanChangePrimitive(type.UnderlyingSystemType,pCls.UnderlyingSystemType)) break;
+					if(!CanChangePrimitive(type.UnderlyingSystemType,pCls.UnderlyingSystemType,null)) break;
 				} else{
 					if(!pCls.IsAssignableFrom(type)) break;
 				}
@@ -481,7 +482,7 @@ public class DynamicBinder:Binder{
 					if(pCls==typeof(object)) continue;
 
 					if(pCls.IsPrimitive){
-						if(!CanChangePrimitive(indexes[j].UnderlyingSystemType,pCls.UnderlyingSystemType)) break;
+						if(!CanChangePrimitive(indexes[j].UnderlyingSystemType,pCls.UnderlyingSystemType,null)) break;
 					} else{
 						if(!pCls.IsAssignableFrom(indexes[j])) break;
 					}
@@ -491,7 +492,7 @@ public class DynamicBinder:Binder{
 			if(j==indexesLength){
 				if(returnType!=null){
 					if(candidates[i].PropertyType.IsPrimitive){
-						if(!CanChangePrimitive(returnType.UnderlyingSystemType,candidates[i].PropertyType.UnderlyingSystemType)) continue;
+						if(!CanChangePrimitive(returnType.UnderlyingSystemType,candidates[i].PropertyType.UnderlyingSystemType,null)) continue;
 					} else{
 						if(!candidates[i].PropertyType.IsAssignableFrom(returnType)) continue;
 					}
@@ -536,7 +537,7 @@ public class DynamicBinder:Binder{
 	// The default binder doesn't support any change type functionality.
 	// This is because the default is built into the low level invoke code.
 	public override object ChangeType(object value,Type type,CultureInfo? cultureInfo){
-		return DataTemplate.DoCast(value,type);
+		return StaticallyTypedUtils.DoCast(value,type);
 	}
 
 	public sealed override void ReorderArgumentArray(ref object?[] args,object state){
@@ -659,8 +660,8 @@ public class DynamicBinder:Binder{
 		}
 
 		if(c1.IsPrimitive&&c2.IsPrimitive){
-			c1FromC2=CanChangePrimitive(c2,c1);
-			c2FromC1=CanChangePrimitive(c1,c2);
+			c1FromC2=CanChangePrimitive(c2,c1,null);
+			c2FromC1=CanChangePrimitive(c1,c2,null);
 		} else{
 			c1FromC2=c1.IsAssignableFrom(c2);
 			c2FromC1=c2.IsAssignableFrom(c1);
@@ -816,7 +817,7 @@ public class DynamicBinder:Binder{
 
 	// CanChangePrimitive
 	// This will determine if the source can be converted to the target type
-	public static bool CanChangePrimitive(Type? source,Type? target){
+	public static bool CanChangePrimitive(Type source,Type target,object? sourceValue){
 		if((source==typeof(IntPtr)&&target==typeof(IntPtr))||
 		   (source==typeof(UIntPtr)&&target==typeof(UIntPtr))) return true;
 
