@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayifyRpc", "PlayifyRpc\PlayifyRpc.csproj", "{AD1F9AA6-8EAE-4D2C-B8FA-BC981FE48C09}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayifyRpc", "PlayifyRpc.csproj", "{AD1F9AA6-8EAE-4D2C-B8FA-BC981FE48C09}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
