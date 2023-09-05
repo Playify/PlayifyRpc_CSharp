@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 using PlayifyRpc.Internal;
-using PlayifyRpc.Types.Data;
 using PlayifyUtils.Utils;
 
 namespace PlayifyRpc.Types.Functions;
@@ -24,6 +24,7 @@ internal class PendingCallRawData:SendReceive{
 	}
 }
 
+[PublicAPI]
 public class PendingCall:SendReceive{
 
 	#region Internal

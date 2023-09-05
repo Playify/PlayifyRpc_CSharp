@@ -8,7 +8,7 @@ namespace PlayifyRpc.Connections;
 
 public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	internal static readonly HashSet<ServerConnection> Connections=new();
-	public string? Name;
+	private string? _name;
 
 	private int _nextId;
 	private readonly Dictionary<int,(ServerConnection respondTo,int respondId)> _activeRequests=new();
@@ -202,7 +202,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 					break;
 				}
 				case "N":{
-					connection.Name=args.Length==0?null:(string?)args[0];
+					connection._name=args.Length==0?null:(string?)args[0];
 					break;
 				}
 				default:
@@ -219,7 +219,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	public override string ToString(){
 		var str=new StringBuilder(GetType().Name);
 		str.Append('(').Append(GetHashCode().ToString("x8"));
-		if(Name!=null) str.Append(':').Append(Name);
+		if(_name!=null) str.Append(':').Append(_name);
 		str.Append(')');
 		return str.ToString();
 	}

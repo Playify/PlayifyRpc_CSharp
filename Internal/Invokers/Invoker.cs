@@ -12,8 +12,8 @@ public abstract class Invoker{
 
 	public static PendingCall CallLocal(Func<object?> a)=>CallLocal(null,null,a);
 	public static PendingCall<T> CallLocal<T>(Func<object?> a)=>CallLocal(a).Cast<T>();
-		
-	public static PendingCall CallLocal(string? type,string? method,Func<object?> a){
+
+	private static PendingCall CallLocal(string? type,string? method,Func<object?> a){
 		var truth=new PendingCallRawData();
 		var context=new FunctionCallContext(type,
 		                                    method,

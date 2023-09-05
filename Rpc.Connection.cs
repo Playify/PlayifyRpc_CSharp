@@ -5,6 +5,7 @@ using PlayifyUtils.Utils;
 
 namespace PlayifyRpc;
 
+
 public static partial class Rpc{
 	public static Task WaitUntilConnected=>ClientConnection.WaitUntilConnected;
 	public static bool IsConnected=>ClientConnection.Instance!=null;

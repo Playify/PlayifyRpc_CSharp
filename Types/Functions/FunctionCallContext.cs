@@ -111,5 +111,5 @@ public class FunctionCallContext:SendReceive{
 		}
 	}
 
-	public static FunctionCallContext? GetContext()=>ThreadLocal.Value;
+	public static FunctionCallContext GetContext()=>ThreadLocal.Value??throw new InvalidOperationException("FunctionCallContext not available");
 }

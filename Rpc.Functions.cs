@@ -19,5 +19,5 @@ public static partial class Rpc{
 	public static PendingCall<T> CallFunction<T>(string? type,string method,params object?[] args)=>CallFunction(type,method,args).Cast<T>();
 	
 	
-	public static FunctionCallContext? GetContext()=>FunctionCallContext.GetContext();
+	public static FunctionCallContext GetContext()=>FunctionCallContext.GetContext();
 }

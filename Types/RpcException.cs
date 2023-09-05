@@ -10,12 +10,10 @@ public class RpcException:Exception{
 	public readonly string Type;
 	public readonly string From;
 
-	public static string AsString(Exception e)=>e.ToString();
-
 	public RpcException(string message,Exception cause):base(message,cause){
 		Type=nameof(RpcException);
 		From=ClientConnection.Instance is ServerConnectionLoopbackClient?"SERVER":Rpc.Id;
-		StackTrace=TabRegex.Replace("caused by: "+AsString(cause).Replace("\r",""),
+		StackTrace=TabRegex.Replace("caused by: "+cause.ToString().Replace("\r",""),
 		                            "\t");
 	}
 
