@@ -4,11 +4,11 @@ using PlayifyRpc.Internal.Invokers;
 namespace PlayifyRpc;
 
 public static partial class Rpc{
-	public static Task Register(string type,Invoker invoker)=>RegisteredTypes.Register(type,invoker);
+	public static Task RegisterInvoker(string type,Invoker invoker)=>RegisteredTypes.Register(type,invoker);
 	
 	public static Task RegisterType<T>(string type,T instance)=>RegisteredTypes.Register(type,TypeInvoker.Create(instance));
 	
-	public static Task Unregister(string type)=>RegisteredTypes.Unregister(type);
+	public static Task UnregisterType(string type)=>RegisteredTypes.Unregister(type);
 	
 	
 	

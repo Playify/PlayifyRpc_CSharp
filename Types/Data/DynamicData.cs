@@ -82,19 +82,19 @@ public static class DynamicData{
 			case uint and <int.MaxValue: 
 			case Enum:
 				output.WriteLength('i');
-				output.WriteInt((int)d);
+				output.WriteInt(Convert.ToInt32(d));
 				return;
 			case uint:
 			case float:
 			case double:
 			case decimal:
 				output.WriteLength('d');
-				output.WriteDouble((double)d);
+				output.WriteDouble(Convert.ToDouble(d));
 				return;
 			case long:
 			case ulong:
 				output.WriteLength('l');
-				output.WriteLong((long)d);
+				output.WriteLong(Convert.ToInt64(d));
 				return;
 			case byte[] buffer:
 				output.WriteLength('b');
@@ -176,7 +176,7 @@ public static class DynamicData{
 
 	private static void RegisterAssembly(Assembly assembly){
 		foreach(var type in assembly.GetTypes()){
-			var remoteClass=type.GetCustomAttribute<DynamicTypeAttribute>();
+			var remoteClass=type.GetCustomAttribute<CustomDynamicTypeAttribute>();
 			if(remoteClass==null) continue;
 
 			/*
