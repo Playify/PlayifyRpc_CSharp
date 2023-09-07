@@ -50,7 +50,7 @@ public abstract class DataTemplate{
 	}
 
 
-	public void WriteDynamic(DataOutput output,List<object> already){
+	internal void WriteDynamic(DataOutput output,List<object> already){
 		already.Add(this);
 
 		var tuples=GetProperties().ToArray();

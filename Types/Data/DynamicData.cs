@@ -7,11 +7,11 @@ using PlayifyUtils.Streams;
 
 namespace PlayifyRpc.Types.Data;
 
-public static class DynamicData{
+internal static class DynamicData{
 	private static readonly List<(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)> WriteRegistry=new();
 	private static readonly Dictionary<string,Func<DataInput,List<object>,object>> ReadRegistry=new();
 
-	public static object? Read(DataInput incoming,List<object> already){
+	internal static object? Read(DataInput incoming,List<object> already){
 		var objectId=incoming.ReadLength();
 
 		if(objectId<0){
@@ -63,7 +63,7 @@ public static class DynamicData{
 			};
 	}
 
-	public static void Write(DataOutput output,object? d,List<object> already){
+	internal static void Write(DataOutput output,object? d,List<object> already){
 		switch(d){
 			case null:
 				output.WriteLength('n');
@@ -133,8 +133,9 @@ public static class DynamicData{
 
 		switch(d){
 			case string s:
-				output.WriteLength(-(s.Length*4+1));
-				output.Write(Encoding.UTF8.GetBytes(s));
+				var bytes=Encoding.UTF8.GetBytes(s);
+				output.WriteLength(-(bytes.Length*4+1));
+				output.Write(bytes);
 				return;
 			case DataTemplate obj:
 				obj.WriteDynamic(output,already);
@@ -161,8 +162,9 @@ public static class DynamicData{
 		}
 		foreach(var (id,check,write) in WriteRegistry){
 			if(!check(d)) continue;
-			output.WriteLength(id.Length+128);
-			output.Write(Encoding.UTF8.GetBytes(id));
+			var idBytes=Encoding.UTF8.GetBytes(id);
+			output.WriteLength(idBytes.Length+128);
+			output.Write(idBytes);
 			write(output,d,already);
 			return;
 		}

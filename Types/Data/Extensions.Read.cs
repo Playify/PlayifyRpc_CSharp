@@ -11,9 +11,6 @@ public static partial class Extensions{
 
 	public static RpcException ReadException(this DataInput input){
 		var type=input.ReadString();
-		if(type=="UnknownType"){
-
-		}
 		return new RpcException(type,input.ReadString()??"???",input.ReadString(),input.ReadString());
 	}
 

@@ -6,7 +6,7 @@ namespace PlayifyRpc.Connections;
 public class ServerConnectionWebSocket:ServerConnection{
 	private readonly WebSocket _webSocket;
 
-	internal ServerConnectionWebSocket(WebSocket webSocket)=>_webSocket=webSocket;
+	public ServerConnectionWebSocket(WebSocket webSocket)=>_webSocket=webSocket;
 
 	protected internal override Task SendRaw(DataOutputBuff buff){
 		var (b,len)=buff.GetBufferAndLength();

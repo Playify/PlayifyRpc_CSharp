@@ -1,5 +1,6 @@
 using PlayifyRpc.Internal;
 using PlayifyUtils.Streams;
+using PlayifyUtils.Utils;
 
 namespace PlayifyRpc.Connections;
 
@@ -10,7 +11,7 @@ internal class ServerConnectionLoopback:ServerConnection{
 	}
 
 	protected internal override Task SendRaw(DataOutputBuff buff){
-		Task.Run((Action)(()=>_otherSide.Receive(new DataInputBuff(buff))));
+		Task.Run((Action)(()=>_otherSide.Receive(new DataInputBuff(buff)).Catch(Console.Error.WriteLine)));
 		return Task.CompletedTask;
 	}
 
@@ -51,7 +52,7 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 	}
 
 	protected internal override Task SendRaw(DataOutputBuff buff){
-		Task.Run((Action)(()=>_otherSide.Receive(new DataInputBuff(buff))));
+		Task.Run((Action)(()=>_otherSide.Receive(new DataInputBuff(buff)).Catch(Console.Error.WriteLine)));
 		return Task.CompletedTask;
 	}
 
