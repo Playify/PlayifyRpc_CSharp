@@ -78,8 +78,10 @@ internal class Program:WebBase{
 				await session.Send.File(_rpcJs+".map");
 				return;
 			case "/":
+			case "/rpc":
+			case "/rpc.html":
 				await session.Send.Document()
-				             .Set("<head><script type=\"module\">import('./rpc.js').then(m=>Object.assign(globalThis,m));</script></head>")
+				             .Set("<title>RPC Test</title><script type=\"module\" src=\"/rpc.js\"/>")
 				             .Send();
 				return;
 			default:
