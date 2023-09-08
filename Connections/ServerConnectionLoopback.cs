@@ -36,8 +36,11 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 			try{
 				await using var connection=new ServerConnectionLoopbackClient();
 				await DoConnect(connection);
-
-				return;//return, as there is no way to error way to disconnect during execution
+				
+				await Task.Delay(Timeout.Infinite);
+				
+				
+				StartConnect(true);
 			} catch(Exception e){
 				FailConnect(e);
 
