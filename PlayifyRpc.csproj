@@ -12,7 +12,7 @@
     <ItemGroup>
         <Reference Include="PlayifyUtils">
             <HintPath>..\PlayifyUtils3\bin\Debug\net48\PlayifyUtils.dll</HintPath>
-            <HintPath>..\..\..\Code\CSharp\_libs\PlayifyUtils3\_run\PlayifyUtils.dll</HintPath>
+            <HintPath>..\..\..\..\C#\own\PlayifyUtils3\bin\Debug\net48\PlayifyUtils.dll</HintPath>
         </Reference>
     </ItemGroup>
 
