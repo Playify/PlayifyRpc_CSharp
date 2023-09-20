@@ -72,10 +72,9 @@ public class PendingCall:SendReceive{
 	#endregion
 
 	#region Cast
-	public PendingCall<T> Cast<T>()=>new(this);
+	public PendingCall<T> Cast<T>()=>this is PendingCall<T> typed?typed:new PendingCall<T>(this);
 	public PendingCall Cast(Type t)=>new PendingCallCasted(this,t);
 	#endregion
-
 }
 
 public class PendingCall<T>:PendingCall{
