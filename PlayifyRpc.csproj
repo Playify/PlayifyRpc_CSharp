@@ -11,8 +11,8 @@
 
     <ItemGroup>
         <Reference Include="PlayifyUtils">
-            <HintPath>..\PlayifyUtils3\bin\Debug\net48\PlayifyUtils.dll</HintPath>
-            <HintPath>..\..\..\Code\CSharp\_libs\PlayifyUtils3\_run\PlayifyUtils.dll</HintPath>
+            <HintPath>..\..\..\Code\CSharp\Network\RemoteProcedureCall2\RemoteProcedureCall.Client\bin\Debug\PlayifyUtils.dll</HintPath>
+            <HintPath>..\..\..\..\C#\own\PlayifyUtils3\bin\Debug\net48\PlayifyUtils.dll</HintPath>
         </Reference>
     </ItemGroup>
 

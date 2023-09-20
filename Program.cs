@@ -81,7 +81,7 @@ internal class Program:WebBase{
 			case "/rpc":
 			case "/rpc.html":
 				await session.Send.Document()
-				             .Set("<title>RPC Test</title><script type=\"module\" src=\"/rpc.js\"/>")
+				             .Set("<title>RPC Test</title><script type=\"module\" src=\"/rpc.js\"></script>")
 				             .Send();
 				return;
 			default:
