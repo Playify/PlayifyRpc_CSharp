@@ -81,7 +81,7 @@ public class PendingCall<T>:PendingCall{
 	internal PendingCall(PendingCall other):base(other){
 	}
 
-	public static implicit operator Task<T>(PendingCall<T> call)=>call.Then(StaticallyTypedUtils.DoCast<T>);
+	public static implicit operator Task<T>(PendingCall<T> call)=>call.Then(StaticallyTypedUtils.Cast<T>);
 	public new TaskAwaiter<T> GetAwaiter()=>((Task<T>)this).GetAwaiter();
 	public new PendingCall<T> WithCancellation(CancellationToken token)=>(PendingCall<T>)base.WithCancellation(token);
 }
@@ -91,5 +91,5 @@ public class PendingCallCasted:PendingCall{
 
 	internal PendingCallCasted(PendingCall other,Type type):base(other)=>_type=type;
 
-	protected override Task<object?> AsTask()=>base.AsTask().Then(o=>StaticallyTypedUtils.DoCast(o,_type))!;
+	protected override Task<object?> AsTask()=>base.AsTask().Then(o=>StaticallyTypedUtils.Cast(o,_type))!;
 }

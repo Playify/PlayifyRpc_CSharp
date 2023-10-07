@@ -180,7 +180,7 @@ public class DynamicBinder:Binder{
 
 				// now do a "classic" type check
 
-				if(!StaticallyTypedUtils.CanCast(argType,pCls,args[paramOrder[i][j]])) break;
+				if(!StaticallyTypedUtils.TryCast(args[paramOrder[i][j]],pCls,out _)) break;
 				#endregion
 
 			}
@@ -190,7 +190,7 @@ public class DynamicBinder:Binder{
 				#region Check that excess arguments can be placed in the param array
 				for(;j<args.Length;j++){
 					var argType=argTypes[j];
-					if(!StaticallyTypedUtils.CanCast(argType,paramArrayType,args[j])) break;
+					if(!StaticallyTypedUtils.TryCast(args[j],paramArrayType,out _)) break;
 				}
 				#endregion
 
@@ -363,7 +363,7 @@ public class DynamicBinder:Binder{
 					continue;
 				}
 
-				if(StaticallyTypedUtils.CanCast(valueType,pCls,value)){
+				if(StaticallyTypedUtils.TryCast(value,pCls,out _)){
 					candidates[curIdx++]=candidates[i];
 				}
 			}
@@ -537,7 +537,7 @@ public class DynamicBinder:Binder{
 	// The default binder doesn't support any change type functionality.
 	// This is because the default is built into the low level invoke code.
 	public override object ChangeType(object value,Type type,CultureInfo? cultureInfo){
-		return StaticallyTypedUtils.DoCast(value,type);
+		return StaticallyTypedUtils.Cast(value,type);
 	}
 
 	public sealed override void ReorderArgumentArray(ref object?[] args,object state){

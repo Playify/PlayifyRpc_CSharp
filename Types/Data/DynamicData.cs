@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using PlayifyUtils.Jsons;
 using PlayifyUtils.Streams;
 
 namespace PlayifyRpc.Types.Data;
@@ -48,8 +49,8 @@ internal static class DynamicData{
 				'n'=>null,
 				't'=>true,
 				'f'=>false,
-				'i'=>incoming.ReadInt(),//TODO try to return smaller types
-				'd'=>incoming.ReadDouble(),//TODO try to return uint
+				'i'=>incoming.ReadInt(),
+				'd'=>incoming.ReadDouble(),
 				'l'=>incoming.ReadLong(),
 				//'s'=>incoming.ReadString(),
 				//'a'=>already[incoming.ReadInt()],
@@ -64,6 +65,15 @@ internal static class DynamicData{
 	}
 
 	internal static void Write(DataOutput output,object? d,List<object> already){
+		d=d switch{
+			JsonString j=>j.AsString(),
+			JsonNumber j=>j.AsNumber(),
+			JsonBool j=>j.AsBoolean(),
+			JsonNull=>null,
+			_=>d,
+		};
+		
+		
 		switch(d){
 			case null:
 				output.WriteLength('n');
@@ -137,7 +147,7 @@ internal static class DynamicData{
 				output.WriteLength(-(bytes.Length*4+1));
 				output.Write(bytes);
 				return;
-			case DataTemplate obj:
+			case ObjectTemplate obj:
 				obj.WriteDynamic(output,already);
 				return;
 			case ExpandoObject obj:
@@ -145,6 +155,14 @@ internal static class DynamicData{
 				var dict=(IDictionary<string,object?>)obj;
 				output.WriteLength(-(dict.Count*4+2));
 				foreach(var (key,value) in dict){
+					output.WriteString(key);
+					Write(output,value,already);
+				}
+				return;
+			case JsonObject obj:
+				already.Add(obj);
+				output.WriteLength(-(obj.Length*4+2));
+				foreach(var (key,value) in obj){
 					output.WriteString(key);
 					Write(output,value,already);
 				}
@@ -158,6 +176,11 @@ internal static class DynamicData{
 				already.Add(arr);
 				output.WriteLength(-(arr.Length*4+3));
 				for(var i=0;i<arr.Length;i++) Write(output,arr[i],already);
+				return;
+			case JsonArray arr:
+				already.Add(arr);
+				output.WriteLength(-(arr.Length*4+3));
+				foreach(var o in arr) Write(output,o,already);
 				return;
 		}
 		foreach(var (id,check,write) in WriteRegistry){

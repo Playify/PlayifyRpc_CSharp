@@ -4,11 +4,11 @@ using PlayifyUtils.Streams;
 
 namespace PlayifyRpc.Types.Data;
 
-public abstract class DataTemplate{
+public abstract class ObjectTemplate{
 	private readonly Dictionary<string,object?> _extraProps=new(StringComparer.OrdinalIgnoreCase);
 
 
-	public static T? CreateFromExpando<T>(ExpandoObject? exp) where T:DataTemplate,new(){
+	public static T? CreateFromExpando<T>(ExpandoObject? exp) where T:ObjectTemplate,new(){
 		if(exp==null) return null;
 
 		var o=new T();
@@ -16,10 +16,10 @@ public abstract class DataTemplate{
 		return o;
 	}
 
-	public static DataTemplate CreateFromExpando(ExpandoObject exp,Type targetType){
-		if(!targetType.IsAssignableTo(typeof(DataTemplate))) throw new ArgumentException(nameof(targetType));
+	public static ObjectTemplate CreateFromExpando(ExpandoObject exp,Type targetType){
+		if(!targetType.IsAssignableTo(typeof(ObjectTemplate))) throw new ArgumentException(nameof(targetType));
 
-		var o=(DataTemplate)Activator.CreateInstance(targetType)!;
+		var o=(ObjectTemplate)Activator.CreateInstance(targetType)!;
 		foreach(var (key,value) in exp) o.SetProperty(key,value);
 		return o;
 	}

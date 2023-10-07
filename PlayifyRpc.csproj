@@ -7,14 +7,8 @@
         <Nullable>enable</Nullable>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <OutputPath>_run</OutputPath>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
-
-    <ItemGroup>
-        <Reference Include="PlayifyUtils">
-            <HintPath>..\..\..\Code\CSharp\Network\RemoteProcedureCall2\RemoteProcedureCall.Client\bin\Debug\PlayifyUtils.dll</HintPath>
-            <HintPath>..\..\..\..\C#\own\PlayifyUtils3\bin\Debug\net48\PlayifyUtils.dll</HintPath>
-        </Reference>
-    </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" Version="2023.2.0" />
@@ -33,7 +27,16 @@
         <Compile Update="Rpc.Types.cs">
             <DependentUpon>Rpc.cs</DependentUpon>
         </Compile>
+        <Compile Update="Internal\StaticallyTypedUtils.Cast.cs">
+          <DependentUpon>StaticallyTypedUtils.cs</DependentUpon>
+        </Compile>
     </ItemGroup>
 
+
+    <ItemGroup>
+      <Reference Include="PlayifyUtils">
+        <HintPath>..\..\..\..\C#\own\PlayifyUtils3\bin\Debug\PlayifyUtils.dll</HintPath>
+      </Reference>
+    </ItemGroup>
 
 </Project>
