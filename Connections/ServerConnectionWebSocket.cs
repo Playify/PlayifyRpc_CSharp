@@ -1,5 +1,5 @@
-using PlayifyUtils.Streams;
-using PlayifyUtils.Web;
+using PlayifyUtility.Streams.Data;
+using PlayifyUtility.Web;
 
 namespace PlayifyRpc.Connections;
 

@@ -3,8 +3,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using PlayifyUtils.Jsons;
-using PlayifyUtils.Streams;
+using PlayifyUtility.Jsons;
+using PlayifyUtility.Streams.Data;
 
 namespace PlayifyRpc.Types.Data;
 

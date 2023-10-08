@@ -1,5 +1,5 @@
 using PlayifyRpc.Types.Functions;
-using PlayifyUtils.Utils;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Internal.Invokers;
 

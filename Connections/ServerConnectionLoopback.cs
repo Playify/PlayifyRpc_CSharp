@@ -1,6 +1,6 @@
 using PlayifyRpc.Internal;
-using PlayifyUtils.Streams;
-using PlayifyUtils.Utils;
+using PlayifyUtility.Streams.Data;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Connections;
 

@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal;
-using PlayifyUtils.Utils;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Types.Functions;
 

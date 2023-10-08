@@ -1,7 +1,7 @@
 using System.Collections.Specialized;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
-using PlayifyUtils.Utils;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc;
 

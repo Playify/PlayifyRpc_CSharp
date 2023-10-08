@@ -1,7 +1,7 @@
 using System.Dynamic;
 using PlayifyRpc.Types.Data;
-using PlayifyUtils.Jsons;
-using PlayifyUtils.Utils;
+using PlayifyUtility.Jsons;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Internal;
 

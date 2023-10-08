@@ -3,7 +3,7 @@ using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types.Data;
-using PlayifyUtils.Streams;
+using PlayifyUtility.Streams.Data;
 
 namespace PlayifyRpc.Types.Functions;
 

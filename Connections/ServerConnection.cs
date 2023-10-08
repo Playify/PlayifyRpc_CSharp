@@ -1,8 +1,8 @@
 using System.Text;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Types.Data;
-using PlayifyUtils.Streams;
-using PlayifyUtils.Utils;
+using PlayifyUtility.Streams.Data;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Connections;
 

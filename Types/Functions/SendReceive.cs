@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks.Dataflow;
 using PlayifyRpc.Internal;
-using PlayifyUtils.Utils;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Types.Functions;
 

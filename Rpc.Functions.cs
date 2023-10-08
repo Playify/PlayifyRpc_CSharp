@@ -1,3 +1,4 @@
+using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Functions;
@@ -17,7 +18,8 @@ public static partial class Rpc{
 	
 	public static PendingCall CallFunction(string? type,string method,params object?[] args)=>FunctionCallContext.CallFunction(type,method,args);
 	public static PendingCall<T> CallFunction<T>(string? type,string method,params object?[] args)=>CallFunction(type,method,args).Cast<T>();
-	
+
+	public static Task<string> Eval(string expression)=>Evaluate.Eval(expression);//Expression must be in form of "Type.Method(arg1,arg2,...)" where args are Json
 	
 	public static FunctionCallContext GetContext()=>FunctionCallContext.GetContext();
 }

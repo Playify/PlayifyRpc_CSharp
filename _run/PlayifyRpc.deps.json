@@ -8,11 +8,8 @@
     ".NETCoreApp,Version=v6.0": {
       "PlayifyRpc/1.0.0": {
         "dependencies": {
-          "JetBrains.Annotations": "2023.2.0",
-          "Microsoft.Bcl.AsyncInterfaces": "8.0.0-preview.7.23375.6",
-          "ReadLine": "2.0.1",
-          "System.Threading.Tasks.Dataflow": "8.0.0-preview.7.23375.6",
-          "PlayifyUtils": "1.0.0.0"
+          "PlayifyUtility": "1.0.0",
+          "ReadLine": "2.0.1"
         },
         "runtime": {
           "PlayifyRpc.dll": {}
@@ -26,11 +23,14 @@
           }
         }
       },
-      "Microsoft.Bcl.AsyncInterfaces/8.0.0-preview.7.23375.6": {
+      "PlayifyUtility/1.0.0": {
+        "dependencies": {
+          "JetBrains.Annotations": "2023.2.0"
+        },
         "runtime": {
-          "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
-            "assemblyVersion": "8.0.0.0",
-            "fileVersion": "8.0.23.37506"
+          "lib/net6.0/PlayifyUtility.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
           }
         }
       },
@@ -39,22 +39,6 @@
           "lib/netstandard2.0/ReadLine.dll": {
             "assemblyVersion": "2.0.1.0",
             "fileVersion": "2.0.1.0"
-          }
-        }
-      },
-      "System.Threading.Tasks.Dataflow/8.0.0-preview.7.23375.6": {
-        "runtime": {
-          "lib/net6.0/System.Threading.Tasks.Dataflow.dll": {
-            "assemblyVersion": "8.0.0.0",
-            "fileVersion": "8.0.23.37506"
-          }
-        }
-      },
-      "PlayifyUtils/1.0.0.0": {
-        "runtime": {
-          "PlayifyUtils.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
           }
         }
       }
@@ -73,12 +57,12 @@
       "path": "jetbrains.annotations/2023.2.0",
       "hashPath": "jetbrains.annotations.2023.2.0.nupkg.sha512"
     },
-    "Microsoft.Bcl.AsyncInterfaces/8.0.0-preview.7.23375.6": {
+    "PlayifyUtility/1.0.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-azVJQofBcNopmdJUWiH4AGtfwzw1RKOjma20QlaH87NzNJV6pdv4x3RTgQVhh6ZLXcB2QrQsis664LBnfQpl0g==",
-      "path": "microsoft.bcl.asyncinterfaces/8.0.0-preview.7.23375.6",
-      "hashPath": "microsoft.bcl.asyncinterfaces.8.0.0-preview.7.23375.6.nupkg.sha512"
+      "sha512": "sha512-HQ9Uqh0wc1R0G3orGMYnaBpuLIFmW1dHU7HitGuYe+jIGZbzCZRTWOXqUTusrahXhi5NTj7yGzeUEePUByFRAQ==",
+      "path": "playifyutility/1.0.0",
+      "hashPath": "playifyutility.1.0.0.nupkg.sha512"
     },
     "ReadLine/2.0.1": {
       "type": "package",
@@ -86,18 +70,6 @@
       "sha512": "sha512-m3eptlV2hlZ3gWxdhvgsUpSjwyA3NCeLdbhgDt0V8rXP1E6ZbjOOExcAufHvAZepSKJvV+zZO1eYWGveShA4gw==",
       "path": "readline/2.0.1",
       "hashPath": "readline.2.0.1.nupkg.sha512"
-    },
-    "System.Threading.Tasks.Dataflow/8.0.0-preview.7.23375.6": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-yGxWiAGrqG7g9IZavhL2bwprewPkRLdEbPTz8BLhBMimFmR21lsrbGX7CBEGkArlZSJyzWz65PTsDt08BVdCGA==",
-      "path": "system.threading.tasks.dataflow/8.0.0-preview.7.23375.6",
-      "hashPath": "system.threading.tasks.dataflow.8.0.0-preview.7.23375.6.nupkg.sha512"
-    },
-    "PlayifyUtils/1.0.0.0": {
-      "type": "reference",
-      "serviceable": false,
-      "sha512": ""
     }
   }
 }

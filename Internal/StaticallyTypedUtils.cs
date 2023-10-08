@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using PlayifyRpc.Types.Data;
-using PlayifyUtils.Utils;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Internal;
 
