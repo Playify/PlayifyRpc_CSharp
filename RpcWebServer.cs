@@ -2,13 +2,12 @@ using System.Net;
 using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
-using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils;
 using PlayifyUtility.Web;
 
 namespace PlayifyRpc;
 
-internal class Program:WebBase{
+public class RpcWebServer:WebBase{
 	
 	private static void ConsoleThread(){
 		while(true){
@@ -42,16 +41,21 @@ internal class Program:WebBase{
 		// ReSharper disable once FunctionNeverReturns
 	}
 
-	public static async Task Main(string[] args){
+	[PublicAPI]
+	public static async Task RunWebServer(IPEndPoint endPoint,string rpcJs){
+		var server=new RpcWebServer(rpcJs);
+		var task=server.RunHttp(endPoint);
+			
+		Rpc.ConnectLoopback();
+
+		await task;
+	}
+
+	internal static async Task Main(string[] args){
 		
 		new Thread(ConsoleThread){Name="ConsoleThread"}.Start();
 		try{
-			var server=new Program(args.Length==0?"rpc.js":args[0]);
-			var task=server.RunHttp(new IPEndPoint(new IPAddress(new byte[]{127,2,4,8}),4590));
-			
-			Rpc.ConnectLoopback();
-
-			await task;
+			await RunWebServer(new IPEndPoint(new IPAddress(new byte[]{127,2,4,8}),4590),args.Length==0?"rpc.js":args[0]);
 		} catch(Exception e){
 			Console.WriteLine(e);
 			Environment.Exit(-1);
@@ -59,7 +63,7 @@ internal class Program:WebBase{
 	}
 
 	private readonly string _rpcJs;
-	private Program(string rpcJs){
+	private RpcWebServer(string rpcJs){
 		_rpcJs=rpcJs;
 	}
 
