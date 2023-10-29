@@ -9,14 +9,15 @@
         <OutputPath>_run</OutputPath>
         <LangVersion>latest</LangVersion>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Title>PlayifyRPC</Title>
+        <Title>PlayifyRpc</Title>
         <Description>Remote Procedure Call (Client and Server)</Description>
         <RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
         <RepositoryType>GitHub</RepositoryType>
+        <Authors>Playify</Authors>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="PlayifyUtility" Version="1.0.0" />
+        <PackageReference Include="PlayifyUtility" Version="1.0.1" />
         <PackageReference Include="ReadLine" Version="2.0.1" />
     </ItemGroup>
 

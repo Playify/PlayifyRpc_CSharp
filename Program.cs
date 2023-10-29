@@ -79,11 +79,19 @@ internal class Program:WebBase{
 			try{
 				s=await Rpc.Eval(s);
 			}catch(Exception e){
-				await session.Send.Document().Code(500).MimeType("text/plain").Set(e.ToString()).Send();
+				await session.Send
+				             .Cache(false)
+				             .Document()
+				             .Code(500)
+				             .MimeType("text/plain")
+				             .Set(e.ToString())
+				             .Send();
 				return;
 			}
 
-			await session.Send.Document()
+			await session.Send
+			             .Cache(false)
+			             .Document()
 			             .MimeType("application/json")
 			             .Set(s)
 			             .Send();
