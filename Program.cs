@@ -1,4 +1,5 @@
 using System.Net;
+using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
 using PlayifyUtility.Jsons;
@@ -62,7 +63,10 @@ internal class Program:WebBase{
 		_rpcJs=rpcJs;
 	}
 
-	protected override async Task HandleRequest(WebSession session){
+	protected override Task HandleRequest(WebSession session)=>HandleRequest(session,_rpcJs);
+
+	[PublicAPI]
+	public static async Task HandleRequest(WebSession session,string rpcJs){
 		if(await session.CreateWebSocket() is{} webSocket){
 			await using var connection=new ServerConnectionWebSocket(webSocket);
 			Console.WriteLine($"{connection} connected");
@@ -98,10 +102,10 @@ internal class Program:WebBase{
 		}
 		switch(session.Path){
 			case "/rpc.js":
-				await session.Send.File(_rpcJs);
+				await session.Send.File(rpcJs);
 				return;
 			case "/rpc.js.map":
-				await session.Send.File(_rpcJs+".map");
+				await session.Send.File(rpcJs+".map");
 				return;
 			case "/":
 			case "/rpc":
