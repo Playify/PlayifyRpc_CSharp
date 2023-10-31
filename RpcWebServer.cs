@@ -8,7 +8,7 @@ using PlayifyUtility.Web;
 namespace PlayifyRpc;
 
 public class RpcWebServer:WebBase{
-	
+
 	private static void ConsoleThread(){
 		while(true){
 			var line=ReadLine.Read();
@@ -42,20 +42,39 @@ public class RpcWebServer:WebBase{
 	}
 
 	[PublicAPI]
-	public static async Task RunWebServer(IPEndPoint endPoint,string rpcJs){
-		var server=new RpcWebServer(rpcJs);
+	public static async Task RunWebServer(IPEndPoint endPoint,string rpcJs)=>await RunWebServer(endPoint,rpcJs,Environment.GetEnvironmentVariable("RPC_TOKEN"));
+
+	[PublicAPI]
+	public static async Task RunWebServer(IPEndPoint endPoint,string rpcJs,string? rpcToken){
+		if(rpcToken==null) Console.WriteLine("RPC_TOKEN is not defined, connections will be not secure");
+		var server=new RpcWebServer(rpcJs,rpcToken);
 		var task=server.RunHttp(endPoint);
-			
+
 		Rpc.ConnectLoopback();
 
 		await task;
 	}
 
 	internal static async Task Main(string[] args){
-		
+		if(args.Length!=0&&args[0]=="help"){
+			Console.WriteLine("use args: <IP:Port or Port> [rpc.js path] [rpcToken]");
+			Console.WriteLine("rpcToken will be used from RPC_TOKEN environment variable");
+			return;
+		}
+		var ipEndPoint=args.Length!=0
+		               ?args[0] switch{
+			               var s when IPEndPoint.TryParse(s,out var ep)=>ep,
+			               var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
+			               _=>throw new ArgumentException("Invalid IP or Port"),
+		               }
+		               :new IPEndPoint(IPAddress.Any,4590);
+		var rpcJs=args.Length>1?args[1]:"rpc.js";
+		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN");
+
 		new Thread(ConsoleThread){Name="ConsoleThread"}.Start();
 		try{
-			await RunWebServer(new IPEndPoint(new IPAddress(new byte[]{127,2,4,8}),4590),args.Length==0?"rpc.js":args[0]);
+			Console.WriteLine("Listening on "+ipEndPoint);
+			await RunWebServer(ipEndPoint,rpcJs,rpcToken);
 		} catch(Exception e){
 			Console.WriteLine(e);
 			Environment.Exit(-1);
@@ -63,14 +82,26 @@ public class RpcWebServer:WebBase{
 	}
 
 	private readonly string _rpcJs;
-	private RpcWebServer(string rpcJs){
+	private readonly string? _rpcToken;
+
+	private RpcWebServer(string rpcJs,string? rpcToken){
 		_rpcJs=rpcJs;
+		_rpcToken=rpcToken;
 	}
 
-	protected override Task HandleRequest(WebSession session)=>HandleRequest(session,_rpcJs);
+	protected override Task HandleRequest(WebSession session)=>HandleRequest(session,_rpcJs,_rpcToken);
 
 	[PublicAPI]
-	public static async Task HandleRequest(WebSession session,string rpcJs){
+	public static async Task HandleRequest(WebSession session,string rpcJs,string? rpcToken){
+		if(rpcToken!=null){
+			var s=session.Cookies.Get("RPC_TOKEN");
+			if(s!=rpcToken){
+				await session.Send.Error(403);
+				return;
+			}
+		}
+		
+		
 		if(await session.CreateWebSocket() is{} webSocket){
 			await using var connection=new ServerConnectionWebSocket(webSocket);
 			Console.WriteLine($"{connection} connected");
@@ -86,7 +117,7 @@ public class RpcWebServer:WebBase{
 
 			try{
 				s=await Rpc.Eval(s);
-			}catch(Exception e){
+			} catch(Exception e){
 				await session.Send
 				             .Cache(false)
 				             .Document()

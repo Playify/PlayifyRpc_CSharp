@@ -28,8 +28,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 
 
 
-	internal static async Task Connect(Uri uri,NameValueCollection? headers,string? name){
-		await RegisteredTypes.SetName(name);
+	internal static async Task Connect(Uri uri,NameValueCollection? headers){
 		StartConnect(false);
 		while(true){
 			try{

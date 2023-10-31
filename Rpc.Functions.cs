@@ -6,8 +6,8 @@ using PlayifyRpc.Types.Functions;
 namespace PlayifyRpc;
 
 public static partial class Rpc{
-	public static RpcObject CreateRemoteObject(string type)=>new(type);
-	public static RpcFunction CreateRemoteFunction(string? type,string method)=>new(type,method);
+	public static RpcObject CreateObject(string type)=>new(type);
+	public static RpcFunction CreateFunction(string? type,string method)=>new(type,method);
 	
 	public static RpcFunction RegisterFunction(Delegate func)=>RpcFunction.RegisterFunction(func);
 	public static void UnregisterFunction(Delegate func)=>RpcFunction.UnregisterFunction(func);
