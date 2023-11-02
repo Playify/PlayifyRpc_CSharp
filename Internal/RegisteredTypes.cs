@@ -18,7 +18,12 @@ internal static class RegisteredTypes{
 	private static void RegisterAssembly(Assembly assembly){
 		foreach(var type in assembly.GetTypes()){
 			var sharedClass=type.GetCustomAttribute<RpcProviderAttribute>();
-			if(sharedClass!=null) _=Register(sharedClass.Type??type.Name,new TypeInvoker(type));
+			if(sharedClass!=null){
+				if(type.IsAssignableTo(typeof(Invoker))){
+					RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+					_=Register(sharedClass.Type??type.Name,(Invoker)Activator.CreateInstance(type)!);
+				}else _=Register(sharedClass.Type??type.Name,new TypeInvoker(type));
+			}
 		}
 	}
 

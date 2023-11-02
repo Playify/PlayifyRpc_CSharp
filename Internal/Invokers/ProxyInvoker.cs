@@ -1,24 +1,23 @@
 using PlayifyRpc.Types;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Internal.Invokers;
 
 public class ProxyInvoker:Invoker{
-	private readonly Func<RpcObject> _object;
+	private readonly Func<Task<RpcObject>> _object;
 
-	public ProxyInvoker(Func<RpcObject> @object){
-		_object=@object;
-
-	}
+	public ProxyInvoker(Func<Task<RpcObject>> @object)=>_object=@object;
+	public ProxyInvoker(Func<RpcObject> @object)=>_object=()=>Task.Run(@object);
 
 	protected internal override object DynamicInvoke(string? type,string method,object?[] args){
 		var ctx=Rpc.GetContext();
-		var o=_object();
-
-		var call=o.CallFunction(method,args)
-		          .WithCancellation(ctx.CancellationToken);
-		call.AddMessageListener(ctx.SendMessage);
-		ctx.AddMessageListener(call.SendMessage);
+		return _object().ThenAsync(o=>{
+			var call=o.CallFunction(method,args)
+			          .WithCancellation(ctx.CancellationToken);
+			call.AddMessageListener(ctx.SendMessage);
+			ctx.AddMessageListener(call.SendMessage);
 		
-		return call;
+			return call;
+		});
 	}
 }

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
 namespace PlayifyRpc.Internal.Invokers;
@@ -9,6 +10,7 @@ public class TypeInvoker:Invoker{
 	public TypeInvoker(Type type,object? instance=null){
 		_type=type;
 		_instance=instance;
+		RuntimeHelpers.RunClassConstructor(type.TypeHandle);
 	}
 
 	[PublicAPI]

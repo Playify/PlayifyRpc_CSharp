@@ -68,6 +68,7 @@ public static partial class StaticallyTypedUtils{
 
 		//Json
 		if(type.IsAssignableFrom(typeof(JsonString))&&value is string s) return new JsonString(s);
+		if(type.IsAssignableFrom(typeof(JsonBool))&&value is bool b) return b?JsonBool.True:JsonBool.False;
 		if(type.IsAssignableFrom(typeof(JsonNumber))&&TryCast<double>(value,out var d)) return new JsonNumber(d);
 
 
