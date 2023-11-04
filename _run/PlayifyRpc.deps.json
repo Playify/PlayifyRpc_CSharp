@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v6.0": {
-      "PlayifyRpc/1.0.3": {
+      "PlayifyRpc/1.0.4": {
         "dependencies": {
           "PlayifyUtility": "1.0.1",
           "ReadLine": "2.0.1"
@@ -45,7 +45,7 @@
     }
   },
   "libraries": {
-    "PlayifyRpc/1.0.3": {
+    "PlayifyRpc/1.0.4": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

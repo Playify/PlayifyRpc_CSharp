@@ -42,6 +42,12 @@ public partial class RpcWebServer:WebBase{
 	}
 
 	[PublicAPI]
+	public static void RunConsoleThread(){
+		new Thread(ConsoleThread){Name="ConsoleThread"}.Start();
+	}
+	
+
+	[PublicAPI]
 	public static async Task RunWebServer(IPEndPoint endPoint,string rpcJs)=>await RunWebServer(endPoint,rpcJs,Environment.GetEnvironmentVariable("RPC_TOKEN"));
 
 	[PublicAPI]
@@ -71,7 +77,7 @@ public partial class RpcWebServer:WebBase{
 		var rpcJs=args.Length>1?args[1]:await TryDownloadRpcJs();
 		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN");
 
-		new Thread(ConsoleThread){Name="ConsoleThread"}.Start();
+		RunConsoleThread();
 		try{
 			Console.WriteLine("Listening on "+ipEndPoint);
 			await RunWebServer(ipEndPoint,rpcJs,rpcToken);
