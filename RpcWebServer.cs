@@ -7,7 +7,7 @@ using PlayifyUtility.Web;
 
 namespace PlayifyRpc;
 
-public class RpcWebServer:WebBase{
+public partial class RpcWebServer:WebBase{
 
 	private static void ConsoleThread(){
 		while(true){
@@ -68,7 +68,7 @@ public class RpcWebServer:WebBase{
 			               _=>throw new ArgumentException("Invalid IP or Port"),
 		               }
 		               :new IPEndPoint(IPAddress.Any,4590);
-		var rpcJs=args.Length>1?args[1]:"rpc.js";
+		var rpcJs=args.Length>1?args[1]:await TryDownloadRpcJs();
 		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN");
 
 		new Thread(ConsoleThread){Name="ConsoleThread"}.Start();

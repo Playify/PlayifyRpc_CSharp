@@ -38,5 +38,8 @@
         <Compile Update="Internal\StaticallyTypedUtils.Cast.cs">
           <DependentUpon>StaticallyTypedUtils.cs</DependentUpon>
         </Compile>
+        <Compile Update="RpcWebServer.RpcJs.cs">
+          <DependentUpon>RpcWebServer.cs</DependentUpon>
+        </Compile>
     </ItemGroup>
 </Project>
