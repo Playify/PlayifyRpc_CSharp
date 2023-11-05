@@ -16,7 +16,7 @@ internal static class Evaluate{
 		return NoValue;
 	}
 
-	public static async Task<string> Eval(string s){
+	public static async Task<object?> EvalAny(string s){
 		var dot=s.IndexOf('.');
 		if(dot==-1) throw new FormatException("No dot");
 		var bracket=s.IndexOf('(',dot+1);
@@ -42,10 +42,14 @@ internal static class Evaluate{
 			args.Add(obj);
 		}
 
-		var result=await Rpc.CallFunction(type,method,args.ToArray());
+		return await Rpc.CallFunction(type,method,args.ToArray());
+	}
+
+	public static async Task<string> Eval(string s){
+		var result=await EvalAny(s);
 		
 		if(StaticallyTypedUtils.TryCast<Json>(result,out var json))
-			return json.ToString();
+			return json.ToString("\t");
 		
 		return result switch{
 			null=>"null",
