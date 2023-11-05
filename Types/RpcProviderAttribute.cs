@@ -4,7 +4,7 @@ namespace PlayifyRpc.Types;
 
 [AttributeUsage(AttributeTargets.Class|AttributeTargets.Struct)]
 [UsedImplicitly(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
-//[BaseTypeRequired(typeof(IDynamicType))]
+[MeansImplicitUse(ImplicitUseTargetFlags.WithMembers)]
 public class RpcProviderAttribute:Attribute{
 	internal readonly string? Type;
 
