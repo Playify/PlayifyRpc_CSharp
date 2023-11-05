@@ -7,14 +7,11 @@ namespace PlayifyRpc;
 public partial class RpcWebServer{
 	[PublicAPI]
 	public static async Task<string> TryDownloadRpcJs(string target="rpc.js",bool forceOverwrite=false){
-		if(forceOverwrite){
-			if(File.Exists(target)) File.Delete(target);
-			if(File.Exists(target+".map")) File.Delete(target+".map");
-		} else if(File.Exists(target)) return target;
+		if(!forceOverwrite&&File.Exists(target)) return target;
 
 		var newPath=await DownloadNewestRpcJs();
-		File.Copy(newPath,target);
-		File.Copy(newPath+".map",target+".map");
+		File.Copy(newPath,target,true);
+		File.Copy(newPath+".map",target+".map",true);
 		return target;
 	}
 

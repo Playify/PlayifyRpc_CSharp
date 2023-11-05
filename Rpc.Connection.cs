@@ -7,7 +7,7 @@ namespace PlayifyRpc;
 
 public static partial class Rpc{
 	public static Task WaitUntilConnected=>ClientConnection.WaitUntilConnected;
-	public static bool IsConnected=>ClientConnection.Instance!=null;
+	public static bool IsConnected{get;internal set;}
 	
 	public static void ConnectLoopback(){
 		_=ServerConnectionLoopbackClient.Connect().Catch(Console.Error.WriteLine);

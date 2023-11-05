@@ -72,30 +72,31 @@ public class FunctionCallContext:SendReceive{
 		}
 
 		var connection=ClientConnection.Instance;
-		if(connection!=null){
-			truth.SendFunc=msgArgs=>{
-				if(truth.Finished)return;
-				var msg=new DataOutputBuff();
-				msg.WriteByte((byte)PacketType.MessageToExecutor);
-				msg.WriteLength(callId);
-				var list=new List<object>();
-				msg.WriteArray(msgArgs,msg.WriteDynamic,list);
-				already.AddRange(list);
-
-				connection.SendRaw(msg);
-			};
-			truth.CancelFunc=()=>{
-				if(truth.Finished)return;
-				var msg=new DataOutputBuff();
-				msg.WriteByte((byte)PacketType.FunctionCancel);
-				msg.WriteLength(callId);
-				
-				connection.SendRaw(msg);
-			};
-			
-			connection.SendCall(callId,call,buff);
+		if(connection==null||(type!=null&&!Rpc.IsConnected)){
+			call.Reject(new Exception("Not connected"));
+			return call;
 		}
-		else call.Reject(new Exception("Not connected"));
+		truth.SendFunc=msgArgs=>{
+			if(truth.Finished) return;
+			var msg=new DataOutputBuff();
+			msg.WriteByte((byte) PacketType.MessageToExecutor);
+			msg.WriteLength(callId);
+			var list=new List<object>();
+			msg.WriteArray(msgArgs,msg.WriteDynamic,list);
+			already.AddRange(list);
+
+			connection.SendRaw(msg);
+		};
+		truth.CancelFunc=()=>{
+			if(truth.Finished) return;
+			var msg=new DataOutputBuff();
+			msg.WriteByte((byte) PacketType.FunctionCancel);
+			msg.WriteLength(callId);
+
+			connection.SendRaw(msg);
+		};
+
+		connection.SendCall(callId,call,buff);
 
 		return call;
 	}

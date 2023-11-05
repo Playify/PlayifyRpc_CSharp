@@ -23,18 +23,20 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	}
 
 	protected static async Task DoConnect(ClientConnection connection){
-		Instance=connection;
-		
-		await Rpc.CallFunction(null,"N",Rpc.NameOrId);
 		object?[] types;
-		lock(RegisteredTypes.Registered) types=RegisteredTypes.Registered.Keys.Cast<object?>().ToArray();
+		lock(RegisteredTypes.Registered)types=RegisteredTypes.Registered.Keys.Cast<object?>().ToArray();
+		
+		Instance=connection;
+		await Rpc.CallFunction(null,"N",Rpc.NameOrId);
 		await Rpc.CallFunction(null,"+",types);
 
+		Rpc.IsConnected=true;
 		(_tcs??=new TaskCompletionSource()).TrySetResult();
 	}
 
 	protected static void FailConnect(Exception e){
 		Instance=null;
+		Rpc.IsConnected=false;
 		Console.WriteLine(e);
 		var tcs=_tcs;
 		_tcs=new TaskCompletionSource();
