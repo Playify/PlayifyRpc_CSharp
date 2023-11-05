@@ -1,8 +1,10 @@
+using JetBrains.Annotations;
 using PlayifyRpc.Types;
 using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Internal.Invokers;
 
+[PublicAPI]
 public class ProxyInvoker:Invoker{
 	private readonly Func<Task<RpcObject>> _object;
 

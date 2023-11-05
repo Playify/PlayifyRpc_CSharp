@@ -1,8 +1,10 @@
 using System.Reflection;
+using JetBrains.Annotations;
 using PlayifyRpc.Types.Data;
 
 namespace PlayifyRpc.Internal.Invokers;
 
+[PublicAPI]
 public class DictionaryInvoker:Invoker{
 	private readonly Dictionary<string,Delegate> _dict;
 		

@@ -1,8 +1,10 @@
+using JetBrains.Annotations;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Internal.Invokers;
 
+[PublicAPI]
 public abstract class Invoker{
 
 	protected internal abstract object? DynamicInvoke(string? type,string method,object?[] args);

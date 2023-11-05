@@ -13,7 +13,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	private int _nextId;
 	private readonly Dictionary<int,(ServerConnection respondTo,int respondId)> _activeRequests=new();
 	private readonly Dictionary<int,(ServerConnection respondFrom,int respondId)> _activeExecutions=new();
-	internal readonly HashSet<string> Types=new();
+	private readonly HashSet<string> _types=new();
 
 
 	protected ServerConnection(){
@@ -28,8 +28,13 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		GC.SuppressFinalize(this);
 
 		lock(Connections) Connections.Remove(this);
-		
-		RpcServerTypes.Disconnect(this);
+
+		lock(RpcServerTypes.Types){
+			foreach(var type in _types)
+				if(RpcServerTypes.Types.Remove(type,out var con)&&con!=this)
+					RpcServerTypes.Types[type]=con;//if deleted wrongly, put back in
+			_types.Clear();
+		}
 
 
 		(ServerConnection respondTo,int respondId)[] toReject;
@@ -49,6 +54,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		                  );
 	}
 
+
 	protected override async Task Receive(DataInputBuff data){
 		var packetType=(PacketType)data.ReadByte();
 		switch(packetType){
@@ -57,7 +63,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				var type=data.ReadString();
 				if(type==null) await CallServer(this,data,callId);
 				else{
-					var handler=RpcServerTypes.GetConnectionForType(type);
+					ServerConnection? handler;
+					lock(RpcServerTypes.Types)
+						if(!RpcServerTypes.Types.TryGetValue(type,out handler))
+							handler=null;
 					if(handler==null) await Reject(callId,new Exception("Unknown Type: "+type));
 					else{
 						var task=handler.CallFunction(type,data,this,callId,out var sentId);
@@ -163,7 +172,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 						failed=args.Where(typeObj=>{
 							if(typeObj is not string type) return true;
 							if(!RpcServerTypes.Types.TryAdd(type,connection)) return true;
-							connection.Types.Add(type);
+							connection._types.Add(type);
 							return false;
 						}).ToArray();
 					if(failed.Length!=0){
@@ -178,7 +187,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 					lock(RpcServerTypes.Types)
 						failed=args.Where(typeObj=>{
 							if(typeObj is not string type) return true;
-							if(!connection.Types.Remove(type)) return true;
+							if(!connection._types.Remove(type)) return true;
 							RpcServerTypes.Types.Remove(type);
 							return false;
 						}).ToArray();
@@ -190,15 +199,15 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 					break;
 				}
 				case "?":{
-					lock(RpcServerTypes.Types) result=RpcServerTypes.Types.Keys.Intersect(args.OfType<string>()).Count();
+					result=RpcServerTypes.CheckTypes(args.OfType<string>());
 					break;
 				}
 				case "T":{
-					lock(RpcServerTypes.Types) result=RpcServerTypes.Types.Keys.ToArray();
+					result=RpcServerTypes.GetAllTypes();
 					break;
 				}
 				case "C":{
-					lock(Connections) result=Connections.Select(c=>c.ToString()).ToArray();
+					result=RpcServerTypes.GetAllConnections();
 					break;
 				}
 				case "N":{

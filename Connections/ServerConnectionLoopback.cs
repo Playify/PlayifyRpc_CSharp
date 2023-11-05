@@ -1,4 +1,5 @@
 using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Invokers;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils;
 
@@ -31,6 +32,7 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 
 	internal static async Task Connect(){
 		await RegisteredTypes.SetName("RPC_SERVER_LOOPBACK");
+		await RegisteredTypes.Register("Rpc",new TypeInvoker(typeof(RpcServerTypes)));
 		StartConnect(false);
 		while(true){
 			try{

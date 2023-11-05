@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 
 namespace PlayifyRpc.Internal.Invokers;
 
+[PublicAPI]
 public class TypeInvoker:Invoker{
 	private readonly Type _type;
 	private readonly object? _instance;
