@@ -2,23 +2,16 @@ using PlayifyRpc.Connections;
 
 namespace PlayifyRpc.Internal;
 
-public static class RpcServerTypes{
-	internal static readonly Dictionary<string,ServerConnection> Types=new();
+public static class RpcServerTypes{//Class is registered as "Rpc" from Server
 	
-	public static void Disconnect(ServerConnection connection){
-		lock(Types){
-			foreach(var type in connection.Types)
-				if(Types.Remove(type,out var con)&&con!=connection)
-					Types[type]=con;//if deleted wrongly, put back in
-			connection.Types.Clear();
-		}
-	}
+	internal static readonly Dictionary<string,ServerConnection> Types=new();
 
-	public static ServerConnection? GetConnectionForType(string type){
-		lock(Types) return Types.TryGetValue(type,out var handler)?handler:null;
+	
+	public static int CheckTypes(IEnumerable<string> types){
+		lock(Types) return Types.Keys.Intersect(types).Count();
 	}
-
-	public static bool HasType(string? type){
+	public static bool HasType(string? type)=>CheckType(type);
+	public static bool CheckType(string? type){
 		if(type==null) return false;
 		lock(Types) return Types.ContainsKey(type);
 	}
@@ -30,4 +23,16 @@ public static class RpcServerTypes{
 	public static string[] GetAllConnections(){
 		lock(ServerConnection.Connections) return ServerConnection.Connections.Select(c=>c.ToString()).ToArray();
 	}
+	
+	public static Task<object?> CallFunction(string? type,string method,params object?[] args){
+		var ctx=Rpc.GetContext();
+		var call=Rpc.CallFunction(type,method,args)
+		            .WithCancellation(ctx.CancellationToken);
+		call.AddMessageListener(ctx.SendMessage);
+		ctx.AddMessageListener(call.SendMessage);
+
+		return call;
+	}
+
+	public static Task<string> Eval(string expression)=>Evaluate.Eval(expression);
 }
