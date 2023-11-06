@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
+using PlayifyRpc.Types;
 
 namespace PlayifyRpc;
 
@@ -17,6 +18,8 @@ public static partial class Rpc{
 	public static Task UnregisterType(string type)=>RegisteredTypes.Unregister(type);
 	
 	
+	
+	public static async Task<RpcObject?> GetObjectWithFallback(string type,params string[] fallback)=>await CallFunction<RpcObject>(null,"O",fallback.Prepend(type).Cast<object?>().ToArray());
 	
 	public static async Task<int> CheckTypes(params string[] types)=>await CallFunction<int>(null,"?",types.Cast<object?>().ToArray());
 	

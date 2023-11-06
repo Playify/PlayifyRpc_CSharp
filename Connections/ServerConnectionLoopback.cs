@@ -32,7 +32,7 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 
 	internal static async Task Connect(){
 		await RegisteredTypes.SetName("RPC_SERVER_LOOPBACK");
-		await RegisteredTypes.Register("Rpc",new TypeInvoker(typeof(RpcServerTypes)));
+		await RegisteredTypes.Register("Rpc",new TypeInvoker(typeof(RpcServer)));
 		StartConnect(false);
 		while(true){
 			try{

@@ -19,10 +19,10 @@ public partial class RpcWebServer:WebBase{
 					Environment.Exit(0);
 					break;
 				case "connection" or "connnections" or "con" or "c":
-					Console.WriteLine("Connections: "+RpcServerTypes.GetAllConnections().Select(s=>"\n\t"+s).Join(""));
+					Console.WriteLine("Connections: "+RpcServer.GetAllConnections().Select(s=>"\n\t"+s).Join(""));
 					break;
 				case "type" or "types" or "t":
-					Console.WriteLine("Types: "+RpcServerTypes.GetAllTypes().Select(s=>"\n\t"+s).Join(""));
+					Console.WriteLine("Types: "+RpcServer.GetAllTypes().Select(s=>"\n\t"+s).Join(""));
 					break;/*
 				case "debug" or "dbg" or "d":
 					if(WebSocket.PingCountUntilError!=0){

@@ -29,10 +29,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 
 		lock(Connections) Connections.Remove(this);
 
-		lock(RpcServerTypes.Types){
+		lock(RpcServer.Types){
 			foreach(var type in _types)
-				if(RpcServerTypes.Types.Remove(type,out var con)&&con!=this)
-					RpcServerTypes.Types[type]=con;//if deleted wrongly, put back in
+				if(RpcServer.Types.Remove(type,out var con)&&con!=this)
+					RpcServer.Types[type]=con;//if deleted wrongly, put back in
 			_types.Clear();
 		}
 
@@ -64,8 +64,8 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				if(type==null) await CallServer(this,data,callId);
 				else{
 					ServerConnection? handler;
-					lock(RpcServerTypes.Types)
-						if(!RpcServerTypes.Types.TryGetValue(type,out handler))
+					lock(RpcServer.Types)
+						if(!RpcServer.Types.TryGetValue(type,out handler))
 							handler=null;
 					if(handler==null) await Reject(callId,new Exception("Unknown Type: "+type));
 					else{
@@ -168,10 +168,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			switch(method){
 				case "+":{
 					object?[] failed;
-					lock(RpcServerTypes.Types)
+					lock(RpcServer.Types)
 						failed=args.Where(typeObj=>{
 							if(typeObj is not string type) return true;
-							if(!RpcServerTypes.Types.TryAdd(type,connection)) return true;
+							if(!RpcServer.Types.TryAdd(type,connection)) return true;
 							connection._types.Add(type);
 							return false;
 						}).ToArray();
@@ -184,11 +184,11 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				}
 				case "-":{
 					object?[] failed;
-					lock(RpcServerTypes.Types)
+					lock(RpcServer.Types)
 						failed=args.Where(typeObj=>{
 							if(typeObj is not string type) return true;
 							if(!connection._types.Remove(type)) return true;
-							RpcServerTypes.Types.Remove(type);
+							RpcServer.Types.Remove(type);
 							return false;
 						}).ToArray();
 					if(failed.Length!=0){
@@ -199,15 +199,19 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 					break;
 				}
 				case "?":{
-					result=RpcServerTypes.CheckTypes(args.OfType<string>());
+					result=RpcServer.CheckTypes(args.OfType<string>().ToArray());
+					break;
+				}
+				case "O":{
+					result=RpcServer.GetObjectWithFallback(args.OfType<string>().ToArray());
 					break;
 				}
 				case "T":{
-					result=RpcServerTypes.GetAllTypes();
+					result=RpcServer.GetAllTypes();
 					break;
 				}
 				case "C":{
-					result=RpcServerTypes.GetAllConnections();
+					result=RpcServer.GetAllConnections();
 					break;
 				}
 				case "N":{
