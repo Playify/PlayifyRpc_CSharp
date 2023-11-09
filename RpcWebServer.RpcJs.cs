@@ -6,17 +6,16 @@ namespace PlayifyRpc;
 
 public partial class RpcWebServer{
 	[PublicAPI]
-	public static async Task<string> TryDownloadRpcJs(string target="rpc.js",bool forceOverwrite=false){
-		if(!forceOverwrite&&File.Exists(target)) return target;
+	public static async Task DownloadRpcJsTo(string target,bool forceOverwrite=false){
+		if(!forceOverwrite&&File.Exists(target)) return;
 
-		var newPath=await DownloadNewestRpcJs();
+		var newPath=await DownloadRpcJsFromNpm();
 		File.Copy(newPath,target,true);
 		File.Copy(newPath+".map",target+".map",true);
-		return target;
 	}
 
 	[PublicAPI]
-	public static async Task<string> DownloadNewestRpcJs(){
+	public static async Task<string> DownloadRpcJsFromNpm(){
 		var dir=Path.Combine(Path.GetTempPath(),"playify-rpc");
 		Directory.CreateDirectory(dir);
 

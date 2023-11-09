@@ -74,7 +74,12 @@ public partial class RpcWebServer:WebBase{
 			               _=>throw new ArgumentException("Invalid IP or Port"),
 		               }
 		               :new IPEndPoint(IPAddress.Any,4590);
-		var rpcJs=args.Length>1?args[1]:await TryDownloadRpcJs();
+		string rpcJs;
+		if(args.Length>1) rpcJs=args[1];
+		else{
+			rpcJs="rpc.js";
+			await DownloadRpcJsTo(rpcJs);
+		}
 		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN");
 
 		RunConsoleThread();
