@@ -50,6 +50,7 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 				Console.WriteLine("Reconnecting...");
 			}
 		}
+		// ReSharper disable once FunctionNeverReturns
 	}
 
 	private ServerConnectionLoopbackClient(){

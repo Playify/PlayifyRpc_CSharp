@@ -45,4 +45,5 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	}
 
 	public static Task<string> Eval(string expression)=>Evaluate.Eval(expression);
+	public static Task<object?> EvalAny(string expression)=>Evaluate.EvalAny(expression);
 }

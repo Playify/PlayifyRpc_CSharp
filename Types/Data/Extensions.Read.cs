@@ -3,11 +3,6 @@ using PlayifyUtility.Streams.Data;
 namespace PlayifyRpc.Types.Data;
 
 public static partial class Extensions{
-	public static byte[] ReadFully(this DataInput input,int length){//TODO move to PlayifyUtility
-		var bytes=new byte[length];
-		input.ReadFully(bytes);
-		return bytes;
-	}
 
 	public static RpcException ReadException(this DataInput input){
 		var type=input.ReadString();

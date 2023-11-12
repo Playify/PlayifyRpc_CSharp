@@ -1,8 +1,9 @@
+using JetBrains.Annotations;
 using PlayifyUtility.Jsons;
-using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Internal;
 
+[PublicAPI]
 internal static class Evaluate{
 	
 	private static readonly object NoValue=new();
@@ -11,7 +12,7 @@ internal static class Evaluate{
 		if(int.TryParse(argString,out var i)) return i;
 		if(double.TryParse(argString,out var d)) return d;
 		if(long.TryParse(argString,out var l)) return l;
-		if(Json.Parse(argString).NotNull(out var json)) return json;
+		if(Json.TryParse(argString,out var json)) return json;
 
 		return NoValue;
 	}

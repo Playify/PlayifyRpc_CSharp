@@ -41,9 +41,9 @@ public static partial class StaticallyTypedUtils{
 	private static object? DoCast(object value,Type type){
 		value=value switch{
 			//Json
-			JsonString j=>j.AsString(),
-			JsonNumber j=>j.AsNumber(),
-			JsonBool j=>j.AsBoolean(),
+			JsonString j=>j.Value,
+			JsonNumber j=>j.Value,
+			JsonBool j=>j.Value,
 			//JsonNull is handled in TryCast
 			_=>value,
 		};

@@ -30,6 +30,7 @@ public class DynamicBinder:Binder{
 		if(match==null||match.Length==0) throw new ArgumentException(nameof(match));
 
 		MethodBase?[] candidates=(MethodBase[])match.Clone();
+		
 
 		int i;
 		int j;
@@ -189,7 +190,6 @@ public class DynamicBinder:Binder{
 
 				#region Check that excess arguments can be placed in the param array
 				for(;j<args.Length;j++){
-					var argType=argTypes[j];
 					if(!StaticallyTypedUtils.TryCast(args[j],paramArrayType,out _)) break;
 				}
 				#endregion
