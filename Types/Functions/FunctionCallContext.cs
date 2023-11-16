@@ -9,22 +9,21 @@ namespace PlayifyRpc.Types.Functions;
 
 public delegate void MessageFunc(params object?[] args);
 
+[PublicAPI]
 public class FunctionCallContext:SendReceive{
 	private readonly MessageFunc _send;
 	private readonly TaskCompletionSource<object?> _tcs;
 	private readonly CancellationTokenSource _cts=new();
 
-	[PublicAPI]
 	public readonly string? Type;
-	[PublicAPI]
 	public readonly string? Method;
 	
 	public override bool Finished=>_tcs.Task.IsCompleted;
 	public override Task<object?> Task=>_tcs.Task;
 	
-	[PublicAPI]
 	public CancellationToken CancellationToken=>_cts.Token;
 	public void Cancel()=>_cts.Cancel();
+	public void CancelAfter(TimeSpan delay)=>_cts.CancelAfter(delay);
 
 
 	public override void SendMessage(params object?[] args)=>_send(args);

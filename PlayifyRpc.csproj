@@ -9,6 +9,8 @@
         <OutputPath>_run</OutputPath>
         <LangVersion>latest</LangVersion>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <DefineConstants>TRACE;JETBRAINS_ANNOTATIONS</DefineConstants>
+        
         <Title>PlayifyRpc</Title>
         <Description>Remote Procedure Call (Client and Server)</Description>
         <RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
