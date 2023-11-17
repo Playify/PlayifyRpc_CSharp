@@ -1,4 +1,5 @@
 using System.Dynamic;
+using System.Reflection;
 using PlayifyRpc.Types.Data;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils;
@@ -36,8 +37,12 @@ public static partial class StaticallyTypedUtils{
 	}
 
 	public static T Cast<T>(object? value)=>(T) Cast(value,typeof(T));
-	public static object Cast(object? value,Type type)=>TryCast(value,type,out var result)?result!:throw new InvalidCastException("Error casting \""+value+"\" to "+type.Name);
-	
+
+	public static object Cast(object? value,Type type)
+		=>TryCast(value,type,out var result)
+		  ?result!
+		  :throw new InvalidCastException("Error casting \""+value+"\" to "+type.Name);
+
 	private static object? DoCast(object value,Type type){
 		value=value switch{
 			//Json
@@ -47,8 +52,8 @@ public static partial class StaticallyTypedUtils{
 			//JsonNull is handled in TryCast
 			_=>value,
 		};
-		
-		
+
+
 		//Primitives
 		if(type.IsPrimitive)
 			try{
@@ -59,6 +64,8 @@ public static partial class StaticallyTypedUtils{
 		//Enums
 		if(type.IsEnum)
 			try{
+				if(value is string valueAsString&&Enum.TryParse(type,valueAsString,true,out var result))
+					return result;
 				return Enum.ToObject(type,Convert.ChangeType(value,Type.GetTypeCode(type)));
 			} catch(Exception){
 				return null;
@@ -112,8 +119,8 @@ public static partial class StaticallyTypedUtils{
 		//Object
 		if(value is ExpandoObject exp){
 			if(type.IsAssignableTo(typeof(ObjectTemplate))) return ObjectTemplate.CreateFromExpando(exp,type);
-			
-			
+
+
 			if(type.IsAssignableFrom(typeof(JsonObject))){
 				var o=new JsonObject();
 				foreach(var (key,val) in exp){
@@ -124,6 +131,14 @@ public static partial class StaticallyTypedUtils{
 				return o;
 			}
 			return null;
+		}
+		
+		if(value is string&&type.GetMethod("TryParse",
+		                                               BindingFlags.Public|BindingFlags.Static|BindingFlags.InvokeMethod,
+		                                               new[]{typeof(string),type.MakeByRefType()}) is {} tryParse){
+			var parameters=new[]{value,type.IsValueType?Activator.CreateInstance(type):null};
+			if(tryParse.Invoke(null,parameters) is true)
+				return parameters[1];
 		}
 
 		return null;
