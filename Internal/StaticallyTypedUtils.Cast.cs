@@ -55,7 +55,7 @@ public static partial class StaticallyTypedUtils{
 
 
 		//Primitives
-		if(type.IsPrimitive)
+		if(type.IsPrimitive&&value is IConvertible)
 			try{
 				return Convert.ChangeType(value,Type.GetTypeCode(type));
 			} catch(Exception){
@@ -118,24 +118,26 @@ public static partial class StaticallyTypedUtils{
 		}
 		//Object
 		if(value is ExpandoObject exp){
-			if(type.IsAssignableTo(typeof(ObjectTemplate))) return ObjectTemplate.CreateFromExpando(exp,type);
-
-
-			if(type.IsAssignableFrom(typeof(JsonObject))){
-				var o=new JsonObject();
-				foreach(var (key,val) in exp){
-					if(TryCast<Json>(val,out var element))
-						o[key]=element;
-					else return null;
-				}
-				return o;
-			}
-			return null;
+			var props=exp.Select(pair=>(pair.Key,pair.Value));
+			
+			if(type.IsAssignableTo(typeof(ObjectTemplate))) return ObjectTemplate.TryCreateTemplate(props,type);
+			if(type.IsAssignableFrom(typeof(JsonObject)))return ObjectTemplate.TryCreateJson(props);
 		}
-		
+		if(value is JsonObject jsonObject){
+			var props=jsonObject.Select(pair=>(pair.Key,(object?) pair.Value));
+			if(type.IsAssignableTo(typeof(ObjectTemplate))) return ObjectTemplate.TryCreateTemplate(props,type);
+			if(type.IsAssignableTo(typeof(ExpandoObject))) return ObjectTemplate.TryCreateExpando(props);
+		}
+		if(value is ObjectTemplate obj){
+			var props=obj.GetProperties();
+			if(type.IsAssignableTo(typeof(ObjectTemplate))) return ObjectTemplate.TryCreateTemplate(props,type);
+			if(type.IsAssignableTo(typeof(ExpandoObject))) return ObjectTemplate.TryCreateExpando(props);
+			if(type.IsAssignableFrom(typeof(JsonObject))) return ObjectTemplate.TryCreateJson(props);
+		}
+
 		if(value is string&&type.GetMethod("TryParse",
-		                                               BindingFlags.Public|BindingFlags.Static|BindingFlags.InvokeMethod,
-		                                               new[]{typeof(string),type.MakeByRefType()}) is {} tryParse){
+		                                   BindingFlags.Public|BindingFlags.Static|BindingFlags.InvokeMethod,
+		                                   new[]{typeof(string),type.MakeByRefType()}) is{} tryParse){
 			var parameters=new[]{value,type.IsValueType?Activator.CreateInstance(type):null};
 			if(tryParse.Invoke(null,parameters) is true)
 				return parameters[1];

@@ -1,5 +1,6 @@
 using System.Text;
 using PlayifyRpc.Internal;
+using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils;
@@ -47,7 +48,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			toCancel=_activeExecutions.Values.ToArray();
 			_activeExecutions.Clear();
 		}
-		var exception=new Exception("Connection closed");
+		var exception=new RpcException("RpcExcetion","SERVER","Connection closed","");
 		await Task.WhenAll(
 		                   toReject.Select(t=>t.respondTo.Reject(t.respondId,exception))
 		                           .Concat(toCancel.Select(t=>t.respondTo.CancelRaw(t.respondId,null)))
@@ -67,7 +68,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 					lock(RpcServer.Types)
 						if(!RpcServer.Types.TryGetValue(type,out handler))
 							handler=null;
-					if(handler==null) await Reject(callId,new Exception("Unknown Type: "+type));
+					if(handler==null) await Reject(callId,new RpcException("RpcException","SERVER","Unknown Type: "+type,""));
 					else{
 						var task=handler.CallFunction(type,data,this,callId,out var sentId);
 						lock(_activeExecutions) _activeExecutions.Add(callId,(handler,sentId));

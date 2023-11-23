@@ -27,7 +27,7 @@ public class RpcException:Exception{
 			From=ClientConnection.Instance is ServerConnectionLoopbackClient?"SERVER":Rpc.Id;
 			var stackTrace=new StackTrace(wrap,true).ToString().Replace("\r","");
 			if(wrap.InnerException!=null) stackTrace+="\ncaused by: "+wrap.InnerException;
-			StackTrace=TabRegex.Replace(stackTrace,"\t");
+			StackTrace=TabRegex.Replace(stackTrace,"\t").TrimStart('\n');
 		}
 	}
 
@@ -48,7 +48,7 @@ public class RpcException:Exception{
 		if(!string.IsNullOrWhiteSpace(Message)) str.Append(": ").Append(Message);
 
 		var st=StackTrace;
-		if(!string.IsNullOrEmpty(st)) str.Append('\n').Append(st);
+		if(!string.IsNullOrWhiteSpace(st)) str.Append('\n').Append(st);
 
 		return str.ToString().Replace("\n","\r\n");
 	}
