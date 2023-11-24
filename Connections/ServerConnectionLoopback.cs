@@ -47,7 +47,7 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 				FailConnect(e);
 
 				await Task.Delay(1000);
-				Console.WriteLine("Reconnecting...");
+				Console.WriteLine("Reconnecting to RPC...");
 			}
 		}
 		// ReSharper disable once FunctionNeverReturns

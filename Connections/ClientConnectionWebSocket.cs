@@ -32,7 +32,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 		while(true){
 			try{
 				await using var connection=new ClientConnectionWebSocket(await WebSocket.CreateWebSocketTo(uri,headers));
-				Console.WriteLine("Connected");
+				Console.WriteLine("Connected to RPC");
 				var loop=connection.ReceiveLoop();//receive loop must start before, otherwise a deadlock would occur, because no answers can be received
 
 				await DoConnect(connection);
@@ -44,7 +44,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 				FailConnect(e);
 
 				await Task.Delay(1000);
-				Console.WriteLine("Reconnecting...");
+				Console.WriteLine("Reconnecting to RPC...");
 			}
 		}
 		// ReSharper disable once FunctionNeverReturns

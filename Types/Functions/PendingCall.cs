@@ -64,6 +64,7 @@ public class PendingCall:SendReceive{
 	public static implicit operator Task(PendingCall call)=>(Task<object?>)call;
 	public TaskAwaiter<object?> GetAwaiter()=>((Task<object?>)this).GetAwaiter();
 
+	public Task<T> ToTask<T>()=>AsTask().Then(StaticallyTypedUtils.Cast<T>);
 
 	public Task Then(Action<object?> a)=>((Task<object?>)this).Then(a);
 	public Task<T> Then<T>(Func<object?,T> a)=>((Task<object?>)this).Then(a);
@@ -72,20 +73,27 @@ public class PendingCall:SendReceive{
 	#endregion
 
 	#region Cast
-	public PendingCall<T> Cast<T>()=>this is PendingCall<T> typed?typed:new PendingCall<T>(this);
+	public PendingCall<T> Cast<T>()=>this as PendingCall<T>??new PendingCall<T>(this);
 	public PendingCall Cast(Type t)=>new PendingCallCasted(this,t);
 	#endregion
 }
 
+[PublicAPI]
 public class PendingCall<T>:PendingCall{
 	internal PendingCall(PendingCall other):base(other){
 	}
 
-	public static implicit operator Task<T>(PendingCall<T> call)=>call.Then(StaticallyTypedUtils.Cast<T>);
+	protected override Task<object?> AsTask()=>base.AsTask().Then(o=>StaticallyTypedUtils.Cast(o,typeof(T)))!;
+
+	public static implicit operator Task<T>(PendingCall<T> call)=>call.ToTask();
+	
+	public Task<T> ToTask()=>Then(StaticallyTypedUtils.Cast<T>);
+	
 	public new TaskAwaiter<T> GetAwaiter()=>((Task<T>)this).GetAwaiter();
 	public new PendingCall<T> WithCancellation(CancellationToken token)=>(PendingCall<T>)base.WithCancellation(token);
 }
 
+[PublicAPI]
 public class PendingCallCasted:PendingCall{
 	private readonly Type _type;
 
