@@ -19,6 +19,7 @@ public static class RpcListener{
 	}
 }
 
+[PublicAPI]
 public class RpcListener<T>{
 	private readonly string _type;
 	private readonly string _method;

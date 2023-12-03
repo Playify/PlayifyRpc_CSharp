@@ -10,7 +10,7 @@
         <LangVersion>latest</LangVersion>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <DefineConstants>TRACE;JETBRAINS_ANNOTATIONS</DefineConstants>
-        
+
         <Title>PlayifyRpc</Title>
         <Description>Remote Procedure Call (Client and Server)</Description>
         <RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
@@ -38,10 +38,10 @@
             <DependentUpon>Rpc.cs</DependentUpon>
         </Compile>
         <Compile Update="Internal\StaticallyTypedUtils.Cast.cs">
-          <DependentUpon>StaticallyTypedUtils.cs</DependentUpon>
+            <DependentUpon>StaticallyTypedUtils.cs</DependentUpon>
         </Compile>
         <Compile Update="RpcWebServer.RpcJs.cs">
-          <DependentUpon>RpcWebServer.cs</DependentUpon>
+            <DependentUpon>RpcWebServer.cs</DependentUpon>
         </Compile>
     </ItemGroup>
 </Project>

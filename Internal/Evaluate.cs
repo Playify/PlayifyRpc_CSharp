@@ -18,11 +18,11 @@ internal static class Evaluate{
 	}
 
 	public static async Task<object?> EvalAny(string s){
-		var dot=s.IndexOf('.');
-		if(dot==-1) throw new FormatException("No dot");
-		var bracket=s.IndexOf('(',dot+1);
+		var bracket=s.IndexOf('(');
 		if(bracket==-1) throw new FormatException("No opening bracket");
-		if(s[^1]!=')') throw new FormatException("No closing bracket");
+		if(s.Last()!=')') throw new FormatException("No closing bracket");
+		var dot=s.LastIndexOf('.',0,bracket);
+		if(dot==-1) throw new FormatException("No dot");
 		
 		var type=s[..dot];
 		var method=s[(dot+1)..bracket];
