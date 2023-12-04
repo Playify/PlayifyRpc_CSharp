@@ -2,29 +2,32 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFrameworks>net6.0;net48</TargetFrameworks>
+        <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <OutputPath>_run</OutputPath>
-        <LangVersion>latest</LangVersion>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <DefineConstants>TRACE;JETBRAINS_ANNOTATIONS</DefineConstants>
 
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Title>PlayifyRpc</Title>
         <Description>Remote Procedure Call (Client and Server)</Description>
         <RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
         <RepositoryType>GitHub</RepositoryType>
         <Authors>Playify</Authors>
-        <Version>1.0.10</Version>
+        <Version>1.1.0</Version>
 
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">
+        <Using Remove="System.Net.Http"/>
+    </ItemGroup>
+
     <ItemGroup>
-        <PackageReference Include="PlayifyUtility" Version="1.0.6" />
-        <PackageReference Include="ReadLine" Version="2.0.1" />
+        <PackageReference Include="PlayifyUtility" Version="1.1.1"/>
+        <PackageReference Include="ReadLine" Version="2.0.1"/>
     </ItemGroup>
 
     <ItemGroup>

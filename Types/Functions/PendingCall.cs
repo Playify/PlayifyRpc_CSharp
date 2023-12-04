@@ -1,22 +1,22 @@
 ﻿using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal;
-using PlayifyUtility.Utils;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Functions;
 
 internal class PendingCallRawData:SendReceive{
 	internal readonly TaskCompletionSource<object?> TaskCompletionSource=new();
-	internal MessageFunc? SendFunc;
 	internal Action? CancelFunc;
+	internal MessageFunc? SendFunc;
+
+	public override bool Finished=>TaskCompletionSource.Task.IsCompleted;
+	public override Task<object?> Task=>TaskCompletionSource.Task;
 
 	public override void SendMessage(params object?[] args){
 		if(Finished) return;
 		SendFunc?.Invoke(args);
 	}
-
-	public override bool Finished=>TaskCompletionSource.Task.IsCompleted;
-	public override Task<object?> Task=>TaskCompletionSource.Task;
 
 	public void SendCancel(){
 		if(Finished) return;
@@ -26,6 +26,16 @@ internal class PendingCallRawData:SendReceive{
 
 [PublicAPI]
 public class PendingCall:SendReceive{
+
+	public void Cancel()=>_rawData.SendCancel();
+
+	public PendingCall WithCancellation(CancellationToken token){
+		if(Finished) return this;
+		var registration=token.Register(_rawData.SendCancel);
+		Task.Then(registration.Dispose);
+
+		return this;
+	}
 
 	#region Internal
 	private readonly PendingCallRawData _rawData;
@@ -48,16 +58,6 @@ public class PendingCall:SendReceive{
 	internal override void DoReceiveMessage(object?[] args)=>_rawData.DoReceiveMessage(args);
 	#endregion
 
-	public void Cancel()=>_rawData.SendCancel();
-
-	public PendingCall WithCancellation(CancellationToken token){
-		if(Finished) return this;
-		var registration=token.Register(_rawData.SendCancel);
-		Task.Then(registration.Unregister);
-
-		return this;
-	}
-
 	#region Task
 	protected virtual Task<object?> AsTask()=>_rawData.TaskCompletionSource.Task;
 	public static implicit operator Task<object?>(PendingCall call)=>call.AsTask();
@@ -76,6 +76,7 @@ public class PendingCall:SendReceive{
 	public PendingCall<T> Cast<T>()=>this as PendingCall<T>??new PendingCall<T>(this);
 	public PendingCall Cast(Type t)=>new PendingCallCasted(this,t);
 	#endregion
+
 }
 
 [PublicAPI]
@@ -86,9 +87,9 @@ public class PendingCall<T>:PendingCall{
 	protected override Task<object?> AsTask()=>base.AsTask().Then(o=>StaticallyTypedUtils.Cast(o,typeof(T)))!;
 
 	public static implicit operator Task<T>(PendingCall<T> call)=>call.ToTask();
-	
+
 	public Task<T> ToTask()=>Then(StaticallyTypedUtils.Cast<T>);
-	
+
 	public new TaskAwaiter<T> GetAwaiter()=>((Task<T>)this).GetAwaiter();
 	public new PendingCall<T> WithCancellation(CancellationToken token)=>(PendingCall<T>)base.WithCancellation(token);
 }

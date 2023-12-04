@@ -6,7 +6,7 @@ namespace PlayifyRpc.Connections;
 public abstract class AnyConnection{
 	protected internal abstract Task SendRaw(DataOutputBuff data);
 	protected abstract Task Receive(DataInputBuff data);
-	
+
 	protected abstract void RespondedToCallId(int callId);
 
 

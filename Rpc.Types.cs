@@ -19,7 +19,7 @@ public static partial class Rpc{
 	public static Task RegisterType(string type,Type t){
 		if(!typeof(Invoker).IsAssignableFrom(t)) return RegisteredTypes.Register(type,new TypeInvoker(t));
 		RuntimeHelpers.RunClassConstructor(t.TypeHandle);
-		return RegisteredTypes.Register(type,(Invoker) Activator.CreateInstance(t)!);
+		return RegisteredTypes.Register(type,(Invoker)Activator.CreateInstance(t)!);
 	}
 
 	public static Task RegisterType<T>(string type)=>RegisterType(type,typeof(T));

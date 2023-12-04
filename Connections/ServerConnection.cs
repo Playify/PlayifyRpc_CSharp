@@ -3,26 +3,22 @@ using PlayifyRpc.Internal;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyUtility.Streams.Data;
-using PlayifyUtility.Utils;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Connections;
 
 public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	internal static readonly HashSet<ServerConnection> Connections=new();
+	private readonly Dictionary<int,(ServerConnection respondFrom,int respondId)> _activeExecutions=new();
+	private readonly Dictionary<int,(ServerConnection respondTo,int respondId)> _activeRequests=new();
+	private readonly HashSet<string> _types=new();
 	private string? _name;
 
 	private int _nextId;
-	private readonly Dictionary<int,(ServerConnection respondTo,int respondId)> _activeRequests=new();
-	private readonly Dictionary<int,(ServerConnection respondFrom,int respondId)> _activeExecutions=new();
-	private readonly HashSet<string> _types=new();
 
 
 	protected ServerConnection(){
 		lock(Connections) Connections.Add(this);
-	}
-
-	protected override void RespondedToCallId(int callId){
-		lock(_activeExecutions) _activeExecutions.Remove(callId);
 	}
 
 	public virtual async ValueTask DisposeAsync(){
@@ -53,6 +49,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		                   toReject.Select(t=>t.respondTo.Reject(t.respondId,exception))
 		                           .Concat(toCancel.Select(t=>t.respondTo.CancelRaw(t.respondId,null)))
 		                  );
+	}
+
+	protected override void RespondedToCallId(int callId){
+		lock(_activeExecutions) _activeExecutions.Remove(callId);
 	}
 
 

@@ -11,22 +11,17 @@ public delegate void MessageFunc(params object?[] args);
 
 [PublicAPI]
 public class FunctionCallContext:SendReceive{
+
+
+	private static int _nextId;
+
+	private static readonly ThreadLocal<FunctionCallContext?> ThreadLocal=new();
+	private readonly CancellationTokenSource _cts=new();
 	private readonly MessageFunc _send;
 	private readonly TaskCompletionSource<object?> _tcs;
-	private readonly CancellationTokenSource _cts=new();
+	public readonly string? Method;
 
 	public readonly string? Type;
-	public readonly string? Method;
-	
-	public override bool Finished=>_tcs.Task.IsCompleted;
-	public override Task<object?> Task=>_tcs.Task;
-	
-	public CancellationToken CancellationToken=>_cts.Token;
-	public void Cancel()=>_cts.Cancel();
-	public void CancelAfter(TimeSpan delay)=>_cts.CancelAfter(delay);
-
-
-	public override void SendMessage(params object?[] args)=>_send(args);
 
 	internal FunctionCallContext(string? type,string? method,MessageFunc send,TaskCompletionSource<object?> tcs){
 		Type=type;
@@ -35,8 +30,15 @@ public class FunctionCallContext:SendReceive{
 		_tcs=tcs;
 	}
 
+	public override bool Finished=>_tcs.Task.IsCompleted;
+	public override Task<object?> Task=>_tcs.Task;
 
-	private static int _nextId;
+	public CancellationToken CancellationToken=>_cts.Token;
+	public void Cancel()=>_cts.Cancel();
+	public void CancelAfter(TimeSpan delay)=>_cts.CancelAfter(delay);
+
+
+	public override void SendMessage(params object?[] args)=>_send(args);
 
 	internal static PendingCall CallFunction(string? type,string method,object?[] args){
 		if(type!=null){
@@ -50,7 +52,7 @@ public class FunctionCallContext:SendReceive{
 		var truth=new PendingCallRawData();
 
 		var call=new PendingCall(truth);
-		
+
 		var already=new List<object>();
 		call.Finally(()=>{
 			foreach(var d in already.OfType<Delegate>()) RpcFunction.UnregisterFunction(d);
@@ -78,7 +80,7 @@ public class FunctionCallContext:SendReceive{
 		truth.SendFunc=msgArgs=>{
 			if(truth.Finished) return;
 			var msg=new DataOutputBuff();
-			msg.WriteByte((byte) PacketType.MessageToExecutor);
+			msg.WriteByte((byte)PacketType.MessageToExecutor);
 			msg.WriteLength(callId);
 			var list=new List<object>();
 			msg.WriteArray(msgArgs,msg.WriteDynamic,list);
@@ -89,7 +91,7 @@ public class FunctionCallContext:SendReceive{
 		truth.CancelFunc=()=>{
 			if(truth.Finished) return;
 			var msg=new DataOutputBuff();
-			msg.WriteByte((byte) PacketType.FunctionCancel);
+			msg.WriteByte((byte)PacketType.FunctionCancel);
 			msg.WriteLength(callId);
 
 			connection.SendRaw(msg);
@@ -99,8 +101,6 @@ public class FunctionCallContext:SendReceive{
 
 		return call;
 	}
-
-	private static readonly ThreadLocal<FunctionCallContext?> ThreadLocal=new();
 
 	internal static T RunWithContext<T>(Func<T> func,FunctionCallContext context){
 		ThreadLocal.Value=context;

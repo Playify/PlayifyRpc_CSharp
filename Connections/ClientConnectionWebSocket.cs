@@ -26,10 +26,9 @@ internal class ClientConnectionWebSocket:ClientConnection{
 	}
 
 
-
 	internal static async Task Connect(Uri uri,NameValueCollection? headers){
 		StartConnect(false);
-		while(true){
+		while(true)
 			try{
 				await using var connection=new ClientConnectionWebSocket(await WebSocket.CreateWebSocketTo(uri,headers));
 				Console.WriteLine("Connected to RPC");
@@ -46,7 +45,6 @@ internal class ClientConnectionWebSocket:ClientConnection{
 				await Task.Delay(1000);
 				Console.WriteLine("Reconnecting to RPC...");
 			}
-		}
 		// ReSharper disable once FunctionNeverReturns
 	}
 }

@@ -4,6 +4,9 @@ using JetBrains.Annotations;
 using PlayifyRpc.Internal;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Streams.Data;
+#if NETFRAMEWORK
+using PlayifyUtility.Utils.Extensions;
+#endif
 
 namespace PlayifyRpc.Types.Data;
 
@@ -23,9 +26,9 @@ public abstract class ObjectTemplate{
 	}
 
 	internal static ObjectTemplate? TryCreateTemplate(IEnumerable<(string key,object? value)> properties,Type targetType){
-		if(!targetType.IsAssignableTo(typeof(ObjectTemplate))) return null;
+		if(!typeof(ObjectTemplate).IsAssignableFrom(targetType)) return null;
 
-		var o=(ObjectTemplate) Activator.CreateInstance(targetType)!;
+		var o=(ObjectTemplate)Activator.CreateInstance(targetType)!;
 		foreach(var (key,value) in properties)
 			if(!o.TrySetProperty(key,value))
 				return null;
@@ -41,10 +44,10 @@ public abstract class ObjectTemplate{
 		return o;
 	}
 
-	internal static ExpandoObject? TryCreateExpando(IEnumerable<(string key,object? value)> properties){
+	internal static ExpandoObject TryCreateExpando(IEnumerable<(string key,object? value)> properties){
 		var o=new ExpandoObject();
 		foreach(var (key,value) in properties)
-			((IDictionary<string,object?>) o)[key]=StaticallyTypedUtils.TryCast<object?>(value,out var casted)?casted:value;
+			((IDictionary<string,object?>)o)[key]=StaticallyTypedUtils.TryCast<object?>(value,out var casted)?casted:value;
 		return o;
 	}
 
@@ -70,9 +73,7 @@ public abstract class ObjectTemplate{
 
 			yield return (field.Name,field.GetValue(this));
 		}
-		foreach(var (key,value) in _extraProps){
-			yield return (key,value);
-		}
+		foreach(var (key,value) in _extraProps) yield return (key,value);
 	}
 
 

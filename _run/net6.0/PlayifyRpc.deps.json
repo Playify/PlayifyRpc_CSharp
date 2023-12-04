@@ -1,0 +1,75 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "PlayifyRpc/1.1.0": {
+        "dependencies": {
+          "PlayifyUtility": "1.1.1",
+          "ReadLine": "2.0.1"
+        },
+        "runtime": {
+          "PlayifyRpc.dll": {}
+        }
+      },
+      "JetBrains.Annotations/2023.3.0": {
+        "runtime": {
+          "lib/netstandard2.0/JetBrains.Annotations.dll": {
+            "assemblyVersion": "4242.42.42.42",
+            "fileVersion": "2023.3.0.0"
+          }
+        }
+      },
+      "PlayifyUtility/1.1.1": {
+        "dependencies": {
+          "JetBrains.Annotations": "2023.3.0"
+        },
+        "runtime": {
+          "lib/net6.0/PlayifyUtility.dll": {
+            "assemblyVersion": "1.1.1.0",
+            "fileVersion": "1.1.1.0"
+          }
+        }
+      },
+      "ReadLine/2.0.1": {
+        "runtime": {
+          "lib/netstandard2.0/ReadLine.dll": {
+            "assemblyVersion": "2.0.1.0",
+            "fileVersion": "2.0.1.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "PlayifyRpc/1.1.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "JetBrains.Annotations/2023.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-PHfnvdBUdGaTVG9bR/GEfxgTwWM0Z97Y6X3710wiljELBISipSfF5okn/vz+C2gfO+ihoEyVPjaJwn8ZalVukA==",
+      "path": "jetbrains.annotations/2023.3.0",
+      "hashPath": "jetbrains.annotations.2023.3.0.nupkg.sha512"
+    },
+    "PlayifyUtility/1.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-1U2fHoymY43d8lUZvIPPRerpJILfhb9x5qJ5J9ukwvLB1vi3fZhd2gAvCPKBxrO1mxKcRiSPX2EdoMORKqo8pQ==",
+      "path": "playifyutility/1.1.1",
+      "hashPath": "playifyutility.1.1.1.nupkg.sha512"
+    },
+    "ReadLine/2.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-m3eptlV2hlZ3gWxdhvgsUpSjwyA3NCeLdbhgDt0V8rXP1E6ZbjOOExcAufHvAZepSKJvV+zZO1eYWGveShA4gw==",
+      "path": "readline/2.0.1",
+      "hashPath": "readline.2.0.1.nupkg.sha512"
+    }
+  }
+}

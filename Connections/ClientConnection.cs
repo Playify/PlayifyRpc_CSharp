@@ -4,7 +4,10 @@ using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Streams.Data;
-using PlayifyUtility.Utils;
+using PlayifyUtility.Utils.Extensions;
+#if NETFRAMEWORK
+using PlayifyUtility.HelperClasses;
+#endif
 
 namespace PlayifyRpc.Connections;
 
@@ -27,8 +30,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 	protected static async Task DoConnect(ClientConnection connection){
 		object?[] types;
-		lock(RegisteredTypes.Registered)types=RegisteredTypes.Registered.Keys.Cast<object?>().ToArray();
-		
+		lock(RegisteredTypes.Registered) types=RegisteredTypes.Registered.Keys.Cast<object?>().ToArray();
+
 		Instance=connection;
 		await Rpc.CallFunction(null,"N",Rpc.NameOrId);
 		await Rpc.CallFunction(null,"+",types);
@@ -45,11 +48,11 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 		var tcs=_tcsOnce;
 		_tcsOnce=new TaskCompletionSource();
 		tcs?.TrySetException(e);
-		
+
 		//If already was connected, then start a new wait loop
 		if(_tcs?.Task.IsCompleted??false) _tcs=null;
 	}
-	
+
 
 	internal void SendCall(int callId,PendingCall call,DataOutputBuff buff){
 		lock(_activeRequests) _activeRequests.Add(callId,call);
@@ -71,7 +74,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				var tcs=new TaskCompletionSource<object?>();
 				try{
 					var type=data.ReadString();
-					
+
 					if(type==null) throw new Exception("Client can't use null as a type for function calls");
 					Invoker? local;
 					lock(RegisteredTypes.Registered)
@@ -194,9 +197,9 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				_activeRequests.Clear();
 			}
 		lock(_currentlyExecuting)
-			if(_currentlyExecuting.Count!=0){
-				foreach(var ctx in _currentlyExecuting.Values) ctx.Cancel();
-			}
+			if(_currentlyExecuting.Count!=0)
+				foreach(var ctx in _currentlyExecuting.Values)
+					ctx.Cancel();
 		return default;
 	}
 }
