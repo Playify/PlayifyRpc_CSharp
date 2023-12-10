@@ -3,11 +3,20 @@ using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
 using PlayifyUtility.Utils;
+using PlayifyUtility.Utils.Extensions;
 using PlayifyUtility.Web;
 
 namespace PlayifyRpc;
 
 public partial class RpcWebServer:WebBase{
+
+	private readonly string _rpcJs;
+	private readonly string? _rpcToken;
+
+	private RpcWebServer(string rpcJs,string? rpcToken){
+		_rpcJs=rpcJs;
+		_rpcToken=rpcToken;
+	}
 
 	private static void ConsoleThread(){
 		while(true){
@@ -42,10 +51,8 @@ public partial class RpcWebServer:WebBase{
 	}
 
 	[PublicAPI]
-	public static void RunConsoleThread(){
-		new Thread(ConsoleThread){Name="ConsoleThread"}.Start();
-	}
-	
+	public static void RunConsoleThread()=>new Thread(ConsoleThread){Name="ConsoleThread"}.Start();
+
 
 	[PublicAPI]
 	public static async Task RunWebServer(IPEndPoint endPoint,string rpcJs)=>await RunWebServer(endPoint,rpcJs,Environment.GetEnvironmentVariable("RPC_TOKEN"));
@@ -65,22 +72,25 @@ public partial class RpcWebServer:WebBase{
 		if(args.Length!=0&&args[0]=="help"){
 			Console.WriteLine("use args: <IP:Port or Port> [rpc.js path] [rpcToken]");
 			Console.WriteLine("rpcToken will be used from RPC_TOKEN environment variable");
+			Console.WriteLine("default port: 4590");
 			return;
 		}
+		const int defaultPort=4590;
 		var ipEndPoint=args.Length!=0
 		               ?args[0] switch{
-			               var s when IPEndPoint.TryParse(s,out var ep)=>ep,
+			               var s when Parsers.TryParseIpEndPoint(s,defaultPort,out var ep)=>ep,
 			               var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
+			               var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,defaultPort),
 			               _=>throw new ArgumentException("Invalid IP or Port"),
 		               }
-		               :new IPEndPoint(IPAddress.Any,4590);
+		               :new IPEndPoint(IPAddress.Any,defaultPort);
 		string rpcJs;
 		if(args.Length>1) rpcJs=args[1];
 		else{
 			rpcJs="rpc.js";
 			await DownloadRpcJsTo(rpcJs);
 		}
-		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN");
+		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN")??null;
 
 		RunConsoleThread();
 		try{
@@ -90,14 +100,6 @@ public partial class RpcWebServer:WebBase{
 			Console.WriteLine(e);
 			Environment.Exit(-1);
 		}
-	}
-
-	private readonly string _rpcJs;
-	private readonly string? _rpcToken;
-
-	private RpcWebServer(string rpcJs,string? rpcToken){
-		_rpcJs=rpcJs;
-		_rpcToken=rpcToken;
 	}
 
 	protected override Task HandleRequest(WebSession session)=>HandleRequest(session,_rpcJs,_rpcToken);
@@ -111,8 +113,8 @@ public partial class RpcWebServer:WebBase{
 				return;
 			}
 		}
-		
-		
+
+
 		if(await session.CreateWebSocket() is{} webSocket){
 			await using var connection=new ServerConnectionWebSocket(webSocket);
 			Console.WriteLine($"{connection} connected");
@@ -124,7 +126,7 @@ public partial class RpcWebServer:WebBase{
 			return;
 		}
 		if(session.RawUrl.StartsWith("/rpc/")){
-			var s=Uri.UnescapeDataString(session.RawUrl["/rpc/".Length..]);
+			var s=Uri.UnescapeDataString(session.RawUrl.Substring("/rpc/".Length));
 
 			try{
 				s=await Rpc.Eval(s);

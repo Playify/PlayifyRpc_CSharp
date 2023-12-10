@@ -5,8 +5,8 @@ namespace PlayifyRpc.Internal.Invokers;
 
 [PublicAPI]
 public class TypeInvoker:Invoker{
-	private readonly Type _type;
 	private readonly object? _instance;
+	private readonly Type _type;
 
 	public TypeInvoker(Type type,object? instance=null){
 		_type=type;

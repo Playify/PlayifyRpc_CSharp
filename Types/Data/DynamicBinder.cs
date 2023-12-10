@@ -30,7 +30,7 @@ public class DynamicBinder:Binder{
 		if(match==null||match.Length==0) throw new ArgumentException(nameof(match));
 
 		MethodBase?[] candidates=(MethodBase[])match.Clone();
-		
+
 
 		int i;
 		int j;
@@ -53,7 +53,8 @@ public class DynamicBinder:Binder{
 
 			if(names==null){
 				// Default mapping
-				for(j=0;j<args.Length;j++) paramOrder[i][j]=j;
+				for(j=0;j<args.Length;j++)
+					paramOrder[i][j]=j;
 			} else{
 				// Named parameters, reorder the mapping.  If CreateParamOrder fails, it means that the method
 				// doesn't have a name that matches one of the named parameters so we don't consider it any further.
@@ -267,8 +268,14 @@ public class DynamicBinder:Binder{
 		for(i=1;i<curIdx;i++){
 
 			#region Walk all of the methods looking the most specific method to invoke
-			var newMin=FindMostSpecificMethod(candidates[currentMin]!,paramOrder[currentMin],paramArrayType1,
-			                                  candidates[i]!,paramOrder[i],paramArrayTypes[i],argTypes,args);
+			var newMin=FindMostSpecificMethod(candidates[currentMin]!,
+			                                  paramOrder[currentMin],
+			                                  paramArrayType1,
+			                                  candidates[i]!,
+			                                  paramOrder[i],
+			                                  paramArrayTypes[i],
+			                                  argTypes,
+			                                  args);
 
 			if(newMin==0){
 				ambiguous=true;
@@ -680,8 +687,14 @@ public class DynamicBinder:Binder{
 	                                          MethodBase m2,int[] paramOrder2,Type? paramArrayType2,
 	                                          Type?[] types,object?[]? args){
 		// Find the most specific method based on the parameters.
-		var res=FindMostSpecific(m1.GetParameters(),paramOrder1,paramArrayType1,
-		                         m2.GetParameters(),paramOrder2,paramArrayType2,types,args);
+		var res=FindMostSpecific(m1.GetParameters(),
+		                         paramOrder1,
+		                         paramArrayType1,
+		                         m2.GetParameters(),
+		                         paramOrder2,
+		                         paramArrayType2,
+		                         types,
+		                         args);
 
 		// If the match was not ambiguous then return the result.
 		if(res!=0) return res;

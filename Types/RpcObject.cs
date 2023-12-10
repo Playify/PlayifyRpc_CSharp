@@ -7,9 +7,7 @@ namespace PlayifyRpc.Types;
 public class RpcObject:DynamicObject{
 	public readonly string? Type;
 
-	public RpcObject(string? type){
-		Type=type;
-	}
+	public RpcObject(string? type)=>Type=type;
 
 	public RpcFunction GetFunction(string name)=>new(Type,name);
 	public PendingCall CallFunction(string name,params object?[] args)=>Rpc.CallFunction(Type,name,args);

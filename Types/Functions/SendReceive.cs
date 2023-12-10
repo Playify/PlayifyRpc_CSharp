@@ -1,15 +1,28 @@
 ﻿using System.Threading.Tasks.Dataflow;
 using PlayifyRpc.Internal;
-using PlayifyUtility.Utils;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Functions;
 
 public abstract class SendReceive:IAsyncEnumerable<object?[]>{
-	private List<object?[]>? _initialPending=new();
 	private readonly HashSet<MessageFunc> _receivers=new();
+	private List<object?[]>? _initialPending=new();
 
 	public abstract bool Finished{get;}
 	public abstract Task<object?> Task{get;}
+
+	public async IAsyncEnumerator<object?[]> GetAsyncEnumerator(CancellationToken cancelToken=new()){
+		var receive=new BufferBlock<object?[]>();
+
+		AddMessageListener(msg=>receive.Post(msg));
+		_=Task.Finally(()=>receive.Complete());
+
+
+		while(await receive.OutputAvailableAsync(cancelToken).ConfigureAwait(false))
+		while(receive.TryReceive(out var item))
+			yield return item;
+		await receive.Completion.ConfigureAwait(false);// Propagate possible exception
+	}
 
 	public abstract void SendMessage(params object?[] args);
 
@@ -40,19 +53,17 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 		                            ));
 
 	public virtual void AddMessageListener(MessageFunc a){
-		lock(_receivers){
+		lock(_receivers)
 			if(_initialPending!=null){
 				_receivers.Add(a);
-				foreach(var objects in _initialPending){
+				foreach(var objects in _initialPending)
 					try{
 						a(objects);
 					} catch(Exception e){
 						Console.WriteLine("Error receiving pending: "+e);
 					}
-				}
 				_initialPending=null;
 			} else _receivers.Add(a);
-		}
 	}
 
 
@@ -67,25 +78,11 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 				return;
 			}
 		}
-		foreach(var func in list){
+		foreach(var func in list)
 			try{
 				func(args);
 			} catch(Exception e){
 				Console.WriteLine("Error receiving: "+e);
 			}
-		}
-	}
-
-	public async IAsyncEnumerator<object?[]> GetAsyncEnumerator(CancellationToken cancelToken=new()){
-		var receive=new BufferBlock<object?[]>();
-
-		AddMessageListener(msg=>receive.Post(msg));
-		_=Task.Finally(()=>receive.Complete());
-
-
-		while(await receive.OutputAvailableAsync(cancelToken).ConfigureAwait(false))
-		while(receive.TryReceive(out var item))
-			yield return item;
-		await receive.Completion.ConfigureAwait(false);// Propagate possible exception
 	}
 }

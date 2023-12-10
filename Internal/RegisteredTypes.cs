@@ -8,6 +8,8 @@ namespace PlayifyRpc.Internal;
 internal static class RegisteredTypes{
 	internal static readonly Dictionary<string,Invoker> Registered=new();
 
+	internal static string? Name;
+
 	static RegisteredTypes(){
 		AppDomain.CurrentDomain.AssemblyLoad+=(_,args)=>RegisterAssembly(args.LoadedAssembly);
 		foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) RegisterAssembly(assembly);
@@ -19,10 +21,10 @@ internal static class RegisteredTypes{
 		foreach(var type in assembly.GetTypes()){
 			var sharedClass=type.GetCustomAttribute<RpcProviderAttribute>();
 			if(sharedClass!=null){
-				if(type.IsAssignableTo(typeof(Invoker))){
+				if(typeof(Invoker).IsAssignableFrom(type)){
 					RuntimeHelpers.RunClassConstructor(type.TypeHandle);
 					_=Register(sharedClass.Type??type.Name,(Invoker)Activator.CreateInstance(type)!);
-				}else _=Register(sharedClass.Type??type.Name,new TypeInvoker(type));
+				} else _=Register(sharedClass.Type??type.Name,new TypeInvoker(type));
 			}
 		}
 	}
@@ -51,7 +53,6 @@ internal static class RegisteredTypes{
 		}
 	}
 
-	internal static string? Name;
 	internal static async Task SetName(string? name){
 		Name=name;
 		try{
@@ -60,5 +61,4 @@ internal static class RegisteredTypes{
 			Console.WriteLine(e);
 		}
 	}
-
 }

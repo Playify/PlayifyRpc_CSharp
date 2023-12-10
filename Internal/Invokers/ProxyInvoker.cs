@@ -1,6 +1,6 @@
 using JetBrains.Annotations;
 using PlayifyRpc.Types;
-using PlayifyUtility.Utils;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Invokers;
 
@@ -18,7 +18,7 @@ public class ProxyInvoker:Invoker{
 			          .WithCancellation(ctx.CancellationToken);
 			call.AddMessageListener(ctx.SendMessage);
 			ctx.AddMessageListener(call.SendMessage);
-		
+
 			return call;
 		});
 	}

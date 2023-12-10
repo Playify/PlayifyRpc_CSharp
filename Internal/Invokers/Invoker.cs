@@ -1,6 +1,6 @@
 using JetBrains.Annotations;
 using PlayifyRpc.Types.Functions;
-using PlayifyUtility.Utils;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Invokers;
 

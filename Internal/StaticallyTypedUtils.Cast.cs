@@ -2,7 +2,7 @@ using System.Dynamic;
 using System.Reflection;
 using PlayifyRpc.Types.Data;
 using PlayifyUtility.Jsons;
-using PlayifyUtility.Utils;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
@@ -21,7 +21,7 @@ public static partial class StaticallyTypedUtils{
 
 	public static bool TryCast<T>(object? value,out T result){
 		if(TryCast(value,typeof(T),out var res)){
-			result=(T) res!;
+			result=(T)res!;
 			return true;
 		}
 		result=default!;
@@ -30,13 +30,13 @@ public static partial class StaticallyTypedUtils{
 
 	public static bool TryCast(object? value,Type type,out object? result){
 		if(value is null or JsonNull){
-			result=type.IsAssignableFrom(typeof(JsonNull))?JsonNull.Null:null;
+			result=type.IsAssignableFrom(typeof(JsonNull))&&type!=typeof(object)?JsonNull.Null:null;
 			return true;
 		}
 		return DoCast(value,type).NotNull<object>(out result);
 	}
 
-	public static T Cast<T>(object? value)=>(T) Cast(value,typeof(T));
+	public static T Cast<T>(object? value)=>(T)Cast(value,typeof(T));
 
 	public static object Cast(object? value,Type type)
 		=>TryCast(value,type,out var result)
@@ -64,8 +64,18 @@ public static partial class StaticallyTypedUtils{
 		//Enums
 		if(type.IsEnum)
 			try{
+#if NETFRAMEWORK
+				if(value is string valueAsString)
+					try{
+						return Enum.Parse(type,valueAsString,true);
+					} catch{
+						// ignored
+					}
+#else
 				if(value is string valueAsString&&Enum.TryParse(type,valueAsString,true,out var result))
 					return result;
+#endif
+
 				return Enum.ToObject(type,Convert.ChangeType(value,Type.GetTypeCode(type)));
 			} catch(Exception){
 				return null;
@@ -107,37 +117,39 @@ public static partial class StaticallyTypedUtils{
 			}
 			if(type.IsAssignableFrom(typeof(JsonArray))){
 				var jsonArray=new JsonArray();
-				foreach(var o in array){
+				foreach(var o in array)
 					if(TryCast<Json>(o,out var element))
 						jsonArray.Add(element);
 					else return null;
-				}
 				return jsonArray;
 			}
 			return null;
 		}
 		//Object
 		if(value is ExpandoObject exp){
-			var props=exp.Select(pair=>(pair.Key,pair.Value));
-			
-			if(type.IsAssignableTo(typeof(ObjectTemplate))) return ObjectTemplate.TryCreateTemplate(props,type);
-			if(type.IsAssignableFrom(typeof(JsonObject)))return ObjectTemplate.TryCreateJson(props);
+			// ReSharper disable once RedundantCast
+			var props=exp.Select(pair=>(pair.Key,(object?)pair.Value));
+
+			if(typeof(ObjectTemplate).IsAssignableFrom(type)) return ObjectTemplate.TryCreateTemplate(props,type);
+			if(type.IsAssignableFrom(typeof(JsonObject))) return ObjectTemplate.TryCreateJson(props);
 		}
 		if(value is JsonObject jsonObject){
-			var props=jsonObject.Select(pair=>(pair.Key,(object?) pair.Value));
-			if(type.IsAssignableTo(typeof(ObjectTemplate))) return ObjectTemplate.TryCreateTemplate(props,type);
-			if(type.IsAssignableTo(typeof(ExpandoObject))) return ObjectTemplate.TryCreateExpando(props);
+			var props=jsonObject.Select(pair=>(pair.Key,(object?)pair.Value));
+			if(typeof(ObjectTemplate).IsAssignableFrom(type)) return ObjectTemplate.TryCreateTemplate(props,type);
+			if(typeof(ExpandoObject).IsAssignableFrom(type)) return ObjectTemplate.TryCreateExpando(props);
 		}
 		if(value is ObjectTemplate obj){
 			var props=obj.GetProperties();
-			if(type.IsAssignableTo(typeof(ObjectTemplate))) return ObjectTemplate.TryCreateTemplate(props,type);
-			if(type.IsAssignableTo(typeof(ExpandoObject))) return ObjectTemplate.TryCreateExpando(props);
+			if(typeof(ObjectTemplate).IsAssignableFrom(type)) return ObjectTemplate.TryCreateTemplate(props,type);
+			if(typeof(ExpandoObject).IsAssignableFrom(type)) return ObjectTemplate.TryCreateExpando(props);
 			if(type.IsAssignableFrom(typeof(JsonObject))) return ObjectTemplate.TryCreateJson(props);
 		}
 
 		if(value is string&&type.GetMethod("TryParse",
 		                                   BindingFlags.Public|BindingFlags.Static|BindingFlags.InvokeMethod,
-		                                   new[]{typeof(string),type.MakeByRefType()}) is{} tryParse){
+		                                   null,
+		                                   new[]{typeof(string),type.MakeByRefType()},
+		                                   null) is{} tryParse){
 			var parameters=new[]{value,type.IsValueType?Activator.CreateInstance(type):null};
 			if(tryParse.Invoke(null,parameters) is true)
 				return parameters[1];

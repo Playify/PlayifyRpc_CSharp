@@ -6,6 +6,9 @@ using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Streams.Data;
+#if NETFRAMEWORK
+using PlayifyUtility.Utils.Extensions;
+#endif
 
 namespace PlayifyRpc.Types.Data;
 
@@ -13,6 +16,11 @@ namespace PlayifyRpc.Types.Data;
 internal static class DynamicData{
 	private static readonly List<(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)> WriteRegistry=new();
 	private static readonly Dictionary<string,Func<DataInput,List<object>,object>> ReadRegistry=new();
+
+	static DynamicData(){
+		foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) RegisterAssembly(assembly);
+		AppDomain.CurrentDomain.AssemblyLoad+=(_,args)=>RegisterAssembly(args.LoadedAssembly);
+	}
 
 	internal static object? Read(DataInput incoming,List<object> already){
 		var objectId=incoming.ReadLength();
@@ -75,8 +83,8 @@ internal static class DynamicData{
 			JsonNull=>null,
 			_=>d,
 		};
-		
-		
+
+
 		switch(d){
 			case null:
 				output.WriteLength('n');
@@ -92,7 +100,7 @@ internal static class DynamicData{
 			case short:
 			case ushort:
 			case int:
-			case uint and <int.MaxValue: 
+			case uint and <int.MaxValue:
 			case Enum:
 				output.WriteLength('i');
 				output.WriteInt(Convert.ToInt32(d));
@@ -197,11 +205,6 @@ internal static class DynamicData{
 		throw new Exception("Unknown Type: "+d.GetType().Name+" for "+d);
 	}
 
-	static DynamicData(){
-		foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) RegisterAssembly(assembly);
-		AppDomain.CurrentDomain.AssemblyLoad+=(_,args)=>RegisterAssembly(args.LoadedAssembly);
-	}
-
 	private static void RegisterAssembly(Assembly assembly){
 		foreach(var type in assembly.GetTypes()){
 			var remoteClass=type.GetCustomAttribute<CustomDynamicTypeAttribute>();
@@ -240,15 +243,12 @@ internal static class DynamicData{
 		WriteRegistry.Add((id,check,write));
 	}
 
-	public static void Register(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write){
-		WriteRegistry.Add((id,check,write));
-	}
+	public static void Register(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)=>WriteRegistry.Add((id,check,write));
 
-	public static void Register<T>(string id,Func<DataInput,List<object>,T> read,Action<DataOutput,T,List<object>> write){
-		Register(id,
-		         (data,already)=>read(data,already)!,
-		         o=>o is T,
-		         (data,o,already)=>write(data,(T)o,already)
-		        );
-	}
+	public static void Register<T>(string id,Func<DataInput,List<object>,T> read,Action<DataOutput,T,List<object>> write)
+		=>Register(id,
+		           (data,already)=>read(data,already)!,
+		           o=>o is T,
+		           (data,o,already)=>write(data,(T)o,already)
+		          );
 }

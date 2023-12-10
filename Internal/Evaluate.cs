@@ -5,7 +5,7 @@ namespace PlayifyRpc.Internal;
 
 [PublicAPI]
 internal static class Evaluate{
-	
+
 	private static readonly object NoValue=new();
 
 	private static object? ParseParameter(string argString){
@@ -20,42 +20,41 @@ internal static class Evaluate{
 	public static async Task<object?> EvalAny(string s){
 		var bracket=s.IndexOf('(');
 		if(bracket==-1) throw new FormatException("No opening bracket");
-		if(s.Last()!=')') throw new FormatException("No closing bracket");
-		var dot=s.LastIndexOf('.',0,bracket);
+		if(!s.EndsWith(")")) throw new FormatException("No closing bracket");
+		var dot=s.LastIndexOf('.',bracket,bracket);
 		if(dot==-1) throw new FormatException("No dot");
-		
-		var type=s[..dot];
-		var method=s[(dot+1)..bracket];
+
+		var type=s.Substring(0,dot);
+		var method=s.Substring(dot+1,bracket-dot-1);
 		var args=new List<object?>();
 
-		var argsString=s[(bracket+1)..^1];
+
+		var argsString=s.Substring(bracket+1,s.Length-(bracket+1)-1);
 		var argsStrings=argsString.Trim().Length==0?Array.Empty<string>():argsString.Split(',');
-		using var enumerator=((IEnumerable<string>)argsStrings).GetEnumerator();
-		while(enumerator.MoveNext()){
-			var argString=enumerator.Current;
+		for(var i=0;i<argsStrings.Length;){
+			var argString=argsStrings[i++];
 
 			var obj=ParseParameter(argString.Trim());
-			while(obj==NoValue){
-				if(!enumerator.MoveNext()) throw new FormatException("Error parsing arguments");
-				argString+=","+enumerator.Current;
-				obj=ParseParameter(argString.Trim());
-			}
+			while(obj==NoValue)
+				if(i<argsStrings.Length){
+					argString+=","+argsStrings[i++];
+					obj=ParseParameter(argString.Trim());
+				} else throw new FormatException("Error parsing arguments");
 			args.Add(obj);
 		}
-
 		return await Rpc.CallFunction(type,method,args.ToArray());
 	}
 
 	public static async Task<string> Eval(string s){
 		var result=await EvalAny(s);
-		
+
 		if(StaticallyTypedUtils.TryCast<Json>(result,out var json))
 			return json.ToString("\t");
-		
+
 		return result switch{
 			null=>"null",
 			float.NaN or double.NaN=>"NaN",
-			_=>result.ToString()??"",
+			_=>$"{result}",
 		};
 	}
 }
