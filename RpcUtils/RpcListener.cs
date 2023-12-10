@@ -26,6 +26,7 @@ public class RpcListener<T>{
 	private readonly Func<object?[],T> _onMessage;
 	private readonly Func<T> _onDisconnect;
 	private T _value;
+	private bool _connected=false;
 
 	public T Value{
 		get=>_value;
@@ -54,13 +55,20 @@ public class RpcListener<T>{
 		while(true){
 			try{
 				var pendingCall=Rpc.CallFunction(_type,_method);
-				pendingCall.AddMessageListener(args=>Value=_onMessage(args));
+				pendingCall.AddMessageListener(args=>{
+					_connected=true;
+					Value=_onMessage(args);
+				});
 				await pendingCall;
-
 			} catch(Exception e){
-				Console.WriteLine("Disconnected from "+nameof(RpcListener)+": "+e);
+				if(_connected){
+					Console.WriteLine("Disconnected from "+nameof(RpcListener)+": "+e);
+				}
 			} finally{
-				_onDisconnect();
+				if(_connected){
+					_connected=false;
+					_onDisconnect();
+				}
 				await Task.Delay(TimeSpan.FromSeconds(1));
 			}
 		}
