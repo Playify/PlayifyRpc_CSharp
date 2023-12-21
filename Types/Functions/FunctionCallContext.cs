@@ -54,9 +54,7 @@ public class FunctionCallContext:SendReceive{
 		var call=new PendingCall(truth);
 
 		var already=new List<object>();
-		call.Finally(()=>{
-			foreach(var d in already.OfType<Delegate>()) RpcFunction.UnregisterFunction(d);
-		});
+		call.Finally(()=>DynamicData.Free(already));
 
 		var buff=new DataOutputBuff();
 		int callId;

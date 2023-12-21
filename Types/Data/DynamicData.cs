@@ -144,6 +144,12 @@ internal static class DynamicData{
 				output.WriteString(func.Type);
 				output.WriteString(func.Method);
 				return;
+			case Delegate func:
+				var rpcFunc=RpcFunction.RegisterFunction(func);
+				output.WriteLength('F');
+				output.WriteString(rpcFunc.Type);
+				output.WriteString(rpcFunc.Method);
+				return;
 		}
 
 		var index=already.IndexOf(d);
@@ -251,4 +257,8 @@ internal static class DynamicData{
 		           o=>o is T,
 		           (data,o,already)=>write(data,(T)o,already)
 		          );
+
+	public static void Free(List<object> already){
+		foreach(var d in already.OfType<Delegate>()) RpcFunction.UnregisterFunction(d);
+	}
 }

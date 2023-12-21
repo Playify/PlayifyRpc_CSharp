@@ -1,6 +1,5 @@
 ﻿using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
-using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Streams.Data;
@@ -110,7 +109,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 					tcs.TrySetException(e);
 					await Reject(callId,e);
 				} finally{
-					foreach(var d in already.OfType<Delegate>()) RpcFunction.UnregisterFunction(d);
+					DynamicData.Free(already);
 				}
 
 				break;
