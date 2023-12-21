@@ -56,6 +56,12 @@ internal static class DynamicData{
 				return read(incoming,already);
 			throw new ArgumentException();
 		}
+		if(objectId=='F'){
+			var func=new RpcFunction(incoming.ReadString(),incoming.ReadString()??throw new InvalidOperationException());
+			already.Add(func);
+			return func;
+		}
+
 		return objectId switch{
 			'n'=>null,
 			't'=>true,
@@ -70,7 +76,6 @@ internal static class DynamicData{
 			'R'=>new Regex(incoming.ReadString()??"",(RegexOptions)incoming.ReadByte()),
 			'E'=>incoming.ReadException(),
 			'O'=>new RpcObject(incoming.ReadString()),
-			'F'=>new RpcFunction(incoming.ReadString(),incoming.ReadString()??throw new InvalidOperationException()),
 			_=>throw new ArgumentException(),
 		};
 	}
@@ -139,17 +144,6 @@ internal static class DynamicData{
 				output.WriteLength('O');
 				output.WriteString(obj.Type);
 				return;
-			case RpcFunction func:
-				output.WriteLength('F');
-				output.WriteString(func.Type);
-				output.WriteString(func.Method);
-				return;
-			case Delegate func:
-				var rpcFunc=RpcFunction.RegisterFunction(func);
-				output.WriteLength('F');
-				output.WriteString(rpcFunc.Type);
-				output.WriteString(rpcFunc.Method);
-				return;
 		}
 
 		var index=already.IndexOf(d);
@@ -159,6 +153,19 @@ internal static class DynamicData{
 		}
 
 		switch(d){
+			case RpcFunction func:
+				already.Add(func);
+				output.WriteLength('F');
+				output.WriteString(func.Type);
+				output.WriteString(func.Method);
+				return;
+			case Delegate func:
+				already.Add(func);
+				var rpcFunc=RpcFunction.RegisterFunction(func);
+				output.WriteLength('F');
+				output.WriteString(rpcFunc.Type);
+				output.WriteString(rpcFunc.Method);
+				return;
 			case string s:
 				var bytes=Encoding.UTF8.GetBytes(s);
 				output.WriteLength(-(bytes.Length*4+1));
