@@ -23,7 +23,7 @@ public abstract class Invoker{
 		                                    truth.TaskCompletionSource);
 
 		truth.SendFunc=received=>Task.Run(()=>context.DoReceiveMessage(received));
-		truth.CancelFunc=()=>context.Cancel();
+		truth.CancelFunc=()=>context.CancelSelf();
 
 
 		var call=new PendingCall(truth);

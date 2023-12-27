@@ -4,9 +4,6 @@ using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
-#if NETFRAMEWORK
-using PlayifyUtility.HelperClasses;
-#endif
 
 namespace PlayifyRpc.Connections;
 
@@ -152,7 +149,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						Console.WriteLine($"{Rpc.NameOrId} has no CurrentlyExecuting with id: {callId}");
 						break;
 					}
-				ctx.Cancel();
+				ctx.CancelSelf();
 				break;
 			}
 			case PacketType.MessageToExecutor:{
@@ -198,7 +195,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 		lock(_currentlyExecuting)
 			if(_currentlyExecuting.Count!=0)
 				foreach(var ctx in _currentlyExecuting.Values)
-					ctx.Cancel();
+					ctx.CancelSelf();
 		return default;
 	}
 }

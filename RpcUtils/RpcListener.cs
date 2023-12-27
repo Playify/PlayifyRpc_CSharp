@@ -28,7 +28,7 @@ public class RpcListener<T>{
 	private readonly Func<object?[],T> _onMessage;
 	private readonly string _type;
 	private T _value;
-	private bool _connected=false;
+	private bool _connected;
 
 	public RpcListener(string type,string method,Func<object?[],T> messageConverter,Func<T> disconnect){
 		_type=type;

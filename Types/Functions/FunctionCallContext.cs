@@ -11,8 +11,6 @@ public delegate void MessageFunc(params object?[] args);
 
 [PublicAPI]
 public class FunctionCallContext:SendReceive{
-
-
 	private static int _nextId;
 
 	private static readonly ThreadLocal<FunctionCallContext?> ThreadLocal=new();
@@ -34,8 +32,8 @@ public class FunctionCallContext:SendReceive{
 	public override Task<object?> Task=>_tcs.Task;
 
 	public CancellationToken CancellationToken=>_cts.Token;
-	public void Cancel()=>_cts.Cancel();
-	public void CancelAfter(TimeSpan delay)=>_cts.CancelAfter(delay);
+	public void CancelSelf()=>_cts.Cancel();
+	public void CancelSelfAfter(TimeSpan delay)=>_cts.CancelAfter(delay);
 
 
 	public override void SendMessage(params object?[] args)=>_send(args);
