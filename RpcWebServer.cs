@@ -9,6 +9,7 @@ using PlayifyUtility.Web;
 namespace PlayifyRpc;
 
 public partial class RpcWebServer:WebBase{
+	public override bool HandleIllegalRequests=>false;
 
 	private readonly string _rpcJs;
 	private readonly string? _rpcToken;
@@ -106,8 +107,8 @@ public partial class RpcWebServer:WebBase{
 
 	[PublicAPI]
 	public static async Task HandleRequest(WebSession session,string rpcJs,string? rpcToken){
-		if(rpcToken!=null){
-			var s=session.Cookies.Get("RPC_TOKEN");
+		if(!string.IsNullOrEmpty(rpcToken)){
+			var s=session.Cookies.Get("RPC_TOKEN")??"";
 			if(s!=rpcToken){
 				await session.Send.Error(403);
 				return;

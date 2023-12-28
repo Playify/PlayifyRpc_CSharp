@@ -1,5 +1,7 @@
+using System.Dynamic;
 using JetBrains.Annotations;
 using PlayifyUtility.Jsons;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
@@ -45,11 +47,23 @@ internal static class Evaluate{
 		return await Rpc.CallFunction(type,method,args.ToArray());
 	}
 
-	public static async Task<string> Eval(string s){
-		var result=await EvalAny(s);
+	public static async Task<string> Eval(string s)=>Stringify(await EvalAny(s));
+
+	private static string Stringify(object? result){
 
 		if(StaticallyTypedUtils.TryCast<Json>(result,out var json))
 			return json.ToString("\t");
+
+		if(result is ExpandoObject expando){
+			if(!expando.Any()) return "{}";
+			return ("{\n"+expando.Select(pair=>JsonString.Escape(pair.Key)+":"+Stringify(pair.Value)).Join(",\n")).Replace("\n","\n\t")+"\n}";
+		}
+
+		if(result is Array array){
+			if(array.Length==0) return "[]";
+			return ("[\n"+array.Cast<object?>().Select(Stringify).Join(",\n")).Replace("\n","\n\t")+"\n]";
+		}
+
 
 		return result switch{
 			null=>"null",
