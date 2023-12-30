@@ -11,7 +11,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	internal static readonly HashSet<ServerConnection> Connections=new();
 	private readonly Dictionary<int,(ServerConnection respondFrom,int respondId)> _activeExecutions=new();
 	private readonly Dictionary<int,(ServerConnection respondTo,int respondId)> _activeRequests=new();
-	private readonly HashSet<string> _types=new();
+	internal readonly HashSet<string> Types=new();
 	private string? _name;
 
 	private int _nextId;
@@ -27,10 +27,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		lock(Connections) Connections.Remove(this);
 
 		lock(RpcServer.Types){
-			foreach(var type in _types)
+			foreach(var type in Types)
 				if(RpcServer.Types.Remove(type,out var con)&&con!=this)
 					RpcServer.Types[type]=con;//if deleted wrongly, put back in
-			_types.Clear();
+			Types.Clear();
 		}
 
 
@@ -45,10 +45,8 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			_activeExecutions.Clear();
 		}
 		var exception=new RpcException("RpcExcetion","SERVER","Connection closed","");
-		await Task.WhenAll(
-		                   toReject.Select(t=>t.respondTo.Reject(t.respondId,exception))
-		                           .Concat(toCancel.Select(t=>t.respondTo.CancelRaw(t.respondId,null)))
-		                  );
+		await Task.WhenAll(toReject.Select(t=>t.respondTo.Reject(t.respondId,exception))
+		                           .Concat(toCancel.Select(t=>t.respondTo.CancelRaw(t.respondId,null))));
 	}
 
 	protected override void RespondedToCallId(int callId){
@@ -173,7 +171,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 						failed=args.Where(typeObj=>{
 							if(typeObj is not string type) return true;
 							if(!RpcServer.Types.TryAdd(type,connection)) return true;
-							connection._types.Add(type);
+							connection.Types.Add(type);
 							return false;
 						}).ToArray();
 					if(failed.Length!=0){
@@ -188,7 +186,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 					lock(RpcServer.Types)
 						failed=args.Where(typeObj=>{
 							if(typeObj is not string type) return true;
-							if(!connection._types.Remove(type)) return true;
+							if(!connection.Types.Remove(type)) return true;
 							RpcServer.Types.Remove(type);
 							return false;
 						}).ToArray();
@@ -213,6 +211,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				}
 				case "C":{
 					result=RpcServer.GetAllConnections();
+					break;
+				}
+				case "R":{
+					result=RpcServer.GetRegistrations();
 					break;
 				}
 				case "N":{

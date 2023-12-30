@@ -26,7 +26,7 @@ public class DynamicBinder:Binder{
 	// The most specific match will be selected.
 	//
 	public sealed override MethodBase BindToMethod(BindingFlags bindingAttr,MethodBase[] match,ref object?[] args,
-	                                               ParameterModifier[]? modifiers,CultureInfo? cultureInfo,string[]? names,out object? state){
+		ParameterModifier[]? modifiers,CultureInfo? cultureInfo,string[]? names,out object? state){
 		if(match==null||match.Length==0) throw new ArgumentException(nameof(match));
 
 		MethodBase?[] candidates=(MethodBase[])match.Clone();
@@ -49,13 +49,12 @@ public class DynamicBinder:Binder{
 			var par=candidates[i]!.GetParameters();
 
 			// args.Length + 1 takes into account the possibility of a last paramArray that can be omitted
-			paramOrder[i]=new int[(par.Length>args.Length)?par.Length:args.Length];
+			paramOrder[i]=new int[par.Length>args.Length?par.Length:args.Length];
 
-			if(names==null){
-				// Default mapping
+			if(names==null)// Default mapping
 				for(j=0;j<args.Length;j++)
 					paramOrder[i][j]=j;
-			} else{
+			else{
 				// Named parameters, reorder the mapping.  If CreateParamOrder fails, it means that the method
 				// doesn't have a name that matches one of the named parameters so we don't consider it any further.
 				if(!CreateParamOrder(paramOrder[i],par,names)) candidates[i]=null;
@@ -70,16 +69,14 @@ public class DynamicBinder:Binder{
 		#region Cache the type of the provided arguments
 		// object that contain a null are treated as if they were typeless (but match either object
 		// references or value classes).  We mark this condition by placing a null in the argTypes array.
-		for(i=0;i<args.Length;i++){
-			if(args[i]!=null){
+		for(i=0;i<args.Length;i++)
+			if(args[i]!=null)
 				argTypes[i]=args[i]!.GetType();
-			}
-		}
 		#endregion
 
 		// Find the method that matches...
 		var curIdx=0;
-		var defaultValueBinding=((bindingAttr&BindingFlags.OptionalParamBinding)!=0);
+		var defaultValueBinding=(bindingAttr&BindingFlags.OptionalParamBinding)!=0;
 
 		#region Filter methods by parameter count and type
 		for(i=0;i<candidates.Length;i++){
@@ -95,9 +92,9 @@ public class DynamicBinder:Binder{
 			if(par.Length==0){
 
 				#region No formal parameters
-				if(args.Length!=0){
-					if((candidates[i]!.CallingConvention&CallingConventions.VarArgs)==0) continue;
-				}
+				if(args.Length!=0)
+					if((candidates[i]!.CallingConvention&CallingConventions.VarArgs)==0)
+						continue;
 
 				// This is a valid routine so we move it up the candidates list.
 				paramOrder[curIdx]=paramOrder[i];
@@ -111,9 +108,9 @@ public class DynamicBinder:Binder{
 				#region Shortage of provided parameters
 				// If the number of parameters is greater than the number of args then
 				// we are in the situation were we may be using default values.
-				for(j=args.Length;j<par.Length-1;j++){
-					if(par[j].DefaultValue==DBNull.Value) break;
-				}
+				for(j=args.Length;j<par.Length-1;j++)
+					if(par[j].DefaultValue==DBNull.Value)
+						break;
 
 				if(j!=par.Length-1) continue;
 
@@ -148,15 +145,15 @@ public class DynamicBinder:Binder{
 
 				if(par[lastArgPos].ParameterType.IsArray
 				   &&par[lastArgPos].IsDefined(typeof(ParamArrayAttribute),true)
-				   &&paramOrder[i][lastArgPos]==lastArgPos){
-					if(!par[lastArgPos].ParameterType.IsAssignableFrom(argTypes[lastArgPos])) paramArrayType=par[lastArgPos].ParameterType.GetElementType();
-				}
+				   &&paramOrder[i][lastArgPos]==lastArgPos)
+					if(!par[lastArgPos].ParameterType.IsAssignableFrom(argTypes[lastArgPos]))
+						paramArrayType=par[lastArgPos].ParameterType.GetElementType();
 				#endregion
 
 			}
 			#endregion
 
-			var argsToCheck=(paramArrayType!=null)?par.Length-1:args.Length;
+			var argsToCheck=paramArrayType!=null?par.Length-1:args.Length;
 
 			#region Match method by parameter type
 			for(j=0;j<argsToCheck;j++){
@@ -190,9 +187,9 @@ public class DynamicBinder:Binder{
 			if(paramArrayType!=null&&j==par.Length-1){
 
 				#region Check that excess arguments can be placed in the param array
-				for(;j<args.Length;j++){
-					if(!StaticallyTypedUtils.TryCast(args[j],paramArrayType,out _)) break;
-				}
+				for(;j<args.Length;j++)
+					if(!StaticallyTypedUtils.TryCast(args[j],paramArrayType,out _))
+						break;
 				#endregion
 
 			}
@@ -277,9 +274,8 @@ public class DynamicBinder:Binder{
 			                                  argTypes,
 			                                  args);
 
-			if(newMin==0){
-				ambiguous=true;
-			} else if(newMin==2){
+			if(newMin==0) ambiguous=true;
+			else if(newMin==2){
 				currentMin=i;
 				ambiguous=false;
 			}
@@ -314,11 +310,8 @@ public class DynamicBinder:Binder{
 
 			for(;i<parameters.Length-1;i++) objs[i]=parameters[i].DefaultValue;
 
-			if(paramArrayType1!=null){
-				objs[i]=Array.CreateInstance(paramArrayType1,0);
-			} else{
-				objs[i]=parameters[i].DefaultValue;
-			}
+			if(paramArrayType1!=null) objs[i]=Array.CreateInstance(paramArrayType1,0);
+			else objs[i]=parameters[i].DefaultValue;
 
 			args=objs;
 		} else{
@@ -338,9 +331,7 @@ public class DynamicBinder:Binder{
 	// Given a set of fields that match the base criteria, select a field.
 	// if value is null then we have no way to select a field
 	public sealed override FieldInfo BindToField(BindingFlags bindingAttr,FieldInfo[] match,object value,CultureInfo? cultureInfo){
-		if(match==null){
-			throw new ArgumentNullException(nameof(match));
-		}
+		if(match==null) throw new ArgumentNullException(nameof(match));
 
 		int i;
 		// Find the method that match...
@@ -358,21 +349,17 @@ public class DynamicBinder:Binder{
 					candidates[curIdx++]=candidates[i];
 					continue;
 				}
-				if(value==null){
-					// the object passed in was null which would match any non primitive non value type
+				if(value==null)// the object passed in was null which would match any non primitive non value type
 					if(pCls.IsClass){
 						candidates[curIdx++]=candidates[i];
 						continue;
 					}
-				}
 				if(pCls==typeof(object)){
 					candidates[curIdx++]=candidates[i];
 					continue;
 				}
 
-				if(StaticallyTypedUtils.TryCast(value,pCls,out _)){
-					candidates[curIdx++]=candidates[i];
-				}
+				if(StaticallyTypedUtils.TryCast(value,pCls,out _)) candidates[curIdx++]=candidates[i];
 			}
 			if(curIdx==0) throw new MissingFieldException();
 			if(curIdx==1) return candidates[0];
@@ -401,10 +388,8 @@ public class DynamicBinder:Binder{
 	public sealed override MethodBase? SelectMethod(BindingFlags bindingAttr,MethodBase[] match,Type[] types,ParameterModifier[]? modifiers){
 
 		var realTypes=new Type[types.Length];
-		for(var i=0;i<types.Length;i++){
-			realTypes[i]=types[i].UnderlyingSystemType;
-			//if(!(realTypes[i].IsRuntimeImplemented()||realTypes[i] is SignatureType)) throw new ArgumentException(SR.Arg_MustBeType,nameof(types));
-		}
+		for(var i=0;i<types.Length;i++) realTypes[i]=types[i].UnderlyingSystemType;
+		//if(!(realTypes[i].IsRuntimeImplemented()||realTypes[i] is SignatureType)) throw new ArgumentException(SR.Arg_MustBeType,nameof(types));
 		types=realTypes;
 
 		// We don't automatically jump out on exact match.
@@ -459,13 +444,12 @@ public class DynamicBinder:Binder{
 
 	// Given a set of properties that match the base criteria, select one.
 	public sealed override PropertyInfo? SelectProperty(BindingFlags bindingAttr,PropertyInfo[] match,Type? returnType,
-	                                                    Type[]? indexes,ParameterModifier[]? modifiers){
+		Type[]? indexes,ParameterModifier[]? modifiers){
 		// Allow a null indexes array. But if it is not null, every element must be non-null as well.
-		if(indexes!=null){
-			foreach(var index in indexes){
-				if(index==null) throw new ArgumentNullException(nameof(indexes));
-			}
-		}
+		if(indexes!=null)
+			foreach(var index in indexes)
+				if(index==null)
+					throw new ArgumentNullException(nameof(indexes));
 
 		if(match==null||match.Length==0) throw new ArgumentException(nameof(match));
 
@@ -543,24 +527,19 @@ public class DynamicBinder:Binder{
 	// ChangeType
 	// The default binder doesn't support any change type functionality.
 	// This is because the default is built into the low level invoke code.
-	public override object ChangeType(object value,Type type,CultureInfo? cultureInfo){
-		return StaticallyTypedUtils.Cast(value,type);
-	}
+	public override object ChangeType(object value,Type type,CultureInfo? cultureInfo)=>StaticallyTypedUtils.Cast(value,type);
 
 	public sealed override void ReorderArgumentArray(ref object?[] args,object state){
 		var binderState=(BinderState)state;
 		ReorderParams(binderState.ArgsMap,args);
 		if(binderState.IsParamArray){
 			var paramArrayPos=args.Length-1;
-			if(args.Length==binderState.OriginalSize){
-				args[paramArrayPos]=((object[])args[paramArrayPos]!)[0];
-			} else{
+			if(args.Length==binderState.OriginalSize) args[paramArrayPos]=((object[])args[paramArrayPos]!)[0];
+			else{
 				// must be args.Length < state.originalSize
 				var newArgs=new object[args.Length];
 				Array.Copy(args,newArgs,paramArrayPos);
-				for(int i=paramArrayPos,j=0;i<newArgs.Length;i++,j++){
-					newArgs[i]=((object[])args[paramArrayPos]!)[j];
-				}
+				for(int i=paramArrayPos,j=0;i<newArgs.Length;i++,j++) newArgs[i]=((object[])args[paramArrayPos]!)[j];
 				args=newArgs;
 			}
 		} else{
@@ -573,8 +552,8 @@ public class DynamicBinder:Binder{
 	}
 
 	private static int FindMostSpecific(ParameterInfo[] p1,int[] paramOrder1,Type? paramArrayType1,
-	                                    ParameterInfo[] p2,int[] paramOrder2,Type? paramArrayType2,
-	                                    Type?[] types,object?[]? args){
+		ParameterInfo[] p2,int[] paramOrder2,Type? paramArrayType2,
+		Type?[] types,object?[]? args){
 		// A method using params is always less specific than one not using params
 		if(paramArrayType1!=null&&paramArrayType2==null) return 2;
 		if(paramArrayType2!=null&&paramArrayType1==null) return 1;
@@ -625,17 +604,12 @@ public class DynamicBinder:Binder{
 			// if we cannot tell which is a better match based on parameter types (p1Less == p2Less),
 			// let's see which one has the most matches without using the params array (the longer one wins).
 			if(!p1Less&&args!=null){
-				if(p1.Length>p2.Length){
-					return 1;
-				} else if(p2.Length>p1.Length){
-					return 2;
-				}
+				if(p1.Length>p2.Length) return 1;
+				else if(p2.Length>p1.Length) return 2;
 			}
 
 			return 0;
-		} else{
-			return p1Less?1:2;
-		}
+		} else return p1Less?1:2;
 	}
 
 	private static int FindMostSpecificType(Type c1,Type c2,Type? t){
@@ -676,16 +650,13 @@ public class DynamicBinder:Binder{
 
 		if(c1FromC2==c2FromC1) return 0;
 
-		if(c1FromC2){
-			return 2;
-		} else{
-			return 1;
-		}
+		if(c1FromC2) return 2;
+		else return 1;
 	}
 
 	private static int FindMostSpecificMethod(MethodBase m1,int[] paramOrder1,Type? paramArrayType1,
-	                                          MethodBase m2,int[] paramOrder2,Type? paramArrayType2,
-	                                          Type?[] types,object?[]? args){
+		MethodBase m2,int[] paramOrder2,Type? paramArrayType2,
+		Type?[] types,object?[]? args){
 		// Find the most specific method based on the parameters.
 		var res=FindMostSpecific(m1.GetParameters(),
 		                         paramOrder1,
@@ -706,13 +677,9 @@ public class DynamicBinder:Binder{
 			var hierarchyDepth2=GetHierarchyDepth(m2.DeclaringType!);
 
 			// The most derived method is the most specific one.
-			if(hierarchyDepth1==hierarchyDepth2){
-				return 0;
-			} else if(hierarchyDepth1<hierarchyDepth2){
-				return 2;
-			} else{
-				return 1;
-			}
+			if(hierarchyDepth1==hierarchyDepth2) return 0;
+			else if(hierarchyDepth1<hierarchyDepth2) return 2;
+			else return 1;
 		}
 
 		// The match is ambiguous.
@@ -742,9 +709,8 @@ public class DynamicBinder:Binder{
 			var hierarchyDepth1=GetHierarchyDepth(cur1.DeclaringType!);
 			var hierarchyDepth2=GetHierarchyDepth(cur2.DeclaringType!);
 
-			if(hierarchyDepth1==hierarchyDepth2){
-				return 0;
-			} else if(hierarchyDepth1<hierarchyDepth2) return 2;
+			if(hierarchyDepth1==hierarchyDepth2) return 0;
+			else if(hierarchyDepth1<hierarchyDepth2) return 2;
 			else return 1;
 		}
 
@@ -759,9 +725,9 @@ public class DynamicBinder:Binder{
 		if(params1.Length!=params2.Length) return false;
 
 		var numParams=params1.Length;
-		for(var i=0;i<numParams;i++){
-			if(params1[i].ParameterType!=params2[i].ParameterType) return false;
-		}
+		for(var i=0;i<numParams;i++)
+			if(params1[i].ParameterType!=params2[i].ParameterType)
+				return false;
 
 		return true;
 	}
@@ -800,13 +766,12 @@ public class DynamicBinder:Binder{
 		// Find the parameters with names.
 		for(var i=0;i<names.Length;i++){
 			int j;
-			for(j=0;j<pars.Length;j++){
+			for(j=0;j<pars.Length;j++)
 				if(names[i].Equals(pars[j].Name)){
 					paramOrder[j]=i;
 					used[i]=true;
 					break;
 				}
-			}
 			// This is an error condition.  The name was not found.  This
 			//  method must not match what we sent.
 			if(j==pars.Length) return false;
@@ -814,17 +779,14 @@ public class DynamicBinder:Binder{
 
 		// Now we fill in the holes with the parameters that are unused.
 		var pos=0;
-		for(var i=0;i<pars.Length;i++){
-			if(paramOrder[i]==-1){
-				for(;pos<pars.Length;pos++){
+		for(var i=0;i<pars.Length;i++)
+			if(paramOrder[i]==-1)
+				for(;pos<pars.Length;pos++)
 					if(!used[pos]){
 						paramOrder[i]=pos;
 						pos++;
 						break;
 					}
-				}
-			}
-		}
 		return true;
 	}
 
@@ -834,8 +796,8 @@ public class DynamicBinder:Binder{
 		if((source==typeof(IntPtr)&&target==typeof(IntPtr))||
 		   (source==typeof(UIntPtr)&&target==typeof(UIntPtr))) return true;
 
-		var widerCodes=PrimitiveConversions[(int)(Type.GetTypeCode(source))];
-		var targetCode=(Primitives)(1<<(int)(Type.GetTypeCode(target)));
+		var widerCodes=PrimitiveConversions[(int)Type.GetTypeCode(source)];
+		var targetCode=(Primitives)(1<<(int)Type.GetTypeCode(target));
 
 		return (widerCodes&targetCode)!=0;
 	}

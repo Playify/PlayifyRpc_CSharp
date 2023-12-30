@@ -3,8 +3,6 @@ using PlayifyUtility.Streams.Data;
 namespace PlayifyRpc.Types.Data;
 
 public static partial class Extensions{
-
-
 	public static void WriteException(this DataOutput output,Exception e){
 		if(e is not RpcException remote) remote=new RpcException(e);
 		output.WriteString(remote.Type);

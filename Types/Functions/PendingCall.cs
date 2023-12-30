@@ -26,7 +26,6 @@ internal class PendingCallRawData:SendReceive{
 
 [PublicAPI]
 public class PendingCall:SendReceive{
-
 	public void Cancel()=>_rawData.SendCancel();
 
 	public PendingCall WithCancellation(CancellationToken token){
@@ -76,7 +75,6 @@ public class PendingCall:SendReceive{
 	public PendingCall<T> Cast<T>()=>this as PendingCall<T>??new PendingCall<T>(this);
 	public PendingCall Cast(Type t)=>new PendingCallCasted(this,t);
 	#endregion
-
 }
 
 [PublicAPI]

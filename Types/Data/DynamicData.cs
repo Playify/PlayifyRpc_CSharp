@@ -259,11 +259,12 @@ internal static class DynamicData{
 	public static void Register(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)=>WriteRegistry.Add((id,check,write));
 
 	public static void Register<T>(string id,Func<DataInput,List<object>,T> read,Action<DataOutput,T,List<object>> write)
-		=>Register(id,
-		           (data,already)=>read(data,already)!,
-		           o=>o is T,
-		           (data,o,already)=>write(data,(T)o,already)
-		          );
+		=>Register(
+			id,
+			(data,already)=>read(data,already)!,
+			o=>o is T,
+			(data,o,already)=>write(data,(T)o,already)
+		);
 
 	public static void Free(List<object> already){
 		foreach(var d in already.OfType<Delegate>()) RpcFunction.UnregisterFunction(d);

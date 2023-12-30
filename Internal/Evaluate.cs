@@ -7,7 +7,6 @@ namespace PlayifyRpc.Internal;
 
 [PublicAPI]
 internal static class Evaluate{
-
 	private static readonly object NoValue=new();
 
 	private static object? ParseParameter(string argString){

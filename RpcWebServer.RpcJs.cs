@@ -1,15 +1,21 @@
 using System.Diagnostics;
 using JetBrains.Annotations;
 using PlayifyUtility.Utils;
-#if NETFRAMEWORK
 using PlayifyUtility.Utils.Extensions;
-#endif
 
 namespace PlayifyRpc;
 
 public partial class RpcWebServer{
 	[PublicAPI]
-	public static async Task DownloadRpcJsTo(string target,bool forceOverwrite=false){
+	public static ValueTask ReDownloadRpcJsTo(string path){
+		var task=DownloadRpcJsTo(path,true);
+		if(!File.Exists(path)) return new ValueTask(task.TryCatch());//impacts startup time, but as web clients depend on rpc.js, it's the only way
+		_=task.TryCatch();//don't await, it would impact startup time
+		return default;
+	}
+
+	[PublicAPI]
+	public static async Task DownloadRpcJsTo(string target,bool forceOverwrite){
 		if(!forceOverwrite&&File.Exists(target)) return;
 
 		var newPath=await DownloadRpcJsFromNpm();
@@ -30,18 +36,18 @@ public partial class RpcWebServer{
 		await File.WriteAllTextAsync(packageJson,content);
 #endif
 		await Process.Start(PlatformUtils.IsLinux()
-		                    ?new ProcessStartInfo{
-			                    FileName="bash",
-			                    Arguments="-c \"npm install\"",
-			                    WorkingDirectory=dir,
-			                    UseShellExecute=false,
-		                    }
-		                    :new ProcessStartInfo{
-			                    FileName="cmd.exe",
-			                    Arguments="/c npm install",
-			                    WorkingDirectory=dir,
-			                    UseShellExecute=false,
-		                    })!.WaitForExitAsync();
+			                    ?new ProcessStartInfo{
+				                    FileName="bash",
+				                    Arguments="-c \"npm install\"",
+				                    WorkingDirectory=dir,
+				                    UseShellExecute=false,
+			                    }
+			                    :new ProcessStartInfo{
+				                    FileName="cmd.exe",
+				                    Arguments="/c npm install",
+				                    WorkingDirectory=dir,
+				                    UseShellExecute=false,
+			                    })!.WaitForExitAsync();
 
 		return Path.GetFullPath(Path.Combine(dir,"node_modules/playify-rpc/dist/rpc.js"));
 	}

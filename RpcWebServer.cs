@@ -21,34 +21,30 @@ public partial class RpcWebServer:WebBase{
 
 	private static void ConsoleThread(){
 		while(true){
-			var line=ReadLine.Read();
-			//var line=Console.ReadLine();
+			var key=Console.ReadKey(true);
 
-			switch(line){
-				case "exit" or "restart" or "r" or "e":
+			switch(key.Key){
+				case ConsoleKey.E:
 					Environment.Exit(0);
-					break;
-				case "connection" or "connnections" or "con" or "c":
+					return;
+				case ConsoleKey.C:
 					Console.WriteLine("Connections: "+RpcServer.GetAllConnections().Select(s=>"\n\t"+s).Join(""));
 					break;
-				case "type" or "types" or "t":
+				case ConsoleKey.T:
 					Console.WriteLine("Types: "+RpcServer.GetAllTypes().Select(s=>"\n\t"+s).Join(""));
-					break;/*
-				case "debug" or "dbg" or "d":
-					if(WebSocket.PingCountUntilError!=0){
-						Console.WriteLine("Enabling debug mode");
-						WebSocket.PingCountUntilError=0;
-					} else{
-						Console.WriteLine("Disabling debug mode");
-						WebSocket.PingCountUntilError=5;
-					}
-					break;*/
+					break;
+				case ConsoleKey.R:
+					Console.WriteLine("Registrations: "+RpcServer.GetRegistrations().ToPrettyString());
+					break;
 				default:
-					Console.WriteLine("Unknown Command: "+line);
+					Console.WriteLine("Commands:");
+					Console.WriteLine("\tE: exit");
+					Console.WriteLine("\tC: list connections");
+					Console.WriteLine("\tT: list types");
+					Console.WriteLine("\tR: list registrations");
 					break;
 			}
 		}
-		// ReSharper disable once FunctionNeverReturns
 	}
 
 	[PublicAPI]
@@ -71,26 +67,28 @@ public partial class RpcWebServer:WebBase{
 
 	internal static async Task Main(string[] args){
 		if(args.Length!=0&&args[0]=="help"){
-			Console.WriteLine("use args: <IP:Port or Port> [rpc.js path] [rpcToken]");
-			Console.WriteLine("rpcToken will be used from RPC_TOKEN environment variable");
+			Console.WriteLine("use args: [IP:Port or Port] [rpc.js path] [rpcToken]");
 			Console.WriteLine("default port: 4590");
+			Console.WriteLine("rpc.js path, if \"\" it will be redownloaded");
+			Console.WriteLine("rpcToken will be used from RPC_TOKEN environment variable");
 			return;
 		}
 		const int defaultPort=4590;
 		var ipEndPoint=args.Length!=0
-		               ?args[0] switch{
-			               var s when Parsers.TryParseIpEndPoint(s,defaultPort,out var ep)=>ep,
-			               var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
-			               var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,defaultPort),
-			               _=>throw new ArgumentException("Invalid IP or Port"),
-		               }
-		               :new IPEndPoint(IPAddress.Any,defaultPort);
-		string rpcJs;
-		if(args.Length>1) rpcJs=args[1];
-		else{
-			rpcJs="rpc.js";
-			await DownloadRpcJsTo(rpcJs);
-		}
+			               ?args[0] switch{
+				               var s when Parsers.TryParseIpEndPoint(s,defaultPort,out var ep)=>ep,
+				               var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
+				               var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,defaultPort),
+				               _=>throw new ArgumentException("Invalid IP or Port"),
+			               }
+			               :new IPEndPoint(IPAddress.Any,defaultPort);
+
+		var rpcJs="rpc.js";
+		if(args.Length>1)
+			if(!string.IsNullOrEmpty(args[1])) rpcJs=args[1];
+			else await ReDownloadRpcJsTo(rpcJs);
+		else
+			await DownloadRpcJsTo(rpcJs,false);
 		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN")??null;
 
 		RunConsoleThread();
@@ -126,8 +124,14 @@ public partial class RpcWebServer:WebBase{
 			}
 			return;
 		}
-		if(session.RawUrl.StartsWith("/rpc/")){
-			var s=Uri.UnescapeDataString(session.RawUrl.Substring("/rpc/".Length));
+		var rawUrl=session.RawUrl;
+		if(rawUrl.EndsWith("/")) rawUrl=rawUrl.TrimEnd('/');
+
+		if(rawUrl.StartsWith("/rpc/")){
+			var emptyResponse=rawUrl.EndsWith("/void");
+			if(emptyResponse) rawUrl=rawUrl.Substring(0,rawUrl.Length-"/void".Length);
+
+			var s=Uri.UnescapeDataString(rawUrl.Substring("/rpc/".Length));
 
 			try{
 				s=await Rpc.Eval(s);
@@ -141,14 +145,19 @@ public partial class RpcWebServer:WebBase{
 				             .Send();
 				return;
 			}
-
-			await session.Send
-			             .Cache(false)
-			             .Document()
-			             .MimeType("application/json")
-			             .Set(s)
-			             .Send();
+			if(emptyResponse)
+				await session.Send.Begin(204);
+			else
+				await session.Send
+				             .Cache(false)
+				             .Document()
+				             .MimeType("application/json")
+				             .Set(s)
+				             .Send();
+			return;
 		}
+
+
 		switch(session.Path){
 			case "/rpc.js":
 				await session.Send.File(rpcJs);

@@ -16,10 +16,10 @@ public static partial class Rpc{
 	public static void Connect(Uri uri,string? token)
 		=>Connect(uri,
 		          token==null
-		          ?null
-		          :new NameValueCollection{
-			          {"Cookie","RPC_TOKEN="+token},
-		          });
+			          ?null
+			          :new NameValueCollection{
+				          {"Cookie","RPC_TOKEN="+token},
+			          });
 
 	public static void Connect(Uri uri,NameValueCollection? headers)=>_=ClientConnectionWebSocket.Connect(uri,headers).Catch(Console.Error.WriteLine);
 }

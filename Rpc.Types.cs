@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types;
+using PlayifyUtility.Jsons;
 
 namespace PlayifyRpc;
 
@@ -36,4 +37,9 @@ public static partial class Rpc{
 	public static async Task<string[]> GetAllTypes()=>await CallFunction<string[]>(null,"T");
 
 	public static async Task<string[]> GetAllConnections()=>await CallFunction<string[]>(null,"C");
+
+	public static async Task<Dictionary<string,string[]>> GetRegistrations()
+		=>(await CallFunction<JsonObject>(null,"R"))
+			.ToDictionary(p=>p.Key,
+			              p=>p.Value.AsArray().Select(j=>j.AsString()).ToArray());
 }

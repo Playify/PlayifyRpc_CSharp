@@ -40,8 +40,8 @@ public static partial class StaticallyTypedUtils{
 
 	public static object Cast(object? value,Type type)
 		=>TryCast(value,type,out var result)
-		  ?result!
-		  :throw new InvalidCastException("Error casting \""+value+"\" to "+type.Name);
+			  ?result!
+			  :throw new InvalidCastException("Error casting \""+value+"\" to "+type.Name);
 
 	private static object? DoCast(object value,Type type){
 		value=value switch{

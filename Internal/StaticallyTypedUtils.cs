@@ -41,13 +41,13 @@ public static partial class StaticallyTypedUtils{
 
 	internal static IList<Type>? GetGenericTypeArguments(InvokeMemberBinder binder)
 		=>Type.GetType("Mono.Runtime")!=null
-		  ?binder
-		   .GetType()
-		   .GetField("typeArguments",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static)
-		   ?.GetValue(binder) as IList<Type>
-		  :binder
-		   .GetType()
-		   .GetInterface("Microsoft.CSharp.RuntimeBinder.ICSharpInvokeOrInvokeMemberBinder")
-		   ?.GetProperty("TypeArguments")
-		   ?.GetValue(binder,null) as IList<Type>;
+			  ?binder
+			   .GetType()
+			   .GetField("typeArguments",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static)
+			   ?.GetValue(binder) as IList<Type>
+			  :binder
+			   .GetType()
+			   .GetInterface("Microsoft.CSharp.RuntimeBinder.ICSharpInvokeOrInvokeMemberBinder")
+			   ?.GetProperty("TypeArguments")
+			   ?.GetValue(binder,null) as IList<Type>;
 }

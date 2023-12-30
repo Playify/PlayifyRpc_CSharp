@@ -6,7 +6,6 @@ namespace PlayifyRpc.Internal.Invokers;
 
 [PublicAPI]
 public abstract class Invoker{
-
 	protected internal abstract object? DynamicInvoke(string? type,string method,object?[] args);
 
 	public PendingCall Call(string type,string method,object?[] args)=>CallLocal(type,method,()=>DynamicInvoke(type,method,args));

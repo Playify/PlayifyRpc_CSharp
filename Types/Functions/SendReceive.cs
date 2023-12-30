@@ -26,31 +26,22 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 
 	public abstract void SendMessage(params object?[] args);
 
-	public void AddMessageListener<T1>(Action<T1> a)
-		=>AddMessageListener(args=>a(
-		                             StaticallyTypedUtils.Cast<T1>(args[0])
-		                            ));
+	public void AddMessageListener<T1>(Action<T1> a)=>AddMessageListener(args=>a(StaticallyTypedUtils.Cast<T1>(args[0])));
 
 	public void AddMessageListener<T1,T2>(Action<T1,T2> a)
-		=>AddMessageListener(args=>a(
-		                             StaticallyTypedUtils.Cast<T1>(args[0]),
-		                             StaticallyTypedUtils.Cast<T2>(args[1])
-		                            ));
+		=>AddMessageListener(args=>a(StaticallyTypedUtils.Cast<T1>(args[0]),
+		                             StaticallyTypedUtils.Cast<T2>(args[1])));
 
 	public void AddMessageListener<T1,T2,T3>(Action<T1,T2,T3> a)
-		=>AddMessageListener(args=>a(
-		                             StaticallyTypedUtils.Cast<T1>(args[0]),
+		=>AddMessageListener(args=>a(StaticallyTypedUtils.Cast<T1>(args[0]),
 		                             StaticallyTypedUtils.Cast<T2>(args[1]),
-		                             StaticallyTypedUtils.Cast<T3>(args[2])
-		                            ));
+		                             StaticallyTypedUtils.Cast<T3>(args[2])));
 
 	public void AddMessageListener<T1,T2,T3,T4>(Action<T1,T2,T3,T4> a)
-		=>AddMessageListener(args=>a(
-		                             StaticallyTypedUtils.Cast<T1>(args[0]),
+		=>AddMessageListener(args=>a(StaticallyTypedUtils.Cast<T1>(args[0]),
 		                             StaticallyTypedUtils.Cast<T2>(args[1]),
 		                             StaticallyTypedUtils.Cast<T3>(args[2]),
-		                             StaticallyTypedUtils.Cast<T4>(args[3])
-		                            ));
+		                             StaticallyTypedUtils.Cast<T4>(args[3])));
 
 	public virtual void AddMessageListener(MessageFunc a){
 		lock(_receivers)

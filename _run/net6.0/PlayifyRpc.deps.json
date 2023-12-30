@@ -6,10 +6,9 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v6.0": {
-      "PlayifyRpc/1.1.0": {
+      "PlayifyRpc/1.1.1": {
         "dependencies": {
-          "PlayifyUtility": "1.1.1",
-          "ReadLine": "2.0.1"
+          "PlayifyUtility": "1.1.2"
         },
         "runtime": {
           "PlayifyRpc.dll": {}
@@ -23,29 +22,21 @@
           }
         }
       },
-      "PlayifyUtility/1.1.1": {
+      "PlayifyUtility/1.1.2": {
         "dependencies": {
           "JetBrains.Annotations": "2023.3.0"
         },
         "runtime": {
           "lib/net6.0/PlayifyUtility.dll": {
-            "assemblyVersion": "1.1.1.0",
-            "fileVersion": "1.1.1.0"
-          }
-        }
-      },
-      "ReadLine/2.0.1": {
-        "runtime": {
-          "lib/netstandard2.0/ReadLine.dll": {
-            "assemblyVersion": "2.0.1.0",
-            "fileVersion": "2.0.1.0"
+            "assemblyVersion": "1.1.2.0",
+            "fileVersion": "1.1.2.0"
           }
         }
       }
     }
   },
   "libraries": {
-    "PlayifyRpc/1.1.0": {
+    "PlayifyRpc/1.1.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -57,19 +48,12 @@
       "path": "jetbrains.annotations/2023.3.0",
       "hashPath": "jetbrains.annotations.2023.3.0.nupkg.sha512"
     },
-    "PlayifyUtility/1.1.1": {
+    "PlayifyUtility/1.1.2": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-1U2fHoymY43d8lUZvIPPRerpJILfhb9x5qJ5J9ukwvLB1vi3fZhd2gAvCPKBxrO1mxKcRiSPX2EdoMORKqo8pQ==",
-      "path": "playifyutility/1.1.1",
-      "hashPath": "playifyutility.1.1.1.nupkg.sha512"
-    },
-    "ReadLine/2.0.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-m3eptlV2hlZ3gWxdhvgsUpSjwyA3NCeLdbhgDt0V8rXP1E6ZbjOOExcAufHvAZepSKJvV+zZO1eYWGveShA4gw==",
-      "path": "readline/2.0.1",
-      "hashPath": "readline.2.0.1.nupkg.sha512"
+      "sha512": "sha512-MrbmVbD+QwRP3VvBD+rztUG6CGNbJu1AXPc1ugCQXqYjrGK/oxWjaovR48HvpDQKAdEiPzXHW5aDgx+SJD2SOQ==",
+      "path": "playifyutility/1.1.2",
+      "hashPath": "playifyutility.1.1.2.nupkg.sha512"
     }
   }
 }

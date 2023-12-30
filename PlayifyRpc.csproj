@@ -15,19 +15,18 @@
         <RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
         <RepositoryType>GitHub</RepositoryType>
         <Authors>Playify</Authors>
-        <Version>1.1.0</Version>
+        <Version>1.1.1</Version>
 
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">
-        <Using Remove="System.Net.Http"/>
+        <Using Remove="System.Net.Http" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="PlayifyUtility" Version="1.1.1"/>
-        <PackageReference Include="ReadLine" Version="2.0.1"/>
+        <PackageReference Include="PlayifyUtility" Version="1.1.2" />
     </ItemGroup>
 
     <ItemGroup>
@@ -46,5 +45,12 @@
         <Compile Update="RpcWebServer.RpcJs.cs">
             <DependentUpon>RpcWebServer.cs</DependentUpon>
         </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="_run\download_backend_net48.sh" />
+        <None Include="_run\download_backend_net6.bat" />
+        <None Include="_run\download_backend_net6.ps1" />
+        <None Include="_run\download_backend_net6.sh" />
     </ItemGroup>
 </Project>

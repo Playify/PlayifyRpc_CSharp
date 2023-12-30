@@ -1,8 +1,11 @@
+using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Types;
+using PlayifyUtility.Jsons;
 
 namespace PlayifyRpc.Internal;
 
+[PublicAPI]
 public static class RpcServer{//Class is registered as "Rpc" from Server
 
 	internal static readonly Dictionary<string,ServerConnection> Types=new();
@@ -34,6 +37,16 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 		lock(ServerConnection.Connections) return ServerConnection.Connections.Select(c=>c.ToString()).ToArray();
 	}
 
+	public static JsonObject GetRegistrations(){
+		lock(ServerConnection.Connections)
+			return new JsonObject(ServerConnection
+			                      .Connections
+			                      .Select(c=>{
+				                      lock(Types)
+					                      return (c.ToString(),(Json)new JsonArray(c.Types));
+			                      }));
+	}
+
 	public static Task<object?> CallFunction(string? type,string method,params object?[] args){
 		var ctx=Rpc.GetContext();
 		var call=Rpc.CallFunction(type,method,args)
@@ -46,4 +59,7 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 
 	public static Task<string> Eval(string expression)=>Evaluate.Eval(expression);
 	public static Task<object?> EvalAny(string expression)=>Evaluate.EvalAny(expression);
+
+	public static object? Return(object? o)=>o;
+	public static object?[] ReturnArguments(params object?[] o)=>o;
 }
