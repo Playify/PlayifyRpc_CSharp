@@ -25,6 +25,8 @@ public partial class RpcWebServer:WebBase{
 
 			switch(key.Key){
 				case ConsoleKey.E:
+				case ConsoleKey.X:
+				case ConsoleKey.Q:
 					Environment.Exit(0);
 					return;
 				case ConsoleKey.C:
@@ -39,6 +41,8 @@ public partial class RpcWebServer:WebBase{
 				default:
 					Console.WriteLine("Commands:");
 					Console.WriteLine("\tE: exit");
+					Console.WriteLine("\tX: exit");
+					Console.WriteLine("\tQ: exit");
 					Console.WriteLine("\tC: list connections");
 					Console.WriteLine("\tT: list types");
 					Console.WriteLine("\tR: list registrations");
@@ -69,7 +73,7 @@ public partial class RpcWebServer:WebBase{
 		if(args.Length!=0&&args[0]=="help"){
 			Console.WriteLine("use args: [IP:Port or Port] [rpc.js path] [rpcToken]");
 			Console.WriteLine("default port: 4590");
-			Console.WriteLine("rpc.js path, if \"\" it will be redownloaded");
+			Console.WriteLine("rpc.js path if omitted will download when the file doesn't exist");
 			Console.WriteLine("rpcToken will be used from RPC_TOKEN environment variable");
 			return;
 		}
@@ -84,11 +88,9 @@ public partial class RpcWebServer:WebBase{
 			               :new IPEndPoint(IPAddress.Any,defaultPort);
 
 		var rpcJs="rpc.js";
-		if(args.Length>1)
-			if(!string.IsNullOrEmpty(args[1])) rpcJs=args[1];
-			else await ReDownloadRpcJsTo(rpcJs);
-		else
-			await DownloadRpcJsTo(rpcJs,false);
+		if(args.Length>1) rpcJs=args[1];
+		else await DownloadRpcJs(false);
+
 		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN")??null;
 
 		RunConsoleThread();

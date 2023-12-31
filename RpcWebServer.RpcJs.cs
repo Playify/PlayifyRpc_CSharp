@@ -1,54 +1,50 @@
 using System.Diagnostics;
-using JetBrains.Annotations;
+using System.Net;
+using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc;
 
 public partial class RpcWebServer{
-	[PublicAPI]
-	public static ValueTask ReDownloadRpcJsTo(string path){
-		var task=DownloadRpcJsTo(path,true);
-		if(!File.Exists(path)) return new ValueTask(task.TryCatch());//impacts startup time, but as web clients depend on rpc.js, it's the only way
-		_=task.TryCatch();//don't await, it would impact startup time
-		return default;
-	}
+	public static async Task DownloadRpcJs(bool overwrite){
+		if(File.Exists("rpc.js")&&!overwrite) return;
 
-	[PublicAPI]
-	public static async Task DownloadRpcJsTo(string target,bool forceOverwrite){
-		if(!forceOverwrite&&File.Exists(target)) return;
 
-		var newPath=await DownloadRpcJsFromNpm();
-		File.Copy(newPath,target,true);
-		File.Copy(newPath+".map",target+".map",true);
-	}
+		string tarballFile;
+		using(var client=new WebClient()){
+			var jsonString=await client.DownloadStringTaskAsync("https://registry.npmjs.org/playify-rpc/latest");
+			if(!JsonObject.TryParse(jsonString,out var json))
+				throw new Exception("Error parsing npm package");
 
-	[PublicAPI]
-	public static async Task<string> DownloadRpcJsFromNpm(){
-		var dir=Path.Combine(Path.GetTempPath(),"playify-rpc");
-		Directory.CreateDirectory(dir);
+			tarballFile=Path.GetTempFileName();
+			await client.DownloadFileTaskAsync(json["dist"]["tarball"].AsString(),tarballFile);
+		}
 
-		var packageJson=Path.Combine(dir,"package.json");
-		const string content="{\"dependencies\": {\"playify-rpc\": \"latest\"}}";
-#if NETFRAMEWORK
-		using(var writer=new StreamWriter(packageJson)) await writer.WriteAsync(content);
-#else
-		await File.WriteAllTextAsync(packageJson,content);
-#endif
-		await Process.Start(PlatformUtils.IsLinux()
-			                    ?new ProcessStartInfo{
-				                    FileName="bash",
-				                    Arguments="-c \"npm install\"",
-				                    WorkingDirectory=dir,
-				                    UseShellExecute=false,
-			                    }
-			                    :new ProcessStartInfo{
-				                    FileName="cmd.exe",
-				                    Arguments="/c npm install",
-				                    WorkingDirectory=dir,
-				                    UseShellExecute=false,
-			                    })!.WaitForExitAsync();
+		using var process=Process.Start(new ProcessStartInfo{
+			FileName="tar",
+			Arguments=CommandLineUtils.EscapeArguments(
+				"-xzf",
+				tarballFile,
+				"--strip-components=2",
+				"-C",
+				".",
+				"package/dist/"
+			),
+			UseShellExecute=false,
+			RedirectStandardOutput=true,
+			RedirectStandardError=true,
+			WorkingDirectory=Environment.CurrentDirectory,
+		})!;
+		await process.WaitForExitAsync();
 
-		return Path.GetFullPath(Path.Combine(dir,"node_modules/playify-rpc/dist/rpc.js"));
+		var error=await process.StandardError.ReadToEndAsync();
+		if(!string.IsNullOrEmpty(error))
+			throw new Exception("Error extracting tarball: "+error);
+
+		File.Delete(tarballFile);
+
+		if(!File.Exists("rpc.js"))
+			throw new Exception("Something went wrong while getting rpc.js");
 	}
 }

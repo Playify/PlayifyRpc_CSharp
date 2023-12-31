@@ -26,7 +26,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="PlayifyUtility" Version="1.1.2" />
+        <PackageReference Include="PlayifyUtility" Version="1.1.3" />
     </ItemGroup>
 
     <ItemGroup>
@@ -45,12 +45,5 @@
         <Compile Update="RpcWebServer.RpcJs.cs">
             <DependentUpon>RpcWebServer.cs</DependentUpon>
         </Compile>
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Include="_run\download_backend_net48.sh" />
-        <None Include="_run\download_backend_net6.bat" />
-        <None Include="_run\download_backend_net6.ps1" />
-        <None Include="_run\download_backend_net6.sh" />
     </ItemGroup>
 </Project>

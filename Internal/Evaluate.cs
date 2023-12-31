@@ -53,21 +53,22 @@ internal static class Evaluate{
 		if(StaticallyTypedUtils.TryCast<Json>(result,out var json))
 			return json.ToString("\t");
 
-		if(result is ExpandoObject expando){
-			if(!expando.Any()) return "{}";
-			return ("{\n"+expando.Select(pair=>JsonString.Escape(pair.Key)+":"+Stringify(pair.Value)).Join(",\n")).Replace("\n","\n\t")+"\n}";
-		}
-
-		if(result is Array array){
-			if(array.Length==0) return "[]";
-			return ("[\n"+array.Cast<object?>().Select(Stringify).Join(",\n")).Replace("\n","\n\t")+"\n]";
-		}
-
-
 		return result switch{
-			null=>"null",
-			float.NaN or double.NaN=>"NaN",
-			_=>$"{result}",
+			ExpandoObject expando when !expando.Any()=>"{}",
+			ExpandoObject expando=>(
+				                       "{\n"+expando
+				                             .Select(pair=>JsonString.Escape(pair.Key)+":"+Stringify(pair.Value))
+				                             .Join(",\n")
+			                       ).Replace("\n","\n\t")+"\n}",
+			Array{Length: 0}=>"[]",
+			Array array=>("[\n"+array.Cast<object?>().Select(Stringify)
+			                         .Join(",\n")).Replace("\n","\n\t")+"\n]",
+			_=>result switch{
+				null=>"null",
+				float.NaN or double.NaN=>"NaN",
+				_=>$"{result}",
+			},
 		};
+
 	}
 }

@@ -20,8 +20,17 @@ $tarballUrl = (Invoke-WebRequest -Uri "https://registry.npmjs.org/playify-rpc/la
 Invoke-WebRequest -Uri $tarballUrl -OutFile "$tempFolder\playify-rpc.tgz" -UseBasicParsing
 tar -xzf "$tempFolder\playify-rpc.tgz" --strip-components=2 -C . package/dist/
 
-# Make executable
-echo '{"runtimeOptions":{"tfm":"net6.0","framework":{"name":"Microsoft.NETCore.App","version":"6.0.0"}}}' > PlayifyRpc.runtimeconfig.json
-
 # Delete temporary folder
 Remove-Item $tempFolder -Recurse -Force
+
+# Make executable
+Set-Content -Path "PlayifyRpc.runtimeconfig.json" -Value '{"runtimeOptions":{"tfm":"net6.0","framework":{"name":"Microsoft.NETCore.App","version":"6.0.0"}}}' -NoNewline -Encoding UTF8
+Set-Content -Path "rpc.bat" -Value @'
+@echo off
+if not exist "%~dp0PlayifyRpc.dll" (
+	echo Error: PlayifyRpc.dll not found in the script directory.
+	exit /b 1
+)
+
+dotnet "%~dp0PlayifyRpc.dll" %*
+'@

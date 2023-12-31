@@ -8,28 +8,17 @@
     ".NETCoreApp,Version=v6.0": {
       "PlayifyRpc/1.1.1": {
         "dependencies": {
-          "PlayifyUtility": "1.1.2"
+          "PlayifyUtility": "1.1.3"
         },
         "runtime": {
           "PlayifyRpc.dll": {}
         }
       },
-      "JetBrains.Annotations/2023.3.0": {
-        "runtime": {
-          "lib/netstandard2.0/JetBrains.Annotations.dll": {
-            "assemblyVersion": "4242.42.42.42",
-            "fileVersion": "2023.3.0.0"
-          }
-        }
-      },
-      "PlayifyUtility/1.1.2": {
-        "dependencies": {
-          "JetBrains.Annotations": "2023.3.0"
-        },
+      "PlayifyUtility/1.1.3": {
         "runtime": {
           "lib/net6.0/PlayifyUtility.dll": {
-            "assemblyVersion": "1.1.2.0",
-            "fileVersion": "1.1.2.0"
+            "assemblyVersion": "1.1.3.0",
+            "fileVersion": "1.1.3.0"
           }
         }
       }
@@ -41,19 +30,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "JetBrains.Annotations/2023.3.0": {
+    "PlayifyUtility/1.1.3": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-PHfnvdBUdGaTVG9bR/GEfxgTwWM0Z97Y6X3710wiljELBISipSfF5okn/vz+C2gfO+ihoEyVPjaJwn8ZalVukA==",
-      "path": "jetbrains.annotations/2023.3.0",
-      "hashPath": "jetbrains.annotations.2023.3.0.nupkg.sha512"
-    },
-    "PlayifyUtility/1.1.2": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-MrbmVbD+QwRP3VvBD+rztUG6CGNbJu1AXPc1ugCQXqYjrGK/oxWjaovR48HvpDQKAdEiPzXHW5aDgx+SJD2SOQ==",
-      "path": "playifyutility/1.1.2",
-      "hashPath": "playifyutility.1.1.2.nupkg.sha512"
+      "sha512": "sha512-3x5UMWct6xNjB4UkLs7LRBt9LSh8IaORuDTSKXtnUJqOQkd+dIbrwXWrVTHl1s/iS+3L06Z6jSgf54wdVn/vFg==",
+      "path": "playifyutility/1.1.3",
+      "hashPath": "playifyutility.1.1.3.nupkg.sha512"
     }
   }
 }

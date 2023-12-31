@@ -20,4 +20,23 @@ rm /tmp/playify-rpc.tgz
 
 #Make executable
 echo '{"runtimeOptions":{"tfm":"net6.0","framework":{"name":"Microsoft.NETCore.App","version":"6.0.0"}}}'>PlayifyRpc.runtimeconfig.json
-chmod +x PlayifyRpc.dll
+
+cat > "rpc.sh"<<'__SCRIPT__'
+#!/bin/bash
+
+if ! command -v dotnet &> /dev/null; then
+  echo "dotnet command not found. Please make sure .NET Core SDK is installed."
+  exit 1
+fi
+
+dll_path="$( cd "$( dirname "$0" )" && pwd )/PlayifyRpc.dll"
+
+if [ ! -f "$dll_path" ]; then
+  echo "Error: PlayifyRpc.dll not found in the current directory."
+  exit 1
+fi
+
+dotnet "$dll_path" "$@"
+__SCRIPT__
+
+chmod +x rpc.sh
