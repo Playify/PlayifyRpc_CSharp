@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types;
-using PlayifyUtility.Jsons;
+using PlayifyRpc.Types.Data;
 
 namespace PlayifyRpc;
 
@@ -28,18 +28,16 @@ public static partial class Rpc{
 	public static Task UnregisterType(string type)=>RegisteredTypes.Unregister(type);
 
 
-	public static async Task<RpcObject?> GetObjectWithFallback(string type,params string[] fallback)=>await CallFunction<RpcObject>(null,"O",fallback.Prepend(type).Cast<object?>().ToArray());
+	public static async Task<RpcObject?> GetObjectWithFallback(string type,params string[] fallback)//
+		=>await CallFunction<RpcObject>("Rpc","GetObjectWithFallback",fallback.Prepend(type).Cast<object?>().ToArray());
 
-	public static async Task<int> CheckTypes(params string[] types)=>await CallFunction<int>(null,"?",types.Cast<object?>().ToArray());
+	public static async Task<int> CheckTypes(params string[] types)=>await CallFunction<int>("Rpc","CheckTypes",types.Cast<object?>().ToArray());
 
-	public static async Task<bool> CheckType(string type)=>await CallFunction<int>(null,"?",type)!=0;
+	public static async Task<bool> CheckType(string type)=>await CallFunction<bool>("Rpc","CheckType",type);
 
-	public static async Task<string[]> GetAllTypes()=>await CallFunction<string[]>(null,"T");
+	public static async Task<string[]> GetAllTypes()=>await CallFunction<string[]>("Rpc","GetAllTypes");
 
-	public static async Task<string[]> GetAllConnections()=>await CallFunction<string[]>(null,"C");
+	public static async Task<string[]> GetAllConnections()=>await CallFunction<string[]>("Rpc","GetAllConnections");
 
-	public static async Task<Dictionary<string,string[]>> GetRegistrations()
-		=>(await CallFunction<JsonObject>(null,"R"))
-			.ToDictionary(p=>p.Key,
-			              p=>p.Value.AsArray().Select(j=>j.AsString()).ToArray());
+	public static async Task<Dictionary<string,string[]>> GetRegistrations()=>await CallFunction<StringMap<string[]>>("Rpc","GetRegistrations");
 }

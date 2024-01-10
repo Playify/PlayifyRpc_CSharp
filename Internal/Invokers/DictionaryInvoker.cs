@@ -16,7 +16,7 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 	public IEnumerator<KeyValuePair<string,Delegate>> GetEnumerator()=>Dictionary.GetEnumerator();
 	IEnumerator IEnumerable.GetEnumerator()=>Dictionary.GetEnumerator();
 
-	protected internal override object? DynamicInvoke(string? type,string method,object?[] args){
+	protected override object? DynamicInvoke(string? type,string method,object?[] args){
 		if(!Dictionary.TryGetValue(method,out var func)) throw new Exception($"Method \"{method}\" not found in \"{type}\"");
 		return func.Method.Invoke(func.Target,
 		                          BindingFlags.OptionalParamBinding|
@@ -26,6 +26,8 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 		                          args,
 		                          null!);
 	}
+
+	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());
 
 	//Used for collection initializer
 	public void Add(string key,Delegate value)=>Dictionary.Add(key,value);

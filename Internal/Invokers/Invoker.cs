@@ -6,9 +6,19 @@ namespace PlayifyRpc.Internal.Invokers;
 
 [PublicAPI]
 public abstract class Invoker{
-	protected internal abstract object? DynamicInvoke(string? type,string method,object?[] args);
+	protected internal object? Invoke(string? type,string? method,object?[] args){
+		if(method!=null) return DynamicInvoke(type,method,args);
+		return (args.Length==0?null:args[0]) switch{
+			"M"=>GetMethods().Push(out var valueTask).IsCompletedSuccessfully?valueTask.Result:valueTask.AsTask(),
+			_=>throw new ArgumentException("Invalid meta-call"),
+		};
+	}
 
-	public PendingCall Call(string type,string method,object?[] args)=>CallLocal(type,method,()=>DynamicInvoke(type,method,args));
+	protected abstract object? DynamicInvoke(string? type,string method,object?[] args);
+	protected abstract ValueTask<string[]> GetMethods();
+
+
+	public PendingCall Call(string type,string? method,object?[] args)=>CallLocal(type,method,()=>Invoke(type,method,args));
 	public PendingCall<T> Call<T>(string type,string method,object?[] args)=>Call(type,method,args).Cast<T>();
 
 	public static PendingCall CallLocal(Func<object?> a)=>CallLocal(null,null,a);
@@ -25,7 +35,7 @@ public abstract class Invoker{
 		truth.CancelFunc=()=>context.CancelSelf();
 
 
-		var call=new PendingCall(truth);
+		var call=new PendingCall<object?>(truth);
 
 		try{
 			var invokeResult=FunctionCallContext.RunWithContext(a,context);

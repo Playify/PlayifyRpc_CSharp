@@ -5,9 +5,9 @@ using PlayifyRpc.Types.Functions;
 namespace PlayifyRpc.Types;
 
 public class RpcObject:DynamicObject{
-	public readonly string? Type;
+	public readonly string Type;
 
-	public RpcObject(string? type)=>Type=type;
+	public RpcObject(string type)=>Type=type;
 
 	public RpcFunction GetFunction(string name)=>new(Type,name);
 	public PendingCall CallFunction(string name,params object?[] args)=>Rpc.CallFunction(Type,name,args);
@@ -27,4 +27,7 @@ public class RpcObject:DynamicObject{
 		result=GetFunction(binder.Name);
 		return true;
 	}
+
+	public Task<string[]> GetMethods()=>FunctionCallContext.CallFunction<string[]>(Type,null,"M");
+	public Task<bool> Exists()=>FunctionCallContext.CallFunction<bool>(null,"E",Type);
 }

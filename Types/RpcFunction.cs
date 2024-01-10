@@ -9,10 +9,10 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Types;
 
 public readonly struct RpcFunction{
-	public readonly string? Type;
+	public readonly string Type;
 	public readonly string Method;
 
-	public RpcFunction(string? type,string method){
+	public RpcFunction(string type,string method){
 		Type=type;
 		Method=method;
 	}

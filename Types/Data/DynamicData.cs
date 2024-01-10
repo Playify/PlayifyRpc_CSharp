@@ -57,7 +57,7 @@ internal static class DynamicData{
 			throw new ArgumentException();
 		}
 		if(objectId=='F'){
-			var func=new RpcFunction(incoming.ReadString(),incoming.ReadString()??throw new InvalidOperationException());
+			var func=new RpcFunction(incoming.ReadString()??throw new NullReferenceException(),incoming.ReadString()??throw new NullReferenceException());
 			already.Add(func);
 			return func;
 		}
@@ -75,7 +75,7 @@ internal static class DynamicData{
 			'D'=>DateTimeOffset.FromUnixTimeMilliseconds(incoming.ReadLong()).LocalDateTime,
 			'R'=>new Regex(incoming.ReadString()??"",(RegexOptions)incoming.ReadByte()),
 			'E'=>incoming.ReadException(),
-			'O'=>new RpcObject(incoming.ReadString()),
+			'O'=>new RpcObject(incoming.ReadString()??throw new NullReferenceException()),
 			_=>throw new ArgumentException(),
 		};
 	}

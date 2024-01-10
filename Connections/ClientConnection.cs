@@ -24,13 +24,19 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 		_tcsOnce=new TaskCompletionSource();
 	}
 
-	protected static async Task DoConnect(ClientConnection connection){
-		object?[] types;
-		lock(RegisteredTypes.Registered) types=RegisteredTypes.Registered.Keys.Cast<object?>().ToArray();
+	protected static async Task DoConnect(ClientConnection connection,string? reportedName=null,HashSet<string>? reportedTypes=null){
+		HashSet<string> toRegister;
+		lock(RegisteredTypes.Registered) toRegister=RegisteredTypes.Registered.Keys.ToHashSet();
+		var toDelete=reportedTypes??new HashSet<string>();
+		toRegister.RemoveWhere(toDelete.Remove);
 
 		Instance=connection;
-		await Rpc.CallFunction(null,"N",Rpc.NameOrId);
-		await Rpc.CallFunction(null,"+",types);
+
+		if(toRegister.Count!=0||toDelete.Count!=0){
+			if(Rpc.NameOrId!=reportedName) await FunctionCallContext.CallFunction(null,"H",Rpc.NameOrId,toRegister.ToArray(),toDelete.ToArray());
+			else await FunctionCallContext.CallFunction(null,"H",toRegister.ToArray(),toDelete.ToArray());
+		} else if(Rpc.NameOrId!=reportedName) await FunctionCallContext.CallFunction(null,"H",Rpc.NameOrId);
+
 
 		Rpc.IsConnected=true;
 		(_tcsOnce??=new TaskCompletionSource()).TrySetResult();
@@ -83,7 +89,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 
 					var context=new FunctionCallContext(type,
-					                                    method!,
+					                                    method,
 					                                    sending=>{
 						                                    if(tcs.Task.IsCompleted) return;
 						                                    var msg=new DataOutputBuff();
@@ -98,7 +104,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 					                                    tcs);
 					lock(_currentlyExecuting) _currentlyExecuting.Add(callId,context);
 
-					var invokeResult=FunctionCallContext.RunWithContext(()=>local.DynamicInvoke(type,method!,args),context);
+					var invokeResult=FunctionCallContext.RunWithContext(()=>local.Invoke(type,method,args),context);
 					var result=await StaticallyTypedUtils.UnwrapTask(invokeResult);
 					tcs.TrySetResult(result);
 					await Resolve(callId,result);

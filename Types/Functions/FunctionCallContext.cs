@@ -38,7 +38,10 @@ public class FunctionCallContext:SendReceive{
 
 	public override void SendMessage(params object?[] args)=>_send(args);
 
-	internal static PendingCall CallFunction(string? type,string method,object?[] args){
+
+	internal static PendingCall<T> CallFunction<T>(string? type,string? method,params object?[] args)=>CallFunction(type,method,args).Cast<T>();
+
+	internal static PendingCall CallFunction(string? type,string? method,params object?[] args){
 		if(type!=null){
 			Invoker? local;
 			lock(RegisteredTypes.Registered)
@@ -49,7 +52,7 @@ public class FunctionCallContext:SendReceive{
 
 		var truth=new PendingCallRawData();
 
-		var call=new PendingCall(truth);
+		var call=new PendingCall<object?>(truth);
 
 		var already=new List<object>();
 		call.Finally(()=>DynamicData.Free(already));

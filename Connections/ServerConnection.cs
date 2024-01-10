@@ -3,6 +3,7 @@ using PlayifyRpc.Internal;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyUtility.Streams.Data;
+using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Connections;
@@ -12,15 +13,17 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	private readonly Dictionary<int,(ServerConnection respondFrom,int respondId)> _activeExecutions=new();
 	private readonly Dictionary<int,(ServerConnection respondTo,int respondId)> _activeRequests=new();
 	internal readonly HashSet<string> Types=new();
-	private string? _name;
+	private readonly ServerInvoker _invoker;
 
 	private int _nextId;
 
 
 	protected ServerConnection(){
+		_invoker=new ServerInvoker(this);
 		lock(Connections) Connections.Add(this);
 	}
 
+	#region Connection
 	public virtual async ValueTask DisposeAsync(){
 		GC.SuppressFinalize(this);
 
@@ -141,7 +144,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			default:throw new ArgumentOutOfRangeException();
 		}
 	}
+	#endregion
 
+
+	#region Calling functions
 	private Task CallFunction(string type,DataInputBuff data,ServerConnection respondTo,int respondId,out int callId){
 		var buff=new DataOutputBuff();
 		buff.WriteByte((byte)PacketType.FunctionCall);
@@ -156,87 +162,75 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	}
 
 	private static async Task CallServer(ServerConnection connection,DataInput data,int callId){
-		var method=data.ReadString()??throw new InvalidOperationException();
+		var method=data.ReadString();
 
 		var already=new List<object>();
 		var args=data.ReadArray(data.ReadDynamic,already)??Array.Empty<object?>();
 
-		object? result=null;
-
 		try{
-			switch(method){
-				case "+":{
-					object?[] failed;
-					lock(RpcServer.Types)
-						failed=args.Where(typeObj=>{
-							if(typeObj is not string type) return true;
-							if(!RpcServer.Types.TryAdd(type,connection)) return true;
-							connection.Types.Add(type);
-							return false;
-						}).ToArray();
-					if(failed.Length!=0){
-						Console.WriteLine($"{connection} tried registering Types \"{args.Join("\",\"")}\"");
-						throw new Exception($"Types \"{failed.Join("\",\"")}\" were already registered");
-					}
-					Console.WriteLine($"{connection} registered Types \"{args.Join("\",\"")}\"");
-					break;
-				}
-				case "-":{
-					object?[] failed;
-					lock(RpcServer.Types)
-						failed=args.Where(typeObj=>{
-							if(typeObj is not string type) return true;
-							if(!connection.Types.Remove(type)) return true;
-							RpcServer.Types.Remove(type);
-							return false;
-						}).ToArray();
-					if(failed.Length!=0){
-						Console.WriteLine($"{connection} tried unregistering Types \"{args.Join("\",\"")}\"");
-						throw new Exception($"Types \"{failed.Join("\",\"")}\" were not registered");
-					}
-					Console.WriteLine($"{connection} unregistered Types \"{args.Join("\",\"")}\"");
-					break;
-				}
-				case "?":{
-					result=RpcServer.CheckTypes(args.OfType<string>().ToArray());
-					break;
-				}
-				case "O":{
-					result=RpcServer.GetObjectWithFallback(args.OfType<string>().ToArray());
-					break;
-				}
-				case "T":{
-					result=RpcServer.GetAllTypes();
-					break;
-				}
-				case "C":{
-					result=RpcServer.GetAllConnections();
-					break;
-				}
-				case "R":{
-					result=RpcServer.GetRegistrations();
-					break;
-				}
-				case "N":{
-					connection._name=args.Length==0?null:(string?)args[0];
-					break;
-				}
-				default:
-					throw new Exception("Unknown server method: "+method);
-			}
-
+			var result=connection._invoker.Invoke(null!,method,args);
 			await connection.Resolve(callId,result);
 		} catch(Exception e){
 			await connection.Reject(callId,e);
 		}
 	}
+	#endregion
 
+
+	#region Local
+	private string? _name;
+	public string Name=>_name??ToString();
+
+	internal void SetName(string? s){
+		_name=s;
+
+		if(s==null) return;
+		ServerConnection[] toKick;
+		lock(Connections) toKick=Connections.Where(c=>c!=this&&c.Name==s).ToArray();
+		TaskUtils.WhenAll(toKick.Select(k=>{
+			Console.WriteLine("Kicking client "+k+" as new client with same name joined.");
+			return k.DisposeAsync();
+		})).AsTask().TryCatch();
+	}
 
 	public override string ToString(){
 		var str=new StringBuilder(GetType().Name);
 		str.Append('(').Append(GetHashCode().ToString("x8"));
-		if(_name!=null) str.Append(':').Append(_name);
+		if(_name!=null) str.Append(':').Append(Name);
 		str.Append(')');
 		return str.ToString();
 	}
+
+	internal void Register(string[] types,bool log){
+		if(types.Length==0) return;
+		string[] failed;
+		lock(RpcServer.Types)
+			failed=types.Where(type=>{
+				if(!RpcServer.Types.TryAdd(type,this)) return true;
+				Types.Add(type);
+				return false;
+			}).ToArray();
+		if(failed.Length!=0){
+			if(log) Console.WriteLine($"{Name} tried registering Types \"{types.Join("\",\"")}\"");
+			throw new Exception($"Types \"{failed.Join("\",\"")}\" were already registered");
+		}
+		if(log) Console.WriteLine($"{Name} registered Types \"{types.Join("\",\"")}\"");
+	}
+
+	internal void Unregister(string[] types,bool log){
+		if(types.Length==0) return;
+		string[] failed;
+		lock(RpcServer.Types)
+			failed=types.Where(type=>{
+				if(!Types.Remove(type)) return true;
+				RpcServer.Types.Remove(type);
+				return false;
+			}).ToArray();
+		if(failed.Length!=0){
+			if(log) Console.WriteLine($"{Name} tried unregistering Types \"{types.Join("\",\"")}\"");
+			throw new Exception($"Types \"{failed.Join("\",\"")}\" were not registered");
+		}
+		if(log) Console.WriteLine($"{Name} unregistered Types \"{types.Join("\",\"")}\"");
+	}
+	#endregion
 }

@@ -25,7 +25,7 @@ internal class PendingCallRawData:SendReceive{
 }
 
 [PublicAPI]
-public class PendingCall:SendReceive{
+public abstract class PendingCall:SendReceive{
 	public void Cancel()=>_rawData.SendCancel();
 
 	public PendingCall WithCancellation(CancellationToken token){
@@ -39,8 +39,8 @@ public class PendingCall:SendReceive{
 	#region Internal
 	private readonly PendingCallRawData _rawData;
 
-	internal PendingCall(PendingCallRawData rawData)=>_rawData=rawData;
-	internal PendingCall(PendingCall other)=>_rawData=other._rawData;
+	private protected PendingCall(PendingCallRawData rawData)=>_rawData=rawData;
+	private protected PendingCall(PendingCall other)=>_rawData=other._rawData;
 
 	internal void Resolve(object? o)=>_rawData.TaskCompletionSource.TrySetResult(o);
 	internal void Reject(Exception e)=>_rawData.TaskCompletionSource.TrySetException(e);
@@ -79,6 +79,9 @@ public class PendingCall:SendReceive{
 
 [PublicAPI]
 public class PendingCall<T>:PendingCall{
+	internal PendingCall(PendingCallRawData other):base(other){
+	}
+
 	internal PendingCall(PendingCall other):base(other){
 	}
 

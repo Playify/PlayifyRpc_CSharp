@@ -36,16 +36,22 @@ public partial class RpcWebServer:WebBase{
 					Console.WriteLine("Types: "+RpcServer.GetAllTypes().Select(s=>"\n\t"+s).Join(""));
 					break;
 				case ConsoleKey.R:
-					Console.WriteLine("Registrations: "+RpcServer.GetRegistrations().ToPrettyString());
+					Console.WriteLine("Registrations: "+RpcServer.GetRegistrations()
+					                                             .OrderBy(p=>p.Key)
+					                                             .Select(pair=>"\n\t"+pair.Key+":"+pair.Value
+					                                                                                   .OrderBy(s=>s)
+					                                                                                   .Select(s=>"\n\t\t\""+s+"\"").Join("")).Join(""));
+					break;
+				case ConsoleKey.Enter:
+				case ConsoleKey.Spacebar:
+					Console.WriteLine();
 					break;
 				default:
 					Console.WriteLine("Commands:");
-					Console.WriteLine("\tE: exit");
-					Console.WriteLine("\tX: exit");
-					Console.WriteLine("\tQ: exit");
-					Console.WriteLine("\tC: list connections");
-					Console.WriteLine("\tT: list types");
-					Console.WriteLine("\tR: list registrations");
+					Console.WriteLine("\tE/X/Q : exit");
+					Console.WriteLine("\t    C : list connections");
+					Console.WriteLine("\t    T : list types");
+					Console.WriteLine("\t    R : list registrations");
 					break;
 			}
 		}
@@ -89,7 +95,7 @@ public partial class RpcWebServer:WebBase{
 
 		var rpcJs="rpc.js";
 		if(args.Length>1) rpcJs=args[1];
-		else await DownloadRpcJs(false);
+		else _=DownloadRpcJs(false).TryCatch();
 
 		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN")??null;
 
@@ -117,8 +123,10 @@ public partial class RpcWebServer:WebBase{
 
 
 		if(await session.CreateWebSocket() is{} webSocket){
-			await using var connection=new ServerConnectionWebSocket(webSocket);
-			Console.WriteLine($"{connection} connected");
+			await using var connection=new ServerConnectionWebSocket(webSocket,session.Args);
+			string types;
+			lock(RpcServer.Types) types=connection.Types.Select(t=>$"\"{t}\"").Join(",");
+			Console.WriteLine($"{connection} connected (Types: "+types+")");
 			try{
 				await connection.ReceiveLoop();
 			} finally{
@@ -130,10 +138,10 @@ public partial class RpcWebServer:WebBase{
 		if(rawUrl.EndsWith("/")) rawUrl=rawUrl.TrimEnd('/');
 
 		if(rawUrl.StartsWith("/rpc/")){
-			var emptyResponse=rawUrl.EndsWith("/void");
-			if(emptyResponse) rawUrl=rawUrl.Substring(0,rawUrl.Length-"/void".Length);
-
 			var s=Uri.UnescapeDataString(rawUrl.Substring("/rpc/".Length));
+
+			var voidResponse=s.EndsWith("/void");
+			if(voidResponse) s=s.Substring(0,s.Length-"/void".Length);
 
 			try{
 				s=await Rpc.Eval(s);
@@ -147,7 +155,7 @@ public partial class RpcWebServer:WebBase{
 				             .Send();
 				return;
 			}
-			if(emptyResponse)
+			if(voidResponse)
 				await session.Send.Begin(204);
 			else
 				await session.Send

@@ -51,7 +51,7 @@ public abstract class ObjectTemplate{
 		return o;
 	}
 
-	private bool TrySetProperty(string key,object? value){
+	private protected virtual bool TrySetProperty(string key,object? value){
 		var field=GetType().GetField(key);
 		field??=GetType().GetField(key,BindingFlags.IgnoreCase);
 
@@ -66,7 +66,7 @@ public abstract class ObjectTemplate{
 		return true;
 	}
 
-	internal IEnumerable<(string key,object? value)> GetProperties(){
+	protected internal virtual IEnumerable<(string key,object? value)> GetProperties(){
 		foreach(var field in GetType().GetFields()){
 			if(field.IsStatic) continue;
 			if(field.IsPrivate) continue;

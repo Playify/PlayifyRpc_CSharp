@@ -25,9 +25,11 @@ public static partial class StaticallyTypedUtils{
 			                                 BindingFlags.Public|
 			                                 BindingFlags.NonPublic|
 			                                 BindingFlags.OptionalParamBinding|
-			                                 BindingFlags.FlattenHierarchy|
 			                                 BindingFlags.Static|
-			                                 (instance!=null?BindingFlags.Instance:0),
+			                                 (instance!=null
+				                                  ?BindingFlags.FlattenHierarchy|
+				                                   BindingFlags.Instance
+				                                  :0),
 			                                 DynamicBinder.Instance,
 			                                 instance,
 			                                 args);
@@ -50,4 +52,16 @@ public static partial class StaticallyTypedUtils{
 			   .GetInterface("Microsoft.CSharp.RuntimeBinder.ICSharpInvokeOrInvokeMemberBinder")
 			   ?.GetProperty("TypeArguments")
 			   ?.GetValue(binder,null) as IList<Type>;
+
+	public static ValueTask<string[]> GetMembers(Type type,object? instance){
+		var members=type.GetMethods(BindingFlags.InvokeMethod|
+		                            BindingFlags.IgnoreCase|
+		                            BindingFlags.Public|
+		                            BindingFlags.OptionalParamBinding|
+		                            BindingFlags.Static|
+		                            (instance!=null?BindingFlags.Instance:0));
+
+
+		return new ValueTask<string[]>(members.Where(m=>m.DeclaringType!=typeof(object)).Select(m=>m.Name).ToArray());
+	}
 }

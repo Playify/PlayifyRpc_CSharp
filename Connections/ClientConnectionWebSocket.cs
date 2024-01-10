@@ -1,4 +1,6 @@
 using System.Collections.Specialized;
+using System.Net;
+using PlayifyRpc.Internal;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Web;
 
@@ -30,11 +32,20 @@ internal class ClientConnectionWebSocket:ClientConnection{
 		StartConnect(false);
 		while(true)
 			try{
+				var reportedName=Rpc.NameOrId;
+				var reportedTypes=new HashSet<string>();
+				lock(RegisteredTypes.Registered) reportedTypes.UnionWith(RegisteredTypes.Registered.Keys);
+
+				var query=reportedTypes.Aggregate(
+					"name="+WebUtility.UrlEncode(reportedName),
+					(q,type)=>q+"&type="+WebUtility.UrlEncode(type));
+				uri=new UriBuilder(uri){Query=query}.Uri;
+
 				await using var connection=new ClientConnectionWebSocket(await WebSocket.CreateWebSocketTo(uri,headers));
 				Console.WriteLine("Connected to RPC");
 				var loop=connection.ReceiveLoop();//receive loop must start before, otherwise a deadlock would occur, because no answers can be received
 
-				await DoConnect(connection);
+				await DoConnect(connection,reportedName,reportedTypes);
 
 				await loop;
 

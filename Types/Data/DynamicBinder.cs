@@ -29,7 +29,8 @@ public class DynamicBinder:Binder{
 		ParameterModifier[]? modifiers,CultureInfo? cultureInfo,string[]? names,out object? state){
 		if(match==null||match.Length==0) throw new ArgumentException(nameof(match));
 
-		MethodBase?[] candidates=(MethodBase[])match.Clone();
+		MethodBase?[] candidates=match.Where(m=>m.DeclaringType!=typeof(object)).ToArray();//effectively clones array as well
+		if(candidates.Length==0) throw new MissingMethodException("Method was declared by object class, therefore not accessible via rpc");
 
 
 		int i;

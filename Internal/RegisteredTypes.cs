@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types;
+using PlayifyRpc.Types.Functions;
 
 namespace PlayifyRpc.Internal;
 
@@ -34,7 +35,7 @@ internal static class RegisteredTypes{
 			if(Registered.ContainsKey(type)) return;
 			else Registered.Add(type,invoker);
 		try{
-			if(Rpc.IsConnected) await Rpc.CallFunction(null,"+",type);
+			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"+",type);
 		} catch(Exception e){
 			Console.WriteLine(e);
 		}
@@ -45,7 +46,7 @@ internal static class RegisteredTypes{
 			if(!Registered.ContainsKey(type))
 				return;
 		try{
-			if(Rpc.IsConnected) await Rpc.CallFunction(null,"-",type);
+			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"-",type);
 		} catch(Exception e){
 			Console.WriteLine(e);
 		} finally{
@@ -56,7 +57,7 @@ internal static class RegisteredTypes{
 	internal static async Task SetName(string? name){
 		Name=name;
 		try{
-			if(Rpc.IsConnected) await Rpc.CallFunction(null,"N",Rpc.NameOrId);
+			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"N",Rpc.NameOrId);
 		} catch(Exception e){
 			Console.WriteLine(e);
 		}
