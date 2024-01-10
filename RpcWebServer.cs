@@ -179,7 +179,24 @@ public partial class RpcWebServer:WebBase{
 			case "/rpc":
 			case "/rpc.html":
 				await session.Send.Document()
-				             .Set("<title>RPC Test</title><script type=\"module\" src=\"/rpc.js\"></script>")
+				             .Set("<title>RPC Test</title><script type=\"module\" src=\"/rpc.js\"></script>\n"+
+				                  "<input type=\"text\" value=\"Rpc.getRegistrations()\" style=\"width:100%\"/>\n"+
+				                  "<pre></pre>\n"+
+				                  "<script>const input=document.querySelector('input');const pre=document.querySelector('pre')let curr=0;\n"+
+				                  "input.addEventListener(\"keydown\",async e=>{\n"+
+				                  " if(e.key!='Enter') return;\n"+
+				                  "  try{\n"+
+				                  "    pre.style.color='blue';\n"+
+				                  "    const now=++curr;\n"+
+				                  "    pre.textContent=await Rpc.eval(input.value);\n"+
+				                  "    if(now!=curr) return;//Don't update if another call was started just now\n"+
+				                  "    pre.style.color='green';\n"+
+				                  "   }catch(e){\n"+
+				                  "    pre.textContent=''+e;\n"+
+				                  "    pre.style.color='red';\n"+
+				                  "   }\n"+
+				                  "  });\n"+
+				                  "</script>")
 				             .Send();
 				return;
 			default:
