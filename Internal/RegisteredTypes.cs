@@ -37,7 +37,11 @@ internal static class RegisteredTypes{
 		try{
 			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"+",type);
 		} catch(Exception e){
-			Console.WriteLine(e);
+			Console.Error.WriteLine(e);
+
+			lock(Registered)
+				if(Registered.TryGetValue(type,out var revert)&&revert==invoker)
+					Registered.Remove(type);
 		}
 	}
 
@@ -48,7 +52,9 @@ internal static class RegisteredTypes{
 		try{
 			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"-",type);
 		} catch(Exception e){
-			Console.WriteLine(e);
+			Console.Error.WriteLine(e);
+
+			//Also delete locally, as it won't be listened to, and on the server it probably is already unregistered
 		} finally{
 			lock(Registered) Registered.Remove(type);
 		}

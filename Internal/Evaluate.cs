@@ -20,7 +20,16 @@ internal static class Evaluate{
 
 	public static async Task<object?> EvalAny(string s){
 		var bracket=s.IndexOf('(');
-		if(bracket==-1) throw new FormatException("No opening bracket");
+		if(bracket==-1){
+			if(s=="")
+				return await Rpc.GetAllTypes();
+			if(s.EndsWith("."))
+				return await Rpc.CreateObject(s.Substring(0,s.Length-1)).GetMethods();
+			if(s.EndsWith("?"))
+				return await Rpc.CreateObject(s.Substring(0,s.Length-1)).Exists();
+
+			throw new FormatException("No opening bracket");
+		}
 		if(!s.EndsWith(")")) throw new FormatException("No closing bracket");
 		var dot=s.LastIndexOf('.',bracket,bracket);
 		if(dot==-1) throw new FormatException("No dot");

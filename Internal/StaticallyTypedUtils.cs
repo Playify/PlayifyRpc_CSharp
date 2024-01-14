@@ -34,7 +34,7 @@ public static partial class StaticallyTypedUtils{
 			                                 instance,
 			                                 args);
 		} catch(TargetInvocationException e){
-			throw e.Rethrow();
+			throw (e.InnerException??e).Rethrow();
 		} catch(MissingMethodException){
 			throw new MissingMethodException($"Unknown Method on type {type??"null"} : {instanceType.FullName}.{method}({args.Select(a=>a?.GetType().Name??"null").Join(",")})");
 		}

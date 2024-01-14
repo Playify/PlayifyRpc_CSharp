@@ -182,7 +182,7 @@ public partial class RpcWebServer:WebBase{
 				             .Set("<title>RPC Test</title><script type=\"module\" src=\"/rpc.js\"></script>\n"+
 				                  "<input type=\"text\" value=\"Rpc.getRegistrations()\" style=\"width:100%\"/>\n"+
 				                  "<pre></pre>\n"+
-				                  "<script>const input=document.querySelector('input');const pre=document.querySelector('pre')let curr=0;\n"+
+				                  "<script>var input=document.querySelector('input'),pre=document.querySelector('pre'),curr=0;\n"+
 				                  "input.addEventListener(\"keydown\",async e=>{\n"+
 				                  " if(e.key!='Enter') return;\n"+
 				                  "  try{\n"+

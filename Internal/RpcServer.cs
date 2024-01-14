@@ -64,7 +64,7 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	#endregion
 
 	#region Test functions
-	public static void Void(object? o){}
+	public static void Void(params object?[] o){}
 
 	public static object? Return(object? o)=>o;
 	public static object?[] ReturnArguments(params object?[] o)=>o;
