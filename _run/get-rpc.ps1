@@ -35,7 +35,7 @@ if not exist "%~dp0PlayifyRpc.dll" (
 dotnet "%~dp0PlayifyRpc.dll" %*
 '@
 
-Set-Content -Path "rpc.sh" -Value (@'
+Set-Content -NoNewline -Path "rpc.sh" -Value (@'
 #!/bin/bash
 
 if ! command -v dotnet &> /dev/null; then

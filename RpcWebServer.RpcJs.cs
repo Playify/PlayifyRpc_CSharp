@@ -9,10 +9,7 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc;
 
 public partial class RpcWebServer{
-	public static async Task DownloadRpcJs(bool overwrite){
-		if(File.Exists("rpc.js")&&!overwrite) return;
-
-
+	public static async Task DownloadRpcJs(){
 		string tarballFile;
 #pragma warning disable SYSLIB0014
 		using(var client=new WebClient()){

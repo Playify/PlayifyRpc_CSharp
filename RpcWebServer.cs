@@ -66,7 +66,7 @@ public partial class RpcWebServer:WebBase{
 
 	[PublicAPI]
 	public static async Task RunWebServer(IPEndPoint endPoint,string rpcJs,string? rpcToken){
-		if(rpcToken==null) Console.WriteLine("RPC_TOKEN is not defined, connections will be not secure");
+		if(rpcToken==null) Console.WriteLine("RPC_TOKEN is not defined, connections will not be secure");
 		var server=new RpcWebServer(rpcJs,rpcToken);
 		var task=server.RunHttp(endPoint);
 
@@ -77,10 +77,10 @@ public partial class RpcWebServer:WebBase{
 
 	internal static async Task Main(string[] args){
 		if(args.Length!=0&&args[0]=="help"){
-			Console.WriteLine("use args: [IP:Port or Port] [rpc.js path] [rpcToken]");
+			Console.WriteLine("use args: [IP:Port or Port] [rpcToken] [rpc.js path]");
 			Console.WriteLine("default port: 4590");
-			Console.WriteLine("rpc.js path if omitted will download when the file doesn't exist");
 			Console.WriteLine("rpcToken will be used from RPC_TOKEN environment variable");
+			Console.WriteLine("rpc.js path if omitted will download when the file doesn't exist");
 			return;
 		}
 		const int defaultPort=4590;
@@ -93,11 +93,11 @@ public partial class RpcWebServer:WebBase{
 			               }
 			               :new IPEndPoint(IPAddress.Any,defaultPort);
 
-		var rpcJs="rpc.js";
-		if(args.Length>1) rpcJs=args[1];
-		else _=DownloadRpcJs(false).TryCatch();
+		var rpcToken=args.Length>1?args[1]:Environment.GetEnvironmentVariable("RPC_TOKEN")??null;
 
-		var rpcToken=args.Length>2?args[2]:Environment.GetEnvironmentVariable("RPC_TOKEN")??null;
+		var rpcJs="rpc.js";
+		if(args.Length>2) rpcJs=args[2];
+		else if(!File.Exists("rpc.js")) _=DownloadRpcJs().TryCatch();
 
 		RunConsoleThread();
 		try{
