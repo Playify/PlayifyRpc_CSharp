@@ -122,15 +122,34 @@ public partial class RpcWebServer:WebBase{
 		}
 
 
-		if(await session.CreateWebSocket() is{} webSocket){
-			await using var connection=new ServerConnectionWebSocket(webSocket,session.Args);
-			string types;
-			lock(RpcServer.Types) types=connection.Types.Select(t=>$"\"{t}\"").Join(",");
-			Console.WriteLine($"{connection} connected (Types: "+types+")");
+		if(session.WantsWebSocket()){
+			var tcs=new TaskCompletionSource<WebSocket>();
+			ServerConnectionWebSocket connection;
 			try{
+				connection=new ServerConnectionWebSocket(tcs.Task,session.Args);
+				tcs.TrySetResult((await session.CreateWebSocket())!);
+			} catch(Exception e){
+				tcs.TrySetException(e);
+				await session.Send
+				             .Cache(false)
+				             .Document()
+				             .Code(500)
+				             .MimeType("text/plain")
+				             .Set(e.ToString())
+				             .Send();
+				return;
+			}
+			try{
+
+				string types;
+				lock(RpcServer.Types) types=connection.Types.Select(t=>$"\"{t}\"").Join(",");
+				Console.WriteLine($"{connection} connected (Types: "+types+")");
+
 				await connection.ReceiveLoop();
 			} finally{
 				Console.WriteLine($"{connection} disconnected");
+
+				await connection.DisposeAsync();
 			}
 			return;
 		}

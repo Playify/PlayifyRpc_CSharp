@@ -5,22 +5,22 @@ using PlayifyUtility.Web;
 namespace PlayifyRpc.Connections;
 
 public class ServerConnectionWebSocket:ServerConnection{
-	private readonly WebSocket _webSocket;
+	private readonly Task<WebSocket> _webSocket;
 
-	public ServerConnectionWebSocket(WebSocket webSocket,NameValueCollection query){
+	public ServerConnectionWebSocket(Task<WebSocket> webSocket,NameValueCollection query){
 		_webSocket=webSocket;
 		foreach(var name in query.GetValues("name")??Array.Empty<string>())
 			SetName(name);
 		Register(query.GetValues("type")??Array.Empty<string>(),false);
 	}
 
-	protected internal override Task SendRaw(DataOutputBuff buff){
+	protected internal override async Task SendRaw(DataOutputBuff buff){
 		var (b,len)=buff.GetBufferAndLength();
-		return _webSocket.Send(b,0,len);
+		await (await _webSocket).Send(b,0,len);
 	}
 
 	public async Task ReceiveLoop(){
-		await foreach(var (s,b) in _webSocket)
+		await foreach(var (s,b) in await _webSocket)
 			if(s!=null) Console.WriteLine($"{this}: {s}");
 			else _=Receive(new DataInputBuff(b)).ConfigureAwait(false);
 	}
