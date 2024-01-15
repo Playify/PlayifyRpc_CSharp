@@ -34,3 +34,21 @@ if not exist "%~dp0PlayifyRpc.dll" (
 
 dotnet "%~dp0PlayifyRpc.dll" %*
 '@
+
+Set-Content -Path "rpc.sh" -Value (@'
+#!/bin/bash
+
+if ! command -v dotnet &> /dev/null; then
+  echo "dotnet command not found. Please make sure .NET Core SDK is installed."
+  exit 1
+fi
+
+dll_path="$( cd "$( dirname "$0" )" && pwd )/PlayifyRpc.dll"
+
+if [ ! -f "$dll_path" ]; then
+  echo "Error: PlayifyRpc.dll not found in the current directory."
+  exit 1
+fi
+
+dotnet "$dll_path" "$@"
+'@ -replace "`r`n", "`n")

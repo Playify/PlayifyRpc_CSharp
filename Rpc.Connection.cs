@@ -11,6 +11,8 @@ public static partial class Rpc{
 
 	public static void ConnectLoopback()=>_=ServerConnectionLoopbackClient.Connect().Catch(Console.Error.WriteLine);
 
+	public static void Connect()=>Connect(new Uri(Environment.GetEnvironmentVariable("RPC_URL")??throw new ArgumentException("Environment variable RPC_URL is not defined")),Environment.GetEnvironmentVariable("RPC_TOKEN"));
+
 	public static void Connect(Uri uri)=>Connect(uri,Environment.GetEnvironmentVariable("RPC_TOKEN"));
 
 	public static void Connect(Uri uri,string? token)

@@ -38,5 +38,14 @@ fi
 
 dotnet "$dll_path" "$@"
 __SCRIPT__
+cat > "rpc.bat"<<'__SCRIPT__'
+@echo off
+if not exist "%~dp0PlayifyRpc.dll" (
+	echo Error: PlayifyRpc.dll not found in the script directory.
+	exit /b 1
+)
+
+dotnet "%~dp0PlayifyRpc.dll" %*
+__SCRIPT__
 
 chmod +x rpc.sh
