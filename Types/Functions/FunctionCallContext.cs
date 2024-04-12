@@ -3,6 +3,8 @@ using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Exceptions;
+using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Streams.Data;
 
 namespace PlayifyRpc.Types.Functions;
@@ -73,7 +75,7 @@ public class FunctionCallContext:SendReceive{
 
 		var connection=ClientConnection.Instance;
 		if(connection==null||(type!=null&&!Rpc.IsConnected)){
-			call.Reject(new Exception("Not connected"));
+			call.Reject(new RpcConnectionException("Not connected",false));
 			return call;
 		}
 		truth.SendFunc=msgArgs=>{
@@ -101,13 +103,38 @@ public class FunctionCallContext:SendReceive{
 		return call;
 	}
 
+	internal static void RunWithContext(Action func,FunctionCallContext context)
+		=>RunWithContext<VoidType>(()=>{
+			func();
+			return default;
+		},context);
+
 	internal static T RunWithContext<T>(Func<T> func,FunctionCallContext context){
+		var old=ThreadLocal.Value;
 		ThreadLocal.Value=context;
 		try{
 			return func();
 		} finally{
-			ThreadLocal.Value=null;
+			ThreadLocal.Value=old;
 		}
+	}
+
+	internal static async Task<object?> RunWithContextAsync(Func<object?> func,FunctionCallContext context,string? type,string? method,object?[]? args){
+#pragma warning disable CS1998// Async method lacks 'await' operators and will run synchronously
+		object? result=System.Threading.Tasks.Task.Run(async ()=>RunWithContext(func,context));
+#pragma warning restore CS1998// Async method lacks 'await' operators and will run synchronously
+		while(result is Task task){
+			try{
+				await task;
+			} catch(Exception e){
+				//throw RpcException.Wrap(e,MethodBase.GetCurrentMethod(),type,method,args);
+				throw RpcException.Convert(e,true).Append(type,method,args);
+			}
+			result=result.GetType().GetProperty("Result")?.GetValue(result);
+			if(result is VoidType) result=null;
+			else if(result?.GetType().FullName=="System.Threading.Tasks.VoidTaskResult") result=null;
+		}
+		return result;
 	}
 
 	public static FunctionCallContext GetContext()=>ThreadLocal.Value??throw new InvalidOperationException("FunctionCallContext not available");

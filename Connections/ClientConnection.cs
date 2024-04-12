@@ -1,6 +1,8 @@
-﻿using PlayifyRpc.Internal;
+﻿using System.Net;
+using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
@@ -11,7 +13,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	internal static ClientConnection? Instance{get;private set;}
 	private static TaskCompletionSource? _tcs;
 	private static TaskCompletionSource? _tcsOnce;
-	internal static Task WaitUntilConnectedOnce=>_tcsOnce?.Task??Task.FromException(new Exception("Not yet started"));
+	internal static Task WaitUntilConnectedOnce=>_tcsOnce?.Task??Task.FromException(new RpcConnectionException("Not yet started to connect",false));
 
 	internal static Task WaitUntilConnectedLooping=>(_tcs??=new TaskCompletionSource()).Task;
 
@@ -20,7 +22,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 
 	protected static void StartConnect(bool reconnect){
-		if(!reconnect&&_tcsOnce!=null) throw new Exception("Already connected");
+		if(!reconnect&&_tcsOnce!=null) throw new RpcConnectionException("Already connected",false);
 		_tcsOnce=new TaskCompletionSource();
 	}
 
@@ -77,11 +79,12 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				try{
 					var type=data.ReadString();
 
-					if(type==null) throw new Exception("Client can't use null as a type for function calls");
+					if(type==null)
+						throw new RpcTypeNotFoundException(null);
 					Invoker? local;
 					lock(RegisteredTypes.Registered)
 						if(!RegisteredTypes.Registered.TryGetValue(type,out local))
-							throw new Exception($"Type \"{type}\" is not registered on client {Rpc.NameOrId}");
+							throw new RpcTypeNotFoundException(type);
 
 					var method=data.ReadString();
 
@@ -104,8 +107,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 					                                    tcs);
 					lock(_currentlyExecuting) _currentlyExecuting.Add(callId,context);
 
-					var invokeResult=FunctionCallContext.RunWithContext(()=>local.Invoke(type,method,args),context);
-					var result=await StaticallyTypedUtils.UnwrapTask(invokeResult);
+					var result=await FunctionCallContext.RunWithContextAsync(()=>local.Invoke(type,method,args),context,type,method,args);
 					tcs.TrySetResult(result);
 					await Resolve(callId,result);
 				} catch(Exception e){
@@ -185,7 +187,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				pending.DoReceiveMessage(args);
 				break;
 			}
-			default:throw new ArgumentOutOfRangeException();
+			default:throw new ProtocolViolationException("Received invalid rpc-packet");
 		}
 	}
 
@@ -194,7 +196,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 		lock(_activeRequests)
 			if(_activeRequests.Count!=0){
-				var exception=new Exception("Websocket closed");
+				var exception=new RpcConnectionException("Websocket closed",false);
 				foreach(var pending in _activeRequests.Values) pending.Reject(exception);
 				_activeRequests.Clear();
 			}

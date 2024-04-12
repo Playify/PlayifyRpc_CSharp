@@ -55,7 +55,7 @@ public class RpcListener<T>{
 
 		_value=disconnect(null);
 
-		Run().TryCatch();
+		Run().Background();
 		return;
 
 		async Task Run(){

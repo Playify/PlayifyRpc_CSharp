@@ -1,46 +1,11 @@
 ﻿using System.Dynamic;
 using System.Reflection;
-using PlayifyRpc.Types.Data;
-using PlayifyUtility.HelperClasses;
+using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
 public static partial class StaticallyTypedUtils{
-	public static async Task<object?> UnwrapTask(object? result){
-		while(result is Task task){
-			await task;
-			result=result.GetType().GetProperty("Result")?.GetValue(result);
-			if(result is VoidType) result=null;
-			if(result?.GetType().FullName=="System.Threading.Tasks.VoidTaskResult") result=null;
-		}
-		return result;
-	}
-
-	internal static object? InvokeMember(Type instanceType,object? instance,string? type,string method,object?[] args){
-		try{
-			return instanceType.InvokeMember(method,
-			                                 BindingFlags.InvokeMethod|
-			                                 BindingFlags.IgnoreCase|
-			                                 BindingFlags.Public|
-			                                 BindingFlags.NonPublic|
-			                                 BindingFlags.OptionalParamBinding|
-			                                 BindingFlags.Static|
-			                                 (instance!=null
-				                                  ?BindingFlags.FlattenHierarchy|
-				                                   BindingFlags.Instance
-				                                  :0),
-			                                 DynamicBinder.Instance,
-			                                 instance,
-			                                 args);
-		} catch(TargetInvocationException e){
-			throw (e.InnerException??e).Rethrow();
-		} catch(MissingMethodException){
-			throw new MissingMethodException($"Unknown Method on type {type??"null"} : {instanceType.FullName}.{method}({args.Select(a=>a?.GetType().Name??"null").Join(",")})");
-		}
-	}
-
-
 	internal static IList<Type>? GetGenericTypeArguments(InvokeMemberBinder binder)
 		=>Type.GetType("Mono.Runtime")!=null
 			  ?binder
@@ -53,15 +18,29 @@ public static partial class StaticallyTypedUtils{
 			   ?.GetProperty("TypeArguments")
 			   ?.GetValue(binder,null) as IList<Type>;
 
-	public static ValueTask<string[]> GetMembers(Type type,object? instance){
-		var members=type.GetMethods(BindingFlags.InvokeMethod|
-		                            BindingFlags.IgnoreCase|
-		                            BindingFlags.Public|
-		                            BindingFlags.OptionalParamBinding|
-		                            BindingFlags.Static|
-		                            (instance!=null?BindingFlags.Instance:0));
+	public static string Stringify(object? result,bool pretty){
+		if(TryCast<Json>(result,out var json)) return json.ToString(pretty?"\t":null);
+		if(TryCast<string>(result,out var s)) return s;
 
+		return result switch{
+			ExpandoObject expando when !expando.Any()=>"{}",
+			ExpandoObject expando when pretty=>("{\n"+expando
+			                                          .Select(pair=>JsonString.Escape(pair.Key)+":"+Stringify(pair.Value,true))
+			                                          .Join(",\n")
+			                                   ).Replace("\n","\n\t")+"\n}",
+			ExpandoObject expando=>"{"+expando
+			                           .Select(pair=>JsonString.Escape(pair.Key)+":"+Stringify(pair.Value,false))
+			                           .Join(",")+"}",
+			Array{Length: 0}=>"[]",
+			Array array when pretty=>("[\n"+array.Cast<object?>().Select(o=>Stringify(o,true))
+			                                     .Join(",\n")
+			                         ).Replace("\n","\n\t")+"\n]",
+			Array array=>"["+array.Cast<object?>().Select(o=>Stringify(o,false))
+			                      .Join(",")+"]",
+			null=>"null",
+			float.NaN or double.NaN=>"NaN",
+			_=>result.ToString()??"",
+		};
 
-		return new ValueTask<string[]>(members.Where(m=>m.DeclaringType!=typeof(object)).Select(m=>m.Name).ToArray());
 	}
 }

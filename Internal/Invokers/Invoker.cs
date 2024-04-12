@@ -1,4 +1,7 @@
+using System.Reflection;
 using JetBrains.Annotations;
+using PlayifyRpc.Types;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
@@ -8,9 +11,11 @@ namespace PlayifyRpc.Internal.Invokers;
 public abstract class Invoker{
 	protected internal object? Invoke(string? type,string? method,object?[] args){
 		if(method!=null) return DynamicInvoke(type,method,args);
+
+		//Meta calls, using null as method
 		return (args.Length==0?null:args[0]) switch{
 			"M"=>GetMethods().Push(out var valueTask).IsCompletedSuccessfully?valueTask.Result:valueTask.AsTask(),
-			_=>throw new ArgumentException("Invalid meta-call"),
+			var meta=>throw new RpcMetaMethodNotFoundException(type,meta?.ToString()),
 		};
 	}
 
@@ -18,13 +23,23 @@ public abstract class Invoker{
 	protected abstract ValueTask<string[]> GetMethods();
 
 
-	public PendingCall Call(string type,string? method,object?[] args)=>CallLocal(type,method,()=>Invoke(type,method,args));
+	public PendingCall Call(string type,string? method,object?[] args)=>CallLocal(()=>Invoke(type,method,args),type,method,args);
 	public PendingCall<T> Call<T>(string type,string method,object?[] args)=>Call(type,method,args).Cast<T>();
 
-	public static PendingCall CallLocal(Func<object?> a)=>CallLocal(null,null,a);
+	public static PendingCall CallLocal(Action a)
+		=>CallLocal(()=>{
+			try{
+				a();
+			} catch(Exception e){
+				throw RpcException.Convert(e,true).Remove(MethodBase.GetCurrentMethod());
+			}
+			return null;
+		});
+
+	public static PendingCall CallLocal(Func<object?> a)=>CallLocal(a,null,null,null);
 	public static PendingCall<T> CallLocal<T>(Func<object?> a)=>CallLocal(a).Cast<T>();
 
-	private static PendingCall CallLocal(string? type,string? method,Func<object?> a){
+	private static PendingCall CallLocal(Func<object?> a,string? type,string? method,object?[]? args){
 		var truth=new PendingCallRawData();
 		var context=new FunctionCallContext(type,
 		                                    method,
@@ -37,15 +52,16 @@ public abstract class Invoker{
 
 		var call=new PendingCall<object?>(truth);
 
-		try{
-			var invokeResult=FunctionCallContext.RunWithContext(a,context);
+		var task=FunctionCallContext.RunWithContextAsync(a,context,type,method,args);
+		TaskToCall(task,call).Background();
+		return call;
+	}
 
-			StaticallyTypedUtils.UnwrapTask(invokeResult)
-			                    .Then(res=>call.Resolve(res))
-			                    .Catch(e=>call.Reject(e));
+	internal static async Task TaskToCall(Task<object?> task,PendingCall call){
+		try{
+			call.Resolve(await task);
 		} catch(Exception e){
 			call.Reject(e);
 		}
-		return call;
 	}
 }

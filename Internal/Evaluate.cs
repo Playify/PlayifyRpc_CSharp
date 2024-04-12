@@ -1,10 +1,18 @@
-using System.Dynamic;
 using JetBrains.Annotations;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Jsons;
-using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
+/**
+ * Allows parsing strings as rpc-calls
+ *
+ * Type.method(arg1,arg2) => will call the function
+ * Type. => will get all methods on the type
+ * Type? => will check if the type exists
+ *
+ * arguments should be Json
+ */
 [PublicAPI]
 internal static class Evaluate{
 	private static readonly object NoValue=new();
@@ -28,11 +36,11 @@ internal static class Evaluate{
 			if(s.EndsWith("?"))
 				return await Rpc.CreateObject(s.Substring(0,s.Length-1)).Exists();
 
-			throw new FormatException("No opening bracket");
+			throw new RpcEvalException("No opening bracket");
 		}
-		if(!s.EndsWith(")")) throw new FormatException("No closing bracket");
+		if(!s.EndsWith(")")) throw new RpcEvalException("No closing bracket");
 		var dot=s.LastIndexOf('.',bracket,bracket);
-		if(dot==-1) throw new FormatException("No dot");
+		if(dot==-1) throw new RpcEvalException("No dot");
 
 		var type=s.Substring(0,dot);
 		var method=s.Substring(dot+1,bracket-dot-1);
@@ -49,35 +57,12 @@ internal static class Evaluate{
 				if(i<argsStrings.Length){
 					argString+=","+argsStrings[i++];
 					obj=ParseParameter(argString.Trim());
-				} else throw new FormatException("Error parsing arguments");
+				} else throw new RpcEvalException("Error parsing arguments");
 			args.Add(obj);
 		}
 		return await Rpc.CallFunction(type,method,args.ToArray());
 	}
 
-	public static async Task<string> Eval(string s)=>Stringify(await EvalAny(s));
+	public static async Task<string> Eval(string s,bool pretty)=>StaticallyTypedUtils.Stringify(await EvalAny(s),pretty);
 
-	private static string Stringify(object? result){
-
-		if(StaticallyTypedUtils.TryCast<Json>(result,out var json))
-			return json.ToString("\t");
-
-		return result switch{
-			ExpandoObject expando when !expando.Any()=>"{}",
-			ExpandoObject expando=>(
-				                       "{\n"+expando
-				                             .Select(pair=>JsonString.Escape(pair.Key)+":"+Stringify(pair.Value))
-				                             .Join(",\n")
-			                       ).Replace("\n","\n\t")+"\n}",
-			Array{Length: 0}=>"[]",
-			Array array=>("[\n"+array.Cast<object?>().Select(Stringify)
-			                         .Join(",\n")).Replace("\n","\n\t")+"\n]",
-			_=>result switch{
-				null=>"null",
-				float.NaN or double.NaN=>"NaN",
-				_=>$"{result}",
-			},
-		};
-
-	}
 }

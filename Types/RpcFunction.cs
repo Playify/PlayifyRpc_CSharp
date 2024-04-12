@@ -42,7 +42,7 @@ public readonly struct RpcFunction{
 	}
 
 	public static void UnregisterFunction(RpcFunction func){
-		if(func.Type!=RegisteredTypeName) throw new Exception("Can't unregister RemoteFunction, that was not registered locally");
+		if(func.Type!=RegisteredTypeName) throw new ArgumentException("Can't unregister RemoteFunction, that was not registered locally");
 		lock(StringToFunc)
 			if(StringToFunc.Remove(func.Method,out var del))
 				FuncToString.Remove(del);

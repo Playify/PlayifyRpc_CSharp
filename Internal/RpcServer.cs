@@ -54,7 +54,7 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 		return call;
 	}
 
-	public static Task<string> Eval(string expression)=>Evaluate.Eval(expression);
+	public static Task<string> Eval(string expression,bool pretty=true)=>Evaluate.Eval(expression,pretty);
 	public static Task<object?> EvalAny(string expression)=>Evaluate.EvalAny(expression);
 	#endregion
 

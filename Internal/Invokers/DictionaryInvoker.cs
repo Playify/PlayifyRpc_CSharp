@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Reflection;
 using JetBrains.Annotations;
+using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Exceptions;
 
 namespace PlayifyRpc.Internal.Invokers;
 
@@ -17,14 +19,18 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 	IEnumerator IEnumerable.GetEnumerator()=>Dictionary.GetEnumerator();
 
 	protected override object? DynamicInvoke(string? type,string method,object?[] args){
-		if(!Dictionary.TryGetValue(method,out var func)) throw new Exception($"Method \"{method}\" not found in \"{type}\"");
-		return func.Method.Invoke(func.Target,
-		                          BindingFlags.OptionalParamBinding|
-		                          BindingFlags.FlattenHierarchy|
-		                          BindingFlags.InvokeMethod,
-		                          DynamicBinder.Instance,
-		                          args,
-		                          null!);
+		if(!Dictionary.TryGetValue(method,out var func)) throw new RpcMethodNotFoundException(type,method);
+		try{
+			return func.Method.Invoke(func.Target,
+			                          BindingFlags.OptionalParamBinding|
+			                          BindingFlags.FlattenHierarchy|
+			                          BindingFlags.InvokeMethod,
+			                          DynamicBinder.Instance,
+			                          args,
+			                          null!);
+		} catch(TargetInvocationException e){
+			throw RpcException.Convert(e.InnerException??e,true);
+		}
 	}
 
 	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());

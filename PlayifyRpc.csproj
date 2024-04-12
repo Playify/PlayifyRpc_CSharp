@@ -21,12 +21,16 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=.../PlayifyRpc_CSharp/</PathMap>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">
         <Using Remove="System.Net.Http" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="PlayifyUtility" Version="1.1.3" />
+        <PackageReference Include="PlayifyUtility" Version="1.2.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -44,6 +48,15 @@
         </Compile>
         <Compile Update="RpcWebServer.RpcJs.cs">
             <DependentUpon>RpcWebServer.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Types\RpcException.Data.cs">
+            <DependentUpon>RpcException.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Types\RpcException.Attribute.cs">
+            <DependentUpon>RpcException.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Types\RpcException.Extensions.cs">
+            <DependentUpon>RpcException.cs</DependentUpon>
         </Compile>
     </ItemGroup>
 </Project>

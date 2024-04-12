@@ -11,6 +11,7 @@ public class ProxyInvoker:Invoker{
 	public ProxyInvoker(Func<Task<RpcObject>> @object)=>_object=@object;
 	public ProxyInvoker(Func<RpcObject> @object)=>_object=()=>Task.Run(@object);
 
+	//TODO remove from RpcException stacktrace
 	protected override object DynamicInvoke(string? type,string method,object?[] args){
 		var ctx=Rpc.GetContext();
 		return _object().ThenAsync(o=>{

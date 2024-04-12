@@ -9,9 +9,11 @@ $null=New-Item -ItemType Directory -Path $tempFolder -Force
 Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/PlayifyRpc" -OutFile "$tempFolder\PlayifyRpc.zip"
 Expand-Archive -Path "$tempFolder\PlayifyRpc.zip" -DestinationPath $tempFolder -Force
 Copy-Item -Path "$tempFolder\lib/net6.0/PlayifyRpc.dll" -Destination . -Force
+Copy-Item -Path "$tempFolder\lib/net6.0/PlayifyRpc.runtimeconfig.json" -Destination . -Force
+$pu_version=Get-Content "$tempFolder\PlayifyRpc.nuspec" | Select-String -Pattern '<dependency id="PlayifyUtility" version="([^"]*)"' | Select-Object -Last 1 | ForEach-Object { $_.Matches.Groups[1].Value }
 
 # Download PlayifyUtility
-Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/PlayifyUtility" -OutFile "$tempFolder\PlayifyUtility.zip"
+Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/PlayifyUtility/$pu_version" -OutFile "$tempFolder\PlayifyUtility.zip"
 Expand-Archive -Path "$tempFolder\PlayifyUtility.zip" -DestinationPath $tempFolder -Force
 Copy-Item -Path "$tempFolder\lib/net6.0/PlayifyUtility.dll" -Destination . -Force
 
@@ -24,7 +26,6 @@ tar -xzf "$tempFolder\playify-rpc.tgz" --strip-components=2 -C . package/dist/
 Remove-Item $tempFolder -Recurse -Force
 
 # Make executable
-Set-Content -Path "PlayifyRpc.runtimeconfig.json" -Value '{"runtimeOptions":{"tfm":"net6.0","framework":{"name":"Microsoft.NETCore.App","version":"6.0.0"}}}' -NoNewline -Encoding UTF8
 Set-Content -Path "rpc.bat" -Value @'
 @echo off
 if not exist "%~dp0PlayifyRpc.dll" (

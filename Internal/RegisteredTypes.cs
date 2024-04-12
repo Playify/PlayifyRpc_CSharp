@@ -32,7 +32,7 @@ internal static class RegisteredTypes{
 
 	internal static async Task Register(string type,Invoker invoker){
 		lock(Registered)
-			if(Registered.ContainsKey(type)) return;
+			if(Registered.ContainsKey(type)) return;//TODO throw if duplicate
 			else Registered.Add(type,invoker);
 		try{
 			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"+",type);

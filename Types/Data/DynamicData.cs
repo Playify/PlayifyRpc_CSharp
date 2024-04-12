@@ -18,8 +18,8 @@ internal static class DynamicData{
 	private static readonly Dictionary<string,Func<DataInput,List<object>,object>> ReadRegistry=new();
 
 	static DynamicData(){
-		foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) RegisterAssembly(assembly);
 		AppDomain.CurrentDomain.AssemblyLoad+=(_,args)=>RegisterAssembly(args.LoadedAssembly);
+		foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) RegisterAssembly(assembly);
 	}
 
 	internal static object? Read(DataInput incoming,List<object> already){

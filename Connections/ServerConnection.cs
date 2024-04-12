@@ -1,7 +1,9 @@
+using System.Net;
 using System.Text;
 using PlayifyRpc.Internal;
-using PlayifyRpc.Types;
+using PlayifyRpc.Internal.Utils;
 using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
@@ -47,7 +49,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			toCancel=_activeExecutions.Values.ToArray();
 			_activeExecutions.Clear();
 		}
-		var exception=new RpcException("RpcExcetion","SERVER","Connection closed","");
+		var exception=new RpcConnectionException("Connection closed by "+Utility.Quoted(_name),false);
 		await Task.WhenAll(toReject.Select(t=>t.respondTo.Reject(t.respondId,exception))
 		                           .Concat(toCancel.Select(t=>t.respondTo.CancelRaw(t.respondId,null))));
 	}
@@ -69,7 +71,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 					lock(RpcServer.Types)
 						if(!RpcServer.Types.TryGetValue(type,out handler))
 							handler=null;
-					if(handler==null) await Reject(callId,new RpcException("RpcException","SERVER","Unknown Type: "+type,""));
+					if(handler==null) await Reject(callId,new RpcTypeNotFoundException(type));
 					else{
 						var task=handler.CallFunction(type,data,this,callId,out var sentId);
 						lock(_activeExecutions) _activeExecutions.Add(callId,(handler,sentId));
@@ -141,7 +143,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				await tuple.respondTo.SendRaw(buff);
 				break;
 			}
-			default:throw new ArgumentOutOfRangeException();
+			default:throw new ProtocolViolationException("Received invalid rpc-packet");
 		}
 	}
 	#endregion
@@ -190,7 +192,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		TaskUtils.WhenAll(toKick.Select(k=>{
 			Console.WriteLine("Kicking client "+k+" as new client with same name joined.");
 			return k.DisposeAsync();
-		})).AsTask().TryCatch();
+		})).AsTask().Background();
 	}
 
 	public override string ToString(){

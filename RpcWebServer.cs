@@ -97,7 +97,7 @@ public partial class RpcWebServer:WebBase{
 
 		var rpcJs="rpc.js";
 		if(args.Length>2) rpcJs=args[2];
-		else if(!File.Exists("rpc.js")) _=DownloadRpcJs().TryCatch();
+		else if(!File.Exists("rpc.js")) DownloadRpcJs().Background();
 
 		RunConsoleThread();
 		try{
@@ -122,12 +122,12 @@ public partial class RpcWebServer:WebBase{
 		}
 
 
-		if(session.WantsWebSocket()){
+		if(session.WantsWebSocket(out var create)){
 			var tcs=new TaskCompletionSource<WebSocket>();
 			ServerConnectionWebSocket connection;
 			try{
 				connection=new ServerConnectionWebSocket(tcs.Task,session.Args);
-				tcs.TrySetResult((await session.CreateWebSocket())!);
+				tcs.TrySetResult(await create());
 			} catch(Exception e){
 				tcs.TrySetException(e);
 				await session.Send
