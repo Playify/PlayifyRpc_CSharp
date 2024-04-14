@@ -10,7 +10,7 @@ internal class ServerConnectionLoopback:ServerConnection{
 
 	private bool _disposed;
 
-	internal ServerConnectionLoopback(ServerConnectionLoopbackClient otherSide)=>_otherSide=otherSide;
+	internal ServerConnectionLoopback(ServerConnectionLoopbackClient otherSide):base(Rpc.Id)=>_otherSide=otherSide;
 
 	protected internal override Task SendRaw(DataOutputBuff buff){
 		Task.Run((Action)(()=>_otherSide.Receive(new DataInputBuff(buff)).Catch(Console.Error.WriteLine)));

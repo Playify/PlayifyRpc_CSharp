@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text;
 using PlayifyRpc.Internal;
-using PlayifyRpc.Internal.Utils;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Streams.Data;
@@ -20,9 +19,27 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	private int _nextId;
 
 
-	protected ServerConnection(){
+	protected ServerConnection(string? id){
+		Id=id??"???";
 		_invoker=new ServerInvoker(this);
-		lock(Connections) Connections.Add(this);
+		ServerConnection[] toKick;
+		lock(Connections){
+			toKick=id==null
+				       ?Array.Empty<ServerConnection>()
+				       :Connections.Where(c=>c.Id==id).ToArray();
+			Connections.Add(this);
+		}
+
+		TaskUtils.WhenAll(toKick.Select(k=>{
+			Console.WriteLine("Kicking client "+k+" as new client with same id joined.");
+			return k.DisposeAsync();
+		})).AsTask().Background();
+
+		if(id!=null)
+			lock(RpcServer.Types){
+				RpcServer.Types["$"+id]=this;
+				Types.Add("$"+id);
+			}
 	}
 
 	#region Connection
@@ -49,7 +66,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			toCancel=_activeExecutions.Values.ToArray();
 			_activeExecutions.Clear();
 		}
-		var exception=new RpcConnectionException("Connection closed by "+Utility.Quoted(_name),false);
+		var exception=new RpcConnectionException("Connection closed by "+PrettyName,false);
 		await Task.WhenAll(toReject.Select(t=>t.respondTo.Reject(t.respondId,exception))
 		                           .Concat(toCancel.Select(t=>t.respondTo.CancelRaw(t.respondId,null))));
 	}
@@ -180,25 +197,15 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 
 
 	#region Local
-	private string? _name;
-	public string Name=>_name??ToString();
+	public readonly string Id;
+	public string? Name{get;internal set;}
+	public string PrettyName=>Name is{} name?$"{name} ({Id})":Id;
 
-	internal void SetName(string? s){
-		_name=s;
-
-		if(s==null) return;
-		ServerConnection[] toKick;
-		lock(Connections) toKick=Connections.Where(c=>c!=this&&c.Name==s).ToArray();
-		TaskUtils.WhenAll(toKick.Select(k=>{
-			Console.WriteLine("Kicking client "+k+" as new client with same name joined.");
-			return k.DisposeAsync();
-		})).AsTask().Background();
-	}
 
 	public override string ToString(){
 		var str=new StringBuilder(GetType().Name);
 		str.Append('(').Append(GetHashCode().ToString("x8"));
-		if(_name!=null) str.Append(':').Append(Name);
+		str.Append(':').Append(PrettyName);
 		str.Append(')');
 		return str.ToString();
 	}
@@ -213,10 +220,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				return false;
 			}).ToArray();
 		if(failed.Length!=0){
-			if(log) Console.WriteLine($"{Name} tried registering Types \"{types.Join("\",\"")}\"");
+			if(log) Console.WriteLine($"{PrettyName} tried registering Types \"{types.Join("\",\"")}\"");
 			throw new Exception($"Types \"{failed.Join("\",\"")}\" were already registered");
 		}
-		if(log) Console.WriteLine($"{Name} registered Types \"{types.Join("\",\"")}\"");
+		if(log) Console.WriteLine($"{PrettyName} registered Types \"{types.Join("\",\"")}\"");
 	}
 
 	internal void Unregister(string[] types,bool log){
@@ -229,10 +236,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				return false;
 			}).ToArray();
 		if(failed.Length!=0){
-			if(log) Console.WriteLine($"{Name} tried unregistering Types \"{types.Join("\",\"")}\"");
+			if(log) Console.WriteLine($"{PrettyName} tried unregistering Types \"{types.Join("\",\"")}\"");
 			throw new Exception($"Types \"{failed.Join("\",\"")}\" were not registered");
 		}
-		if(log) Console.WriteLine($"{Name} unregistered Types \"{types.Join("\",\"")}\"");
+		if(log) Console.WriteLine($"{PrettyName} unregistered Types \"{types.Join("\",\"")}\"");
 	}
 	#endregion
 }

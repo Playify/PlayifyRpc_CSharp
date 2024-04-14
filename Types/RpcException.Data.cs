@@ -20,7 +20,13 @@ public partial class RpcException{
 		var from=input.ReadString()??"???";
 		var message=input.ReadString();
 		var stackTrace=input.ReadString()??"";
-		var data=input.ReadString() is{} jsonString?JsonObject.ParseOrNull(jsonString):null;
+
+		JsonObject? data;
+		try{
+			data=input.ReadString() is{} jsonString?JsonObject.ParseOrNull(jsonString):null;
+		} catch(EndOfStreamException){
+			data=new JsonObject{{"$info","JsonData was not included, due to an old "+nameof(PlayifyRpc)+" version"}};
+		}
 
 		return Read(type,from,message,stackTrace,data);
 	}

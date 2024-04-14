@@ -63,9 +63,9 @@ internal static class RegisteredTypes{
 	internal static async Task SetName(string? name){
 		Name=name;
 		try{
-			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"N",Rpc.NameOrId);
+			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"N",name);
 		} catch(Exception e){
-			Console.WriteLine(e);
+			Console.Error.WriteLine(e);
 		}
 	}
 }

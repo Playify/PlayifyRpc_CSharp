@@ -123,13 +123,10 @@ public partial class RpcWebServer:WebBase{
 
 
 		if(session.WantsWebSocket(out var create)){
-			var tcs=new TaskCompletionSource<WebSocket>();
 			ServerConnectionWebSocket connection;
 			try{
-				connection=new ServerConnectionWebSocket(tcs.Task,session.Args);
-				tcs.TrySetResult(await create());
+				connection=new ServerConnectionWebSocket(create,session.Args);
 			} catch(Exception e){
-				tcs.TrySetException(e);
 				await session.Send
 				             .Cache(false)
 				             .Document()
@@ -140,10 +137,16 @@ public partial class RpcWebServer:WebBase{
 				return;
 			}
 			try{
+				await connection.WebSocketTask;
+			} catch(Exception){
+				await connection.DisposeAsync();
+				return;
+			}
+			try{
 
 				string types;
-				lock(RpcServer.Types) types=connection.Types.Select(t=>$"\"{t}\"").Join(",");
-				Console.WriteLine($"{connection} connected (Types: "+types+")");
+				lock(RpcServer.Types) types=connection.Types.Where(t=>t!="$"+connection.Id).Select(t=>$"\"{t}\"").Join(",");
+				Console.WriteLine($"{connection} connected (Types: {(types!=""?types:"<<none>>")})");
 
 				await connection.ReceiveLoop();
 			} finally{

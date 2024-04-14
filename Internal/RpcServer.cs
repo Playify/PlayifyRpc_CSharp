@@ -31,14 +31,14 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	}
 
 	public static string[] GetAllConnections(){
-		lock(ServerConnection.Connections) return ServerConnection.Connections.Select(c=>c.Name).OrderBy(s=>s).ToArray();
+		lock(ServerConnection.Connections) return ServerConnection.Connections.Select(c=>c.PrettyName).OrderBy(s=>s).ToArray();
 	}
 
 	public static StringMap<string[]> GetRegistrations(){
 		lock(ServerConnection.Connections)
 			return ServerConnection
 			       .Connections
-			       .ToDictionary(c=>c.Name,c=>{
+			       .ToDictionary(c=>c.PrettyName,c=>{
 				       lock(Types) return c.Types.ToArray();
 			       });
 	}

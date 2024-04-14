@@ -32,13 +32,21 @@ internal class ClientConnectionWebSocket:ClientConnection{
 		StartConnect(false);
 		while(true)
 			try{
-				var reportedName=Rpc.NameOrId;
+				var reportedName=Rpc.Name;
 				var reportedTypes=new HashSet<string>();
-				lock(RegisteredTypes.Registered) reportedTypes.UnionWith(RegisteredTypes.Registered.Keys);
 
-				var query=reportedTypes.Aggregate(
-					"name="+WebUtility.UrlEncode(reportedName),
-					(q,type)=>q+"&type="+WebUtility.UrlEncode(type));
+				var query="id="+WebUtility.UrlEncode(Rpc.Id);
+				reportedTypes.Add("$"+Rpc.Id);
+
+				if(reportedName!=null)
+					query+="&name="+WebUtility.UrlEncode(reportedName);
+
+				lock(RegisteredTypes.Registered)
+					foreach(var type in RegisteredTypes.Registered.Keys)
+						if(reportedTypes.Add(type))
+							query+="&type="+WebUtility.UrlEncode(type);
+
+
 				uri=new UriBuilder(uri){Query=query}.Uri;
 
 				await using var connection=new ClientConnectionWebSocket(await WebSocket.CreateWebSocketTo(uri,headers));
@@ -54,7 +62,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 				FailConnect(e);
 
 				await Task.Delay(1000);
-				Console.WriteLine("Reconnecting to RPC...");
+				Console.WriteLine("Reconnecting to RPC");
 			}
 		// ReSharper disable once FunctionNeverReturns
 	}

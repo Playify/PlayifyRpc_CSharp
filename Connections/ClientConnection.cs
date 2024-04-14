@@ -29,15 +29,15 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	protected static async Task DoConnect(ClientConnection connection,string? reportedName=null,HashSet<string>? reportedTypes=null){
 		HashSet<string> toRegister;
 		lock(RegisteredTypes.Registered) toRegister=RegisteredTypes.Registered.Keys.ToHashSet();
-		var toDelete=reportedTypes??new HashSet<string>();
+		var toDelete=reportedTypes??new HashSet<string>{"$"+Rpc.Id};
 		toRegister.RemoveWhere(toDelete.Remove);
 
 		Instance=connection;
 
 		if(toRegister.Count!=0||toDelete.Count!=0){
-			if(Rpc.NameOrId!=reportedName) await FunctionCallContext.CallFunction(null,"H",Rpc.NameOrId,toRegister.ToArray(),toDelete.ToArray());
+			if(Rpc.Name!=reportedName) await FunctionCallContext.CallFunction(null,"H",Rpc.Name,toRegister.ToArray(),toDelete.ToArray());
 			else await FunctionCallContext.CallFunction(null,"H",toRegister.ToArray(),toDelete.ToArray());
-		} else if(Rpc.NameOrId!=reportedName) await FunctionCallContext.CallFunction(null,"H",Rpc.NameOrId);
+		} else if(Rpc.Name!=reportedName) await FunctionCallContext.CallFunction(null,"H",Rpc.Name);
 
 
 		Rpc.IsConnected=true;
@@ -124,7 +124,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				PendingCall? pending;
 				lock(_activeRequests)
 					if(!_activeRequests.Remove(callId,out pending)){
-						Console.WriteLine($"{Rpc.NameOrId} has no ActiveRequest with id: {callId}");
+						Console.WriteLine($"{Rpc.PrettyName} has no ActiveRequest with id: {callId}");
 						break;
 					}
 				try{
@@ -139,7 +139,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				PendingCall? pending;
 				lock(_activeRequests)
 					if(!_activeRequests.Remove(callId,out pending)){
-						Console.WriteLine($"{Rpc.NameOrId} has no ActiveRequest with id: {callId}");
+						Console.WriteLine($"{Rpc.PrettyName} has no ActiveRequest with id: {callId}");
 						break;
 					}
 				try{
@@ -154,7 +154,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				FunctionCallContext? ctx;
 				lock(_currentlyExecuting)
 					if(!_currentlyExecuting.TryGetValue(callId,out ctx)){
-						Console.WriteLine($"{Rpc.NameOrId} has no CurrentlyExecuting with id: {callId}");
+						Console.WriteLine($"{Rpc.PrettyName} has no CurrentlyExecuting with id: {callId}");
 						break;
 					}
 				ctx.CancelSelf();
@@ -165,7 +165,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				FunctionCallContext? ctx;
 				lock(_currentlyExecuting)
 					if(!_currentlyExecuting.TryGetValue(callId,out ctx)){
-						Console.WriteLine($"{Rpc.NameOrId} has no CurrentlyExecuting with id: {callId}");
+						Console.WriteLine($"{Rpc.PrettyName} has no CurrentlyExecuting with id: {callId}");
 						break;
 					}
 				var already=new List<object>();
@@ -178,7 +178,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				PendingCall? pending;
 				lock(_activeRequests)
 					if(!_activeRequests.TryGetValue(callId,out pending)){
-						Console.WriteLine($"{Rpc.NameOrId} has no ActiveRequest with id: {callId}");
+						Console.WriteLine($"{Rpc.PrettyName} has no ActiveRequest with id: {callId}");
 						break;
 					}
 				var already=new List<object>();

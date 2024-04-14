@@ -42,7 +42,7 @@ public partial class RpcException:Exception{//TODO check for net48
 	private RpcException(string? type,string? from,string? message,string? stackTrace,Exception? cause):base(message,cause){
 		Type=type??GetType().Name;
 		if((GetType().GetCustomAttribute<RpcCustomExceptionAttribute>()?.TypeTag).NotNull(out var typeTag)) Data["$type"]=typeTag;
-		From=from??Rpc.NameOrId;
+		From=from??Rpc.PrettyName;
 
 		if(stackTrace==null) _prependOwnStack=true;
 		else{

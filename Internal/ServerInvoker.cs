@@ -7,12 +7,12 @@ namespace PlayifyRpc.Internal;
 
 internal class ServerInvoker:TypeInvoker{
 	private readonly ServerConnection _connection;
-	private void Name(string? s)=>_connection.SetName(s);
+	private void Name(string? name)=>_connection.Name=name;
 
-	private void Handshake(string? s)=>Name(s);
+	private void Handshake(string? name)=>Name(name);
 
-	private void Handshake(string? s,string[]? register,string[]? unregister){
-		Name(s);
+	private void Handshake(string? name,string[]? register,string[]? unregister){
+		Name(name);
 		Handshake(register,unregister);
 	}
 
