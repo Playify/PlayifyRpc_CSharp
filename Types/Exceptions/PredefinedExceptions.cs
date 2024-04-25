@@ -1,9 +1,10 @@
-using PlayifyRpc.Internal.Utils;
 
 namespace PlayifyRpc.Types.Exceptions;
 
 public abstract class RpcCallException:RpcException{
 	protected RpcCallException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
+
+	private protected static string Quoted(string? s)=>s==null?"null":"\""+s+"\"";
 }
 
 [RpcCustomException("$type")]
@@ -11,7 +12,7 @@ public class RpcTypeNotFoundException:RpcCallException{
 	protected internal RpcTypeNotFoundException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
 
 	public RpcTypeNotFoundException(string? type)
-		:base(null,null,$"Type {Utility.Quoted(type)} does not exist",""){
+		:base(null,null,$"Type {Quoted(type)} does not exist",""){
 		Data["type"]=type;
 	}
 }
@@ -21,7 +22,7 @@ public class RpcMethodNotFoundException:RpcCallException{
 	protected RpcMethodNotFoundException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
 
 	public RpcMethodNotFoundException(string? type,string? method)
-		:base(null,null,$"Method {Utility.Quoted(method)} does not exist on type {Utility.Quoted(type)}",""){
+		:base(null,null,$"Method {Quoted(method)} does not exist on type {Quoted(type)}",""){
 		Data["type"]=type;
 		Data["method"]=method;
 	}
@@ -32,7 +33,7 @@ public class RpcMetaMethodNotFoundException:RpcMethodNotFoundException{
 	protected RpcMetaMethodNotFoundException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
 
 	public RpcMetaMethodNotFoundException(string? type,string? meta)
-		:base(null,null,$"Meta-method {Utility.Quoted(meta)} does not exist on type {Utility.Quoted(type)}",""){
+		:base(null,null,$"Meta-method {Quoted(meta)} does not exist on type {Quoted(type)}",""){
 		Data["type"]=type;
 		Data["method"]=null;
 		Data["meta"]=meta;
@@ -40,13 +41,13 @@ public class RpcMetaMethodNotFoundException:RpcMethodNotFoundException{
 }
 
 [RpcCustomException("$connection")]
-public sealed class RpcConnectionException:RpcCallException{
+public class RpcConnectionException:RpcCallException{
 	internal RpcConnectionException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
-	public RpcConnectionException(string? message,bool stack):base(null,null,message,stack?null:""){}
+	public RpcConnectionException(string? message):base(null,null,message,""){}
 }
 
 [RpcCustomException("$eval")]
-public sealed class RpcEvalException:RpcCallException{
+public class RpcEvalException:RpcCallException{
 	internal RpcEvalException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
 	public RpcEvalException(string message):base(null,null,message,""){}
 }

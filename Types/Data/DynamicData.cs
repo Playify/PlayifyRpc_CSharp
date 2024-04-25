@@ -13,7 +13,7 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Types.Data;
 
 [PublicAPI]
-internal static class DynamicData{
+public static class DynamicData{
 	private static readonly List<(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)> WriteRegistry=new();
 	private static readonly Dictionary<string,Func<DataInput,List<object>,object>> ReadRegistry=new();
 

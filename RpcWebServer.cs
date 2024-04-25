@@ -166,7 +166,7 @@ public partial class RpcWebServer:WebBase{
 			if(voidResponse) s=s.Substring(0,s.Length-"/void".Length);
 
 			try{
-				s=await Rpc.Eval(s);
+				s=await Evaluate.Eval(s,true);
 			} catch(Exception e){
 				await session.Send
 				             .Cache(false)

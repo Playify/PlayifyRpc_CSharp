@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Functions;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
@@ -15,7 +16,7 @@ internal static class RegisteredTypes{
 		AppDomain.CurrentDomain.AssemblyLoad+=(_,args)=>RegisterAssembly(args.LoadedAssembly);
 		foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) RegisterAssembly(assembly);
 
-		RuntimeHelpers.RunClassConstructor(typeof(RpcFunction).TypeHandle);//initialize static constructor of RemoteFunction
+		typeof(RpcFunction).RunClassConstructor();//initialize static constructor of RemoteFunction
 	}
 
 	private static void RegisterAssembly(Assembly assembly){

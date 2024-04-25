@@ -26,7 +26,7 @@ public abstract class Invoker{
 	public PendingCall Call(string type,string? method,object?[] args)=>CallLocal(()=>Invoke(type,method,args),type,method,args);
 	public PendingCall<T> Call<T>(string type,string method,object?[] args)=>Call(type,method,args).Cast<T>();
 
-	public static PendingCall CallLocal(Action a)
+	internal static PendingCall CallLocal(Action a)
 		=>CallLocal(()=>{
 			try{
 				a();
@@ -36,8 +36,8 @@ public abstract class Invoker{
 			return null;
 		});
 
-	public static PendingCall CallLocal(Func<object?> a)=>CallLocal(a,null,null,null);
-	public static PendingCall<T> CallLocal<T>(Func<object?> a)=>CallLocal(a).Cast<T>();
+	internal static PendingCall CallLocal(Func<object?> a)=>CallLocal(a,null,null,null);
+	internal static PendingCall<T> CallLocal<T>(Func<object?> a)=>CallLocal(a).Cast<T>();
 
 	private static PendingCall CallLocal(Func<object?> a,string? type,string? method,object?[]? args){
 		var truth=new PendingCallRawData();

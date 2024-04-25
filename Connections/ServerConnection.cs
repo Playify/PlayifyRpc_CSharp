@@ -66,7 +66,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			toCancel=_activeExecutions.Values.ToArray();
 			_activeExecutions.Clear();
 		}
-		var exception=new RpcConnectionException("Connection closed by "+PrettyName,false);
+		var exception=new RpcConnectionException("Connection closed by "+PrettyName);
 		await Task.WhenAll(toReject.Select(t=>t.respondTo.Reject(t.respondId,exception))
 		                           .Concat(toCancel.Select(t=>t.respondTo.CancelRaw(t.respondId,null))));
 	}

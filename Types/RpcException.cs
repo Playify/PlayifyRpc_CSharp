@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using PlayifyRpc.Types.Exceptions;
-using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
 
@@ -16,10 +15,6 @@ public partial class RpcException:Exception{//TODO check for net48
 
 	public readonly string From;
 	public new readonly JsonObject Data=new();
-	private static readonly List<string> HiddenMethods=new(){
-		$"{typeof(FunctionCallContext).FullName}.{nameof(FunctionCallContext.RunWithContextAsync)}(",
-		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.DoCast)}[",
-	};
 
 	public override string? StackTrace{
 		get{
@@ -33,7 +28,7 @@ public partial class RpcException:Exception{//TODO check for net48
 	}
 	private bool _prependOwnStack;
 	private string? _stackTrace;
-	private string _causes="";
+	private readonly string _causes="";
 
 	public RpcException(string message):this(null,null,message,null){}
 	public RpcException(string message,Exception cause):this(null,null,message,null,cause){}
@@ -46,7 +41,7 @@ public partial class RpcException:Exception{//TODO check for net48
 
 		if(stackTrace==null) _prependOwnStack=true;
 		else{
-			_stackTrace=FixString(stackTrace);
+			_stackTrace="\n"+FixString(stackTrace);
 			var causeIndex=_stackTrace.IndexOf("\ncaused by: ",StringComparison.Ordinal);
 			if(causeIndex!=-1){
 				_causes+=_stackTrace.Substring(causeIndex);
@@ -54,20 +49,17 @@ public partial class RpcException:Exception{//TODO check for net48
 			}
 		}
 
-		if(cause!=null) _causes+="\n"+FixString("caused by: "+cause);
-
+		if(cause!=null) _causes+="\ncaused by: "+FixString(cause.ToString());
 	}
 
 
 	public override string ToString(){
 		var str=new StringBuilder();
-		str.Append(Type);
-		str.Append('(').Append(From).Append(')');
-
+		str.Append(Type).Append('(').Append(From).Append(')');
 		if(!string.IsNullOrWhiteSpace(Message)) str.Append(": ").Append(Message);
 
-		var st=StackTrace;
-		if(!string.IsNullOrWhiteSpace(st)) str.Append('\n').Append(st);
+		var trace=StackTrace;
+		if(!string.IsNullOrWhiteSpace(trace)) str.Append('\n').Append(trace);
 
 		return str.ToString().Replace("\n","\r\n");
 	}

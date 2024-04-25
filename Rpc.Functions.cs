@@ -18,7 +18,7 @@ public static partial class Rpc{
 	public static PendingCall<T> CallLocal<T>(Func<object?> func)=>Invoker.CallLocal<T>(func);
 
 	public static PendingCall CallFunction(string type,string method,params object?[] args)=>FunctionCallContext.CallFunction(type,method,args);
-	public static PendingCall<T> CallFunction<T>(string type,string method,params object?[] args)=>CallFunction(type,method,args).Cast<T>();
+	public static PendingCall<T> CallFunction<T>(string type,string method,params object?[] args)=>FunctionCallContext.CallFunction<T>(type,method,args);
 
 	public static Task<string> Eval(string expression,bool pretty=true)=>Evaluate.Eval(expression,pretty);
 

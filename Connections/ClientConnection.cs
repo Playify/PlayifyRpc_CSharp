@@ -13,7 +13,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	internal static ClientConnection? Instance{get;private set;}
 	private static TaskCompletionSource? _tcs;
 	private static TaskCompletionSource? _tcsOnce;
-	internal static Task WaitUntilConnectedOnce=>_tcsOnce?.Task??Task.FromException(new RpcConnectionException("Not yet started to connect",false));
+	internal static Task WaitUntilConnectedOnce=>_tcsOnce?.Task??Task.FromException(new RpcConnectionException("Not yet started to connect"));
 
 	internal static Task WaitUntilConnectedLooping=>(_tcs??=new TaskCompletionSource()).Task;
 
@@ -22,7 +22,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 
 	protected static void StartConnect(bool reconnect){
-		if(!reconnect&&_tcsOnce!=null) throw new RpcConnectionException("Already connected",false);
+		if(!reconnect&&_tcsOnce!=null) throw new RpcConnectionException("Already connected");
 		_tcsOnce=new TaskCompletionSource();
 	}
 
@@ -196,7 +196,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 		lock(_activeRequests)
 			if(_activeRequests.Count!=0){
-				var exception=new RpcConnectionException("Websocket closed",false);
+				var exception=new RpcConnectionException("Websocket closed");
 				foreach(var pending in _activeRequests.Values) pending.Reject(exception);
 				_activeRequests.Clear();
 			}

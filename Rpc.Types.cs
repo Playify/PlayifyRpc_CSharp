@@ -1,8 +1,8 @@
-using System.Runtime.CompilerServices;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc;
 
@@ -19,7 +19,7 @@ public static partial class Rpc{
 
 	public static Task RegisterType(string type,Type t){
 		if(!typeof(Invoker).IsAssignableFrom(t)) return RegisteredTypes.Register(type,new TypeInvoker(t));
-		RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+		t.RunClassConstructor();
 		return RegisteredTypes.Register(type,(Invoker)Activator.CreateInstance(t)!);
 	}
 

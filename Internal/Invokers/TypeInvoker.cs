@@ -1,9 +1,9 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Invokers;
 
@@ -20,7 +20,7 @@ public class TypeInvoker:Invoker{
 	public TypeInvoker(Type type,object? instance=null){
 		_type=type;
 		_instance=instance;
-		RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+		type.RunClassConstructor();
 	}
 
 	[PublicAPI]
@@ -58,6 +58,14 @@ public class TypeInvoker:Invoker{
 		                             (_instance!=null?BindingFlags.Instance:0));
 
 
-		return new ValueTask<string[]>(members.Where(m=>m.DeclaringType!=typeof(object)).Select(m=>m.Name).ToArray());
+		return new ValueTask<string[]>(members.Where(m=>m.DeclaringType!=typeof(object))
+		                                      .Select(m=>m.Name)
+		                                      .Distinct()
+		                                      .ToArray());
 	}
+}
+
+public class TypeInvoker<T>:TypeInvoker{
+	public TypeInvoker():base(typeof(T)){}
+	public TypeInvoker(T? instance):base(typeof(T),instance){}
 }

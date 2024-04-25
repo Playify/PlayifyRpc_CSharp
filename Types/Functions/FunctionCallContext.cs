@@ -75,7 +75,7 @@ public class FunctionCallContext:SendReceive{
 
 		var connection=ClientConnection.Instance;
 		if(connection==null||(type!=null&&!Rpc.IsConnected)){
-			call.Reject(new RpcConnectionException("Not connected",false));
+			call.Reject(new RpcConnectionException("Not connected"));
 			return call;
 		}
 		truth.SendFunc=msgArgs=>{

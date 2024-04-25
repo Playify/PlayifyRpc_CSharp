@@ -1,4 +1,3 @@
-using JetBrains.Annotations;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Jsons;
 
@@ -13,7 +12,6 @@ namespace PlayifyRpc.Internal;
  *
  * arguments should be Json
  */
-[PublicAPI]
 internal static class Evaluate{
 	private static readonly object NoValue=new();
 
@@ -26,7 +24,7 @@ internal static class Evaluate{
 		return NoValue;
 	}
 
-	public static async Task<object?> EvalAny(string s){
+	internal static async Task<object?> EvalAny(string s){
 		var bracket=s.IndexOf('(');
 		if(bracket==-1){
 			if(s=="")
@@ -63,6 +61,5 @@ internal static class Evaluate{
 		return await Rpc.CallFunction(type,method,args.ToArray());
 	}
 
-	public static async Task<string> Eval(string s,bool pretty)=>StaticallyTypedUtils.Stringify(await EvalAny(s),pretty);
-
+	internal static async Task<string> Eval(string s,bool pretty)=>StaticallyTypedUtils.Stringify(await EvalAny(s),pretty);
 }

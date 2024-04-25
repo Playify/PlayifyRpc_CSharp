@@ -68,7 +68,7 @@ public abstract class PendingCall:SendReceive{
 	public Task Then(Action<object?> a)=>((Task<object?>)this).Then(a);
 	public Task<T> Then<T>(Func<object?,T> a)=>((Task<object?>)this).Then(a);
 	public Task Catch(Action<Exception> a)=>((Task<object?>)this).Catch(a);
-	public Task Finally(Action a)=>((Task<object?>)this).Finally(a);
+	public Task Finally(Action a)=>((Task<object?>)this).ContinueWith(_=>a());
 	#endregion
 
 	#region Cast

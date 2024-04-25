@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Invokers;
 
@@ -19,7 +20,12 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 	IEnumerator IEnumerable.GetEnumerator()=>Dictionary.GetEnumerator();
 
 	protected override object? DynamicInvoke(string? type,string method,object?[] args){
-		if(!Dictionary.TryGetValue(method,out var func)) throw new RpcMethodNotFoundException(type,method);
+		if(!Dictionary.TryGetValue(method,out var func)){
+			func=Dictionary.FirstOrNull(p=>p.Key.Equals(method,StringComparison.OrdinalIgnoreCase))?.Value;
+
+			if(func==null) throw new RpcMethodNotFoundException(type,method);
+		}
+		
 		try{
 			return func.Method.Invoke(func.Target,
 			                          BindingFlags.OptionalParamBinding|

@@ -4,7 +4,7 @@ using PlayifyRpc.Internal;
 
 namespace PlayifyRpc.Types.Data;
 
-//This has to be used instead of using Dictionary directly, as Dictionary better assembles a JavaScript Map, instead of a JavaScript Object
+//This has to be used instead of using Dictionary<string,?> directly, as Dictionary would better assembles a JavaScript Map, instead of a JavaScript Object
 [PublicAPI]
 public class StringMap<T>:ObjectTemplate,IEnumerable<KeyValuePair<string,T>>{
 	#region Enumerable

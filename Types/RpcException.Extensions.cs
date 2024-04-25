@@ -2,11 +2,19 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using PlayifyRpc.Internal;
+using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types;
 
 public partial class RpcException{
+	private static readonly List<string> HiddenMethods=new(){
+		$"{typeof(FunctionCallContext).FullName}.{nameof(FunctionCallContext.RunWithContextAsync)}(",
+		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.DoCast)}[",
+		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalAny)}(",
+		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.Eval)}(",
+		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleRequest)}(",
+	};
 	private static string GetOwnStackTrace(Exception e){
 		var str=new StringBuilder();
 		var lines=FixString(new StackTrace(e,true).ToString()).Split('\n');
@@ -29,28 +37,19 @@ public partial class RpcException{
 		};
 	}
 
-	public RpcException Unfreeze(){
-		if(_prependOwnStack) return this;
-
-		var e=Read(Type,From,Message,StackTrace??"",Data);
-		e._prependOwnStack=true;
-		return e;
-	}
-
-	public RpcException Freeze(){
+	private RpcException Freeze(){
 		if(!_prependOwnStack) return this;
 		_prependOwnStack=false;
 		_stackTrace+=GetOwnStackTrace(this);
 		return this;
 	}
 
-	public RpcException Append(string s){
-		if(_prependOwnStack){
-			_prependOwnStack=false;
-			_stackTrace+=GetOwnStackTrace(this);
-		}
-		_stackTrace+="\n\trpc "+s;
-		return this;
+	private RpcException Unfreeze(){
+		if(_prependOwnStack) return this;
+
+		var e=Read(Type,From,Message,StackTrace??"",Data);//TODO 'cause' gets lost
+		e._prependOwnStack=true;
+		return e;
 	}
 
 	public RpcException Remove(MethodBase? method){
@@ -62,11 +61,16 @@ public partial class RpcException{
 			var lastLine=_stackTrace.LastIndexOf('\n');
 			var methodAndFurther=_stackTrace.Substring(_stackTrace.IndexOf(' ',lastLine)+1);
 			var methodString=method.DeclaringType?.ToString().Replace('+','.')+"."+method.Name;
-			if(methodAndFurther.StartsWith(methodString+"(")||methodAndFurther.StartsWith(methodString+"[")){
+			if(methodAndFurther.StartsWith(methodString+"(")||methodAndFurther.StartsWith(methodString+"["))
 				_stackTrace=_stackTrace.Substring(0,lastLine);
-			}
 		}
 		return this;
+	}
+
+	public RpcException Append(string s){
+		var freeze=Freeze();
+		freeze._stackTrace+="\n\trpc "+s;
+		return freeze;
 	}
 
 	public RpcException Append(string? type,string? method,object?[]? args)
