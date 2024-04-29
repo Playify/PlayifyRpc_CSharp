@@ -7,12 +7,17 @@ This library allows calling functions accross different devices. It works for:
 # Web Interface
 
 You can access http://127.0.0.1:4590/rpc to get to a simple web interface,
-here you can evaluate simple RPC calls directly from the browser.
+here you can evaluate simple RPC calls directly from the browser (and the browser devtools).
 
-Additionally you can directly evaluate calls using
-http://127.0.0.1:4590/rpc/EXPRESSION where `EXPRESSION` is a valid function call,
-e.g. if you want to call `Rpc.getRegistrations()`, you can access
-http://127.0.0.1:4590/rpc/Rpc.getRegistrations() and get the return value from the http response
+Additionally you can call functions directly using http://127.0.0.1:4590/rpc/EXPRESSION.
+
+e.g. if you want to call `Rpc.getRegistrations()`, you can access http://127.0.0.1:4590/rpc/Rpc.getRegistrations()
+and get the return value from the http response.
+
+Using http://127.0.0.1:4590/rpc/EXPRESSION/pretty you can get a prettified Json back.
+
+Using http://127.0.0.1:4590/rpc/EXPRESSION/void you don't get any response back
+([HTTP Status Code 204](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204)).
 
 # Server
 

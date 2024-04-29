@@ -129,11 +129,7 @@ public partial class RpcWebServer:WebBase{
 			} catch(Exception e){
 				await session.Send
 				             .Cache(false)
-				             .Document()
-				             .Code(500)
-				             .MimeType("text/plain")
-				             .Set(e.ToString())
-				             .Send();
+				             .Text(e.ToString(),code:500);
 				return;
 			}
 			try{
@@ -146,7 +142,9 @@ public partial class RpcWebServer:WebBase{
 
 				string types;
 				lock(RpcServer.Types) types=connection.Types.Where(t=>t!="$"+connection.Id).Select(t=>$"\"{t}\"").Join(",");
-				Console.WriteLine($"{connection} connected (Types: {(types!=""?types:"<<none>>")})");
+				Console.WriteLine(types==""
+					                  ?$"{connection} connected (no Types)"
+					                  :$"{connection} connected (Types: {(types!=""?types:"<<none>>")})");
 
 				await connection.ReceiveLoop();
 			} finally{
@@ -162,30 +160,28 @@ public partial class RpcWebServer:WebBase{
 		if(rawUrl.StartsWith("/rpc/")){
 			var s=Uri.UnescapeDataString(rawUrl.Substring("/rpc/".Length));
 
-			var voidResponse=s.EndsWith("/void");
-			if(voidResponse) s=s.Substring(0,s.Length-"/void".Length);
+
+			var voidResponse=false;
+			var prettyResponse=false;
+			while(true)
+				if("/void".RemoveFromEndOf(ref s)) voidResponse=true;
+				else if("/pretty".RemoveFromEndOf(ref s)) prettyResponse=true;
+				else break;
 
 			try{
-				s=await Evaluate.Eval(s,true);
+				s=await Evaluate.Eval(s,prettyResponse);
 			} catch(Exception e){
 				await session.Send
 				             .Cache(false)
-				             .Document()
-				             .Code(500)
-				             .MimeType("text/plain")
-				             .Set(e.ToString())
-				             .Send();
+				             .Text(e.ToString(),code:500);
 				return;
 			}
 			if(voidResponse)
-				await session.Send.Begin(204);
+				await session.Send.NoContent();
 			else
 				await session.Send
 				             .Cache(false)
-				             .Document()
-				             .MimeType("application/json")
-				             .Set(s)
-				             .Send();
+				             .Json(s);
 			return;
 		}
 
@@ -200,26 +196,25 @@ public partial class RpcWebServer:WebBase{
 			case "/":
 			case "/rpc":
 			case "/rpc.html":
-				await session.Send.Document()
-				             .Set("<title>RPC Test</title><script type=\"module\" src=\"/rpc.js\"></script>\n"+
-				                  "<input type=\"text\" value=\"Rpc.getRegistrations()\" style=\"width:100%\"/>\n"+
-				                  "<pre></pre>\n"+
-				                  "<script>var input=document.querySelector('input'),pre=document.querySelector('pre'),curr=0;\n"+
-				                  "input.addEventListener(\"keydown\",async e=>{\n"+
-				                  " if(e.key!='Enter') return;\n"+
-				                  "  try{\n"+
-				                  "    pre.style.color='blue';\n"+
-				                  "    const now=++curr;\n"+
-				                  "    pre.textContent=await Rpc.eval(input.value);\n"+
-				                  "    if(now!=curr) return;//Don't update if another call was started just now\n"+
-				                  "    pre.style.color='green';\n"+
-				                  "   }catch(e){\n"+
-				                  "    pre.textContent=''+e;\n"+
-				                  "    pre.style.color='red';\n"+
-				                  "   }\n"+
-				                  "  });\n"+
-				                  "</script>")
-				             .Send();
+				await session.Send.Html("<!DOCTYPE html>"+
+				                        "<title>RPC Test</title><script type=\"module\" src=\"/rpc.js\"></script>\n"+
+				                        "<input type=\"text\" value=\"Rpc.getRegistrations()\" style=\"width:100%\"/>\n"+
+				                        "<pre></pre>\n"+
+				                        "<script>var input=document.querySelector('input'),pre=document.querySelector('pre'),curr=0;\n"+
+				                        "input.addEventListener(\"keydown\",async e=>{\n"+
+				                        "  if(e.key!='Enter') return;\n"+
+				                        "  try{\n"+
+				                        "   pre.style.color='blue';\n"+
+				                        "   const now=++curr;\n"+
+				                        "   pre.textContent=await Rpc.eval(input.value);\n"+
+				                        "   if(now!=curr) return;//Don't update if another call was started just now\n"+
+				                        "   pre.style.color='green';\n"+
+				                        "  }catch(e){\n"+
+				                        "   pre.textContent=''+e;\n"+
+				                        "   pre.style.color='red';\n"+
+				                        "  }\n"+
+				                        "});\n"+
+				                        "</script>");
 				return;
 			default:
 				await session.Send.Error(404);

@@ -43,7 +43,7 @@ public abstract class PendingCall:SendReceive{
 	private protected PendingCall(PendingCall other)=>_rawData=other._rawData;
 
 	internal void Resolve(object? o)=>_rawData.TaskCompletionSource.TrySetResult(o);
-	internal void Reject(Exception e)=>_rawData.TaskCompletionSource.TrySetException(RpcException.Convert(e,false));
+	internal void Reject(Exception e)=>_rawData.TaskCompletionSource.TrySetException(e is RpcException rpc?rpc.Unfreeze():e);
 	#endregion
 
 	#region SendReceive

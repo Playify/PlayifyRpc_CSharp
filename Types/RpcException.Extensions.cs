@@ -24,30 +24,30 @@ public partial class RpcException{
 		return str.ToString();
 	}
 
-	public static RpcException Convert(Exception e,bool freeze){
-		if(e is RpcException rpc) return freeze?rpc.Freeze():rpc.Unfreeze();
+	public static RpcException WrapAndFreeze(Exception e){
+		if(e is RpcException rpc){
+			rpc.Freeze();
+			return rpc;
+		}
 
 		var type=e.GetType();
 		return new RpcException(type.FullName??type.Name,
 		                        null,
 		                        e.Message,
 		                        GetOwnStackTrace(e).TrimStart('\n'),
-		                        e.InnerException){
-			_prependOwnStack=!freeze,
-		};
+		                        e.InnerException);
 	}
 
-	private RpcException Freeze(){
-		if(!_prependOwnStack) return this;
+	private void Freeze(){
+		if(!_prependOwnStack) return;
 		_prependOwnStack=false;
 		_stackTrace+=GetOwnStackTrace(this);
-		return this;
 	}
 
-	private RpcException Unfreeze(){
+	public RpcException Unfreeze(){
 		if(_prependOwnStack) return this;
 
-		var e=Read(Type,From,Message,StackTrace??"",Data);//TODO 'cause' gets lost
+		var e=Read(Type,From,Message,StackTrace??"",Data,InnerException);
 		e._prependOwnStack=true;
 		return e;
 	}
@@ -68,9 +68,9 @@ public partial class RpcException{
 	}
 
 	public RpcException Append(string s){
-		var freeze=Freeze();
-		freeze._stackTrace+="\n\trpc "+s;
-		return freeze;
+		Freeze();
+		_stackTrace+="\n\trpc "+s;
+		return this;
 	}
 
 	public RpcException Append(string? type,string? method,object?[]? args)

@@ -191,7 +191,10 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 		}
 	}
 
+	private bool _disposed;
 	public virtual ValueTask DisposeAsync(){
+		if(_disposed) return default;
+		_disposed=true;
 		GC.SuppressFinalize(this);
 
 		lock(_activeRequests)

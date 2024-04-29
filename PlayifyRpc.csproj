@@ -30,7 +30,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="PlayifyUtility" Version="1.2.1" />
+        <PackageReference Include="PlayifyUtility" Version="1.2.2" />
     </ItemGroup>
 
     <ItemGroup>

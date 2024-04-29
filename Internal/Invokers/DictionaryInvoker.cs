@@ -35,7 +35,7 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 			                          args,
 			                          null!);
 		} catch(TargetInvocationException e){
-			throw RpcException.Convert(e.InnerException??e,true);
+			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		}
 	}
 

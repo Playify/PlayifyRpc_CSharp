@@ -8,17 +8,17 @@
     ".NETCoreApp,Version=v6.0": {
       "PlayifyRpc/1.2.0": {
         "dependencies": {
-          "PlayifyUtility": "1.2.1"
+          "PlayifyUtility": "1.2.2"
         },
         "runtime": {
           "PlayifyRpc.dll": {}
         }
       },
-      "PlayifyUtility/1.2.1": {
+      "PlayifyUtility/1.2.2": {
         "runtime": {
           "lib/net6.0/PlayifyUtility.dll": {
-            "assemblyVersion": "1.2.1.0",
-            "fileVersion": "1.2.1.0"
+            "assemblyVersion": "1.2.2.0",
+            "fileVersion": "1.2.2.0"
           }
         }
       }
@@ -30,12 +30,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "PlayifyUtility/1.2.1": {
+    "PlayifyUtility/1.2.2": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-NgPITTPQ3ah/4Nz2KR4qvX+X5oUxjAxVoM0SPQWKAIiezJ8fED68hNz+TYacn0VDmoQ49yLmE7d0BzPPb/hd8w==",
-      "path": "playifyutility/1.2.1",
-      "hashPath": "playifyutility.1.2.1.nupkg.sha512"
+      "sha512": "sha512-Ravwthj1iNSbNL+XTPUCuM4q5XmcH3GIojNYcF7KFBuAb2U3zHbk9E9qNZNVFxlME6+xcE3vchrxGbzr9PKT9Q==",
+      "path": "playifyutility/1.2.2",
+      "hashPath": "playifyutility.1.2.2.nupkg.sha512"
     }
   }
 }

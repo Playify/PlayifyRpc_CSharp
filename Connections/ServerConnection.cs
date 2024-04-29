@@ -29,7 +29,6 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				       :Connections.Where(c=>c.Id==id).ToArray();
 			Connections.Add(this);
 		}
-
 		TaskUtils.WhenAll(toKick.Select(k=>{
 			Console.WriteLine("Kicking client "+k+" as new client with same id joined.");
 			return k.DisposeAsync();
@@ -42,10 +41,8 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			}
 	}
 
-	#region Connection
-	public virtual async ValueTask DisposeAsync(){
-		GC.SuppressFinalize(this);
-
+	//Used when the constructor fails
+	protected void ForceUnregister(){
 		lock(Connections) Connections.Remove(this);
 
 		lock(RpcServer.Types){
@@ -54,7 +51,17 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 					RpcServer.Types[type]=con;//if deleted wrongly, put back in
 			Types.Clear();
 		}
+	}
 
+	#region Connection
+	private bool _disposed;
+
+	public virtual async ValueTask DisposeAsync(){
+		if(_disposed) return;
+		_disposed=true;
+		GC.SuppressFinalize(this);
+
+		ForceUnregister();
 
 		(ServerConnection respondTo,int respondId)[] toReject;
 		(ServerConnection respondTo,int respondId)[] toCancel;
@@ -219,11 +226,20 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				Types.Add(type);
 				return false;
 			}).ToArray();
+
 		if(failed.Length!=0){
-			if(log) Console.WriteLine($"{PrettyName} tried registering Types \"{types.Join("\",\"")}\"");
-			throw new Exception($"Types \"{failed.Join("\",\"")}\" were already registered");
+			if(log)
+				Console.WriteLine(types.Length==1
+					                  ?$"{PrettyName} tried registering Type \"{types[0]}\""
+					                  :$"{PrettyName} tried registering Types \"{types.Join("\",\"")}\"");
+			throw new Exception(failed.Length==1
+				                    ?$"Type \"{failed[0]}\" was already registered"
+				                    :$"Types \"{failed.Join("\",\"")}\" were already registered");
 		}
-		if(log) Console.WriteLine($"{PrettyName} registered Types \"{types.Join("\",\"")}\"");
+		if(log)
+			Console.WriteLine(types.Length==1
+				                  ?$"{PrettyName} registered Type \"{types[0]}\""
+				                  :$"{PrettyName} registered Types \"{types.Join("\",\"")}\"");
 	}
 
 	internal void Unregister(string[] types,bool log){
@@ -235,11 +251,20 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				RpcServer.Types.Remove(type);
 				return false;
 			}).ToArray();
+
 		if(failed.Length!=0){
-			if(log) Console.WriteLine($"{PrettyName} tried unregistering Types \"{types.Join("\",\"")}\"");
-			throw new Exception($"Types \"{failed.Join("\",\"")}\" were not registered");
+			if(log)
+				Console.WriteLine(types.Length==1
+					                  ?$"{PrettyName} tried unregistering Type \"{types[0]}\""
+					                  :$"{PrettyName} tried unregistering Types \"{types.Join("\",\"")}\"");
+			throw new Exception(failed.Length==1
+				                    ?$"Type \"{failed[0]}\" was not registered"
+				                    :$"Types \"{failed.Join("\",\"")}\" were not registered");
 		}
-		if(log) Console.WriteLine($"{PrettyName} unregistered Types \"{types.Join("\",\"")}\"");
+		if(log)
+			Console.WriteLine(types.Length==1
+				                  ?$"{PrettyName} unregistered Type \"{types[0]}\""
+				                  :$"{PrettyName} unregistered Types \"{types.Join("\",\"")}\"");
 	}
 	#endregion
 }

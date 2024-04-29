@@ -43,7 +43,7 @@ public class TypeInvoker:Invoker{
 			                          _instance,
 			                          args);
 		} catch(TargetInvocationException e){
-			throw RpcException.Convert(e.InnerException??e,true);
+			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
 			throw new RpcMethodNotFoundException(type,method);
 		}

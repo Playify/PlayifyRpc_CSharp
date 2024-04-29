@@ -31,7 +31,7 @@ public abstract class Invoker{
 			try{
 				a();
 			} catch(Exception e){
-				throw RpcException.Convert(e,true).Remove(MethodBase.GetCurrentMethod());
+				throw RpcException.WrapAndFreeze(e).Remove(MethodBase.GetCurrentMethod());
 			}
 			return null;
 		});

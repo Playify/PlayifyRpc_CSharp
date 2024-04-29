@@ -9,21 +9,28 @@ public class ServerConnectionWebSocket:ServerConnection{
 
 	public ServerConnectionWebSocket(Func<Task<WebSocket>> webSocket,NameValueCollection query)
 		:base(
-			query.GetValues("id") is not{} id?null:id.SingleOrDefault()??throw new ArgumentException("Multiple 'id' parameters")
-		){/*
-   :base((query.GetValues("id")??throw new ArgumentException("Missing 'id' parameter"))
-		    .SingleOrDefault()??throw new ArgumentException("Multiple 'id' parameters")){*/
+			query.GetValues("id") is not{} ids?null:ids.SingleOrDefault()??throw new ArgumentException("Multiple 'id' parameters")
+		){
+		try{
+			if(query.GetValues("name") is{} names)
+				Name=names.SingleOrDefault()??throw new ArgumentException("Multiple 'name' parameters");
+			Register(query.GetValues("type")??Array.Empty<string>(),false);
 
-		if(query.GetValues("name") is{} names)
-			Name=names.SingleOrDefault()??throw new ArgumentException("Multiple 'name' parameters");
-		Register(query.GetValues("type")??Array.Empty<string>(),false);
-
-		WebSocketTask=webSocket();
+			WebSocketTask=webSocket();
+		} catch(Exception e){
+			ForceUnregister();
+			Console.WriteLine(this+" rejected ("+e.Message+")");
+			throw;
+		}
 	}
 
 	protected internal override async Task SendRaw(DataOutputBuff buff){
-		var (b,len)=buff.GetBufferAndLength();
-		await (await WebSocketTask).Send(b,0,len);
+		try{
+			var (b,len)=buff.GetBufferAndLength();
+			await (await WebSocketTask).Send(b,0,len);
+		} catch(ObjectDisposedException){
+			await DisposeAsync().AsTask();//Should be already closed, but close again, just in case
+		}
 	}
 
 	public async Task ReceiveLoop(){

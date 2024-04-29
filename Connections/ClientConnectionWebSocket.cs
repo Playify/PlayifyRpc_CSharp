@@ -11,9 +11,13 @@ internal class ClientConnectionWebSocket:ClientConnection{
 
 	private ClientConnectionWebSocket(WebSocket webSocket)=>_webSocket=webSocket;
 
-	protected internal override Task SendRaw(DataOutputBuff buff){
-		var (b,len)=buff.GetBufferAndLength();
-		return _webSocket.Send(b,0,len);
+	protected internal override async Task SendRaw(DataOutputBuff buff){
+		try{
+			var (b,len)=buff.GetBufferAndLength();
+			await _webSocket.Send(b,0,len);
+		} catch(ObjectDisposedException){
+			await DisposeAsync().AsTask();//Should be already closed, but close again, just in case
+		}
 	}
 
 	private async Task ReceiveLoop(){

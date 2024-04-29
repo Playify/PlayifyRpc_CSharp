@@ -39,6 +39,7 @@ public static partial class StaticallyTypedUtils{
 			                      .Join(",")+"]",
 			null=>"null",
 			float.NaN or double.NaN=>"NaN",
+			// ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
 			_=>result.ToString()??"",
 		};
 

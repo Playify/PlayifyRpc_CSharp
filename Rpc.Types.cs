@@ -28,6 +28,7 @@ public static partial class Rpc{
 	public static Task UnregisterType(string type)=>RegisteredTypes.Unregister(type);
 
 
+	//TODO name doesn't match CreateObject
 	public static async Task<RpcObject?> GetObjectWithFallback(string type,params string[] fallback)//
 		=>await CallFunction<RpcObject>("Rpc","GetObjectWithFallback",fallback.Prepend(type).Cast<object?>().ToArray());
 
