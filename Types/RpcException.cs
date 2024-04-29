@@ -5,11 +5,14 @@ using JetBrains.Annotations;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
+#if NETFRAMEWORK
+using AsyncFriendlyStackTrace;
+#endif
 
 namespace PlayifyRpc.Types;
 
 [PublicAPI]
-public partial class RpcException:Exception{//TODO check for net48
+public partial class RpcException:Exception{
 	private static readonly Regex TabRegex=new("^  +",RegexOptions.Multiline);
 	public readonly string Type;
 
@@ -49,7 +52,14 @@ public partial class RpcException:Exception{//TODO check for net48
 			}
 		}
 
-		if(cause!=null) _causes+="\ncaused by: "+FixString(cause.ToString());
+		if(cause!=null)
+			_causes+="\ncaused by: "+FixString(
+#if NETFRAMEWORK
+				         cause is RpcException rpc?rpc.ToString():cause.ToAsyncString()
+#else
+				         cause.ToString()
+#endif
+			         );
 	}
 
 

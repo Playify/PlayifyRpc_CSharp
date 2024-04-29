@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils;
-#if NET48
+#if NETFRAMEWORK
 using PlayifyUtility.Utils.Extensions;
 #endif
 
@@ -12,7 +12,7 @@ public partial class RpcWebServer{
 	public static async Task DownloadRpcJs(){
 		string tarballFile;
 #pragma warning disable SYSLIB0014
-		using(var client=new WebClient()){
+		using (var client=new WebClient()){
 #pragma warning restore SYSLIB0014
 			var jsonString=await client.DownloadStringTaskAsync("https://registry.npmjs.org/playify-rpc/latest");
 			if(!JsonObject.TryParse(jsonString,out var json))

@@ -127,7 +127,6 @@ public class FunctionCallContext:SendReceive{
 			try{
 				await task;
 			} catch(Exception e){
-				//throw RpcException.Wrap(e,MethodBase.GetCurrentMethod(),type,method,args);
 				throw RpcException.WrapAndFreeze(e).Append(type,method,args);
 			}
 			result=result.GetType().GetProperty("Result")?.GetValue(result);

@@ -4,6 +4,9 @@ using System.Text;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
+#if NETFRAMEWORK
+using AsyncFriendlyStackTrace;
+#endif
 
 namespace PlayifyRpc.Types;
 
@@ -15,12 +18,23 @@ public partial class RpcException{
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.Eval)}(",
 		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleRequest)}(",
 	};
+
 	private static string GetOwnStackTrace(Exception e){
 		var str=new StringBuilder();
-		var lines=FixString(new StackTrace(e,true).ToString()).Split('\n');
-		foreach(var line in lines)
-			if(line!=""&&!HiddenMethods.Any(line.Substring(line.IndexOf(' ')+1).StartsWith))
-				str.Append('\n').Append(line);
+
+		var lines=FixString(
+#if NETFRAMEWORK
+			new StackTrace(e,true).ToAsyncString()
+#else
+			new StackTrace(e,true).ToString()
+#endif
+		).Split('\n');
+		foreach(var line in lines){
+			if(line=="") continue;
+			var substring=line.Substring(line.IndexOf(' ')+1);
+			"async ".RemoveFromStartOf(ref substring);//TODO change to new from PU
+			if(!HiddenMethods.Any(substring.StartsWith)) str.Append('\n').Append(line);
+		}
 		return str.ToString();
 	}
 
@@ -32,10 +46,10 @@ public partial class RpcException{
 
 		var type=e.GetType();
 		return new RpcException(type.FullName??type.Name,
-		                        null,
-		                        e.Message,
-		                        GetOwnStackTrace(e).TrimStart('\n'),
-		                        e.InnerException);
+			null,
+			e.Message,
+			GetOwnStackTrace(e).TrimStart('\n'),
+			e.InnerException);
 	}
 
 	private void Freeze(){

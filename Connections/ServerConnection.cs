@@ -222,7 +222,8 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		string[] failed;
 		lock(RpcServer.Types)
 			failed=types.Where(type=>{
-				if(!RpcServer.Types.TryAdd(type,this)) return true;
+				if(RpcServer.Types.ContainsKey(type)) return true;
+				RpcServer.Types.Add(type,this);//TODO use TryAdd after PU fix
 				Types.Add(type);
 				return false;
 			}).ToArray();
@@ -267,4 +268,5 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				                  :$"{PrettyName} unregistered Types \"{types.Join("\",\"")}\"");
 	}
 	#endregion
+
 }

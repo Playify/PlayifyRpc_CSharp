@@ -1,6 +1,6 @@
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Streams.Data;
-#if NET48
+#if NETFRAMEWORK
 using PlayifyUtility.Utils.Extensions;
 #endif
 
