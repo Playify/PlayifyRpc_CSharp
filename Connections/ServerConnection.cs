@@ -89,6 +89,9 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			case PacketType.FunctionCall:{
 				var callId=data.ReadLength();
 				var type=data.ReadString();
+
+				ListenAllCalls.Broadcast(this,type,data.Clone());
+					
 				if(type==null) await CallServer(this,data,callId);
 				else{
 					ServerConnection? handler;
@@ -181,6 +184,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		buff.WriteLength(callId);
 		buff.WriteString(type);
 		buff.Write(data);
+
 
 		lock(_activeRequests) _activeRequests.Add(callId,(respondTo,respondId));
 

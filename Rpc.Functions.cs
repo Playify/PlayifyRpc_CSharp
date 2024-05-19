@@ -20,7 +20,8 @@ public static partial class Rpc{
 	public static PendingCall CallFunction(string type,string method,params object?[] args)=>FunctionCallContext.CallFunction(type,method,args);
 	public static PendingCall<T> CallFunction<T>(string type,string method,params object?[] args)=>FunctionCallContext.CallFunction<T>(type,method,args);
 
-	public static Task<string> Eval(string expression,bool pretty=true)=>Evaluate.Eval(expression,pretty);
+	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
+	public static Task<object?> EvalObject(string expression)=>Evaluate.EvalObject(expression);
 
 	public static FunctionCallContext GetContext()=>FunctionCallContext.GetContext();
 	public static void RunWithContext(Action func,FunctionCallContext context)=>FunctionCallContext.RunWithContext(func,context);

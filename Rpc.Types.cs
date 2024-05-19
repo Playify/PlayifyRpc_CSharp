@@ -2,6 +2,7 @@ using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc;
@@ -40,5 +41,7 @@ public static partial class Rpc{
 
 	public static async Task<string[]> GetAllConnections()=>await CallFunction<string[]>("Rpc","GetAllConnections");
 
-	public static async Task<Dictionary<string,string[]>> GetRegistrations()=>await CallFunction<StringMap<string[]>>("Rpc","GetRegistrations");
+	public static async Task<Dictionary<string,string[]>> GetRegistrations(bool includeHidden=false)=>await CallFunction<StringMap<string[]>>("Rpc","GetRegistrations",includeHidden);
+
+	public static PendingCall ListenCalls()=>CallFunction("Rpc","ListenCalls");
 }

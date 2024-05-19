@@ -16,6 +16,7 @@ namespace PlayifyRpc.Types.Data;
 public static class DynamicData{
 	private static readonly List<(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)> WriteRegistry=new();
 	private static readonly Dictionary<string,Func<DataInput,List<object>,object>> ReadRegistry=new();
+	private static readonly List<Func<object?,object?>> Converters=new();
 
 	static DynamicData(){
 		AppDomain.CurrentDomain.AssemblyLoad+=(_,args)=>RegisterAssembly(args.LoadedAssembly);
@@ -81,6 +82,9 @@ public static class DynamicData{
 	}
 
 	internal static void Write(DataOutput output,object? d,List<object> already){
+		foreach(var converter in Converters)
+			d=converter(d);
+		
 		d=d switch{
 			JsonString j=>j.Value,
 			JsonNumber j=>j.Value,
@@ -266,7 +270,10 @@ public static class DynamicData{
 			(data,o,already)=>write(data,(T)o,already)
 		);
 
-	public static void Free(List<object> already){
+	// Converters are called before a value is being written to the DataOutput, to allow casting from anything to some supported type
+	public static void AddConverter<T>(Func<object?,object?> func)=>Converters.Add(func);
+
+	internal static void Free(List<object> already){
 		foreach(var d in already.OfType<Delegate>()) RpcFunction.UnregisterFunction(d);
 	}
 }

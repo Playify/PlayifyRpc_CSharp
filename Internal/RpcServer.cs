@@ -34,12 +34,15 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 		lock(ServerConnection.Connections) return ServerConnection.Connections.Select(c=>c.PrettyName).OrderBy(s=>s).ToArray();
 	}
 
-	public static StringMap<string[]> GetRegistrations(){
+	public static StringMap<string[]> GetRegistrations(bool includeHidden=false){
 		lock(ServerConnection.Connections)
 			return ServerConnection
 			       .Connections
 			       .ToDictionary(c=>c.PrettyName,c=>{
-				       lock(Types) return c.Types.ToArray();
+				       lock(Types)
+					       return includeHidden
+						              ?c.Types.ToArray()
+						              :c.Types.Where(t=>t!="$"+c.Id).ToArray();
 			       });
 	}
 
@@ -54,8 +57,15 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 		return call;
 	}
 
-	public static Task<string> Eval(string expression,bool pretty=true)=>Evaluate.Eval(expression,pretty);
-	public static Task<object?> EvalAny(string expression)=>Evaluate.EvalAny(expression);
+	[Obsolete]
+	public static Task<string> Eval(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
+
+	[Obsolete]
+	public static Task<object?> EvalAny(string expression)=>Evaluate.EvalObject(expression);
+
+	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
+	public static Task<object?> EvalObject(string expression)=>Evaluate.EvalObject(expression);
+	public static Task ListenCalls()=>ListenAllCalls.Listen(Rpc.GetContext());
 	#endregion
 
 	#region Extension Methods, not available via eval

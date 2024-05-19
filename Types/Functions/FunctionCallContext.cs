@@ -36,6 +36,7 @@ public class FunctionCallContext:SendReceive{
 	public CancellationToken CancellationToken=>_cts.Token;
 	public void CancelSelf()=>_cts.Cancel();
 	public void CancelSelfAfter(TimeSpan delay)=>_cts.CancelAfter(delay);
+	//TODO public Task<{id,name,prettyName}> GetCaller()
 
 
 	public override void SendMessage(params object?[] args)=>_send(args);
@@ -49,7 +50,12 @@ public class FunctionCallContext:SendReceive{
 			lock(RegisteredTypes.Registered)
 				if(!RegisteredTypes.Registered.TryGetValue(type,out local))
 					local=null;
-			if(local!=null) return local.Call(type,method,args);
+			if(local!=null){
+				var action=ListenAllCalls.Broadcast(type,method,args);
+				var pending=local.Call(type,method,args);
+				if(action!=null) pending.Finally(action);
+				return pending;
+			}
 		}
 
 		var truth=new PendingCallRawData();
@@ -67,7 +73,10 @@ public class FunctionCallContext:SendReceive{
 			buff.WriteLength(callId);
 			buff.WriteString(type);
 			buff.WriteString(method);
+			var len=buff.GetBufferAndLength().len;
 			buff.WriteArray(args,buff.WriteDynamic,already);
+
+			ListenAllCalls.Broadcast(type,method,buff,len);
 		} catch(Exception e){
 			call.Reject(e);
 			return call;

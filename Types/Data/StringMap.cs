@@ -1,17 +1,22 @@
 using System.Collections;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal;
+using PlayifyUtility.HelperClasses;
 
 namespace PlayifyRpc.Types.Data;
 
-//This has to be used instead of using Dictionary<string,?> directly, as Dictionary would better assembles a JavaScript Map, instead of a JavaScript Object
+/**
+This has to be used instead of using Dictionary<string,?> directly,
+as Dictionary would better assembles a JavaScript Map, instead of a JavaScript Object
+Otherwise, an ExpandoObject can be used as well
+*/
 [PublicAPI]
 public class StringMap<T>:ObjectTemplate,IEnumerable<KeyValuePair<string,T>>{
 	#region Enumerable
-	public readonly Dictionary<string,T> Dictionary;
+	public readonly IDictionary<string,T> Dictionary;
 
-	private StringMap()=>Dictionary=new Dictionary<string,T>();
-	private StringMap(Dictionary<string,T> dict)=>Dictionary=dict;
+	public StringMap()=>Dictionary=new InsertionOrderDictionary<string,T>();
+	public StringMap(IDictionary<string,T> dict)=>Dictionary=dict;
 
 	public void Add(string key,T value)=>Dictionary.Add(key,value);
 
@@ -31,6 +36,7 @@ public class StringMap<T>:ObjectTemplate,IEnumerable<KeyValuePair<string,T>>{
 	#endregion
 
 
-	public static implicit operator Dictionary<string,T>(StringMap<T> sm)=>sm.Dictionary;
+	public static implicit operator Dictionary<string,T>(StringMap<T> sm)=>sm.Dictionary as Dictionary<string,T>??new Dictionary<string,T>(sm.Dictionary);
+	public static implicit operator InsertionOrderDictionary<string,T>(StringMap<T> sm)=>sm.Dictionary as InsertionOrderDictionary<string,T>??new InsertionOrderDictionary<string,T>(sm.Dictionary);
 	public static implicit operator StringMap<T>(Dictionary<string,T> dict)=>new(dict);
 }

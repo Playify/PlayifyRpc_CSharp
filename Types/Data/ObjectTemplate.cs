@@ -10,12 +10,25 @@ using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Data;
 
-public abstract class ObjectTemplate{
-	private readonly Dictionary<string,object?> _extraProps=new(StringComparer.OrdinalIgnoreCase);
+public abstract class ObjectTemplate:DynamicObject{
+	[PublicAPI]
+	public readonly Dictionary<string,object?> ExtraProps=new(StringComparer.OrdinalIgnoreCase);
+	//InsertionOrderDictionary doesn't help here, as keys are already scrambled, due to normal properties
 
 
 	[PublicAPI]
 	public static T? CreateFromExpando<T>(ExpandoObject? exp) where T:ObjectTemplate,new(){
+		if(exp==null) return null;
+
+		var o=new T();
+		foreach(var (key,value) in exp)
+			if(!o.TrySetProperty(key,value))
+				throw new InvalidCastException("Error setting property \""+key+"\" of "+typeof(T).Name);
+		return o;
+	}
+
+	[PublicAPI]
+	public static T? CreateFromJson<T>(JsonObject? exp) where T:ObjectTemplate,new(){
 		if(exp==null) return null;
 
 		var o=new T();
@@ -56,7 +69,7 @@ public abstract class ObjectTemplate{
 		field??=GetType().GetField(key,BindingFlags.IgnoreCase);
 
 		if(field==null){
-			_extraProps[key]=value;
+			ExtraProps[key]=value;
 			return true;
 		}
 
@@ -73,7 +86,7 @@ public abstract class ObjectTemplate{
 
 			yield return (field.Name,field.GetValue(this));
 		}
-		foreach(var (key,value) in _extraProps) yield return (key,value);
+		foreach(var (key,value) in ExtraProps) yield return (key,value);
 	}
 
 
@@ -88,4 +101,16 @@ public abstract class ObjectTemplate{
 			output.WriteDynamic(value,already);
 		}
 	}
+
+	public override bool TryGetMember(GetMemberBinder binder,out object result){
+		foreach(var (key,value) in GetProperties())
+			if(binder.Name.Equals(key,binder.IgnoreCase?StringComparison.OrdinalIgnoreCase:StringComparison.Ordinal))
+				return StaticallyTypedUtils.TryCast(value,binder.ReturnType,out result!);
+		result=null!;
+		return false;
+	}
+
+	public override bool TrySetMember(SetMemberBinder binder,object? value)=>TrySetProperty(binder.Name,value);
+
+	public override IEnumerable<string> GetDynamicMemberNames()=>GetProperties().Select(t=>t.key);
 }

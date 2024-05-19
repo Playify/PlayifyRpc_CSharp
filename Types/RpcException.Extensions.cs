@@ -14,8 +14,8 @@ public partial class RpcException{
 	private static readonly List<string> HiddenMethods=new(){
 		$"{typeof(FunctionCallContext).FullName}.{nameof(FunctionCallContext.RunWithContextAsync)}(",
 		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.DoCast)}[",
-		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalAny)}(",
-		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.Eval)}(",
+		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalObject)}(",
+		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalString)}(",
 		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleRequest)}(",
 	};
 
@@ -32,7 +32,7 @@ public partial class RpcException{
 		foreach(var line in lines){
 			if(line=="") continue;
 			var substring=line.Substring(line.IndexOf(' ')+1);
-			"async ".RemoveFromStartOf(ref substring);//TODO change to new from PU
+			substring=substring.RemoveFromStart("async ");
 			if(!HiddenMethods.Any(substring.StartsWith)) str.Append('\n').Append(line);
 		}
 		return str.ToString();

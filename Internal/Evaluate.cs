@@ -24,7 +24,7 @@ internal static class Evaluate{
 		return NoValue;
 	}
 
-	internal static async Task<object?> EvalAny(string s){
+	internal static async Task<object?> EvalObject(string s){
 		var bracket=s.IndexOf('(');
 		if(bracket==-1){
 			if(s=="")
@@ -61,5 +61,5 @@ internal static class Evaluate{
 		return await Rpc.CallFunction(type,method,args.ToArray());
 	}
 
-	internal static async Task<string> Eval(string s,bool pretty)=>StaticallyTypedUtils.Stringify(await EvalAny(s),pretty);
+	internal static async Task<string> EvalString(string s,bool pretty)=>StaticallyTypedUtils.Stringify(await EvalObject(s),pretty);
 }

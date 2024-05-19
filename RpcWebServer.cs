@@ -169,7 +169,7 @@ public partial class RpcWebServer:WebBase{
 				else break;
 
 			try{
-				s=await Evaluate.Eval(s,prettyResponse);
+				s=await Evaluate.EvalString(s,prettyResponse);
 			} catch(Exception e){
 				await session.Send
 				             .Cache(false)
@@ -206,7 +206,7 @@ public partial class RpcWebServer:WebBase{
 				                        "  try{\n"+
 				                        "   pre.style.color='blue';\n"+
 				                        "   const now=++curr;\n"+
-				                        "   pre.textContent=await Rpc.eval(input.value);\n"+
+				                        "   pre.textContent=await Rpc.evalString(input.value);\n"+
 				                        "   if(now!=curr) return;//Don't update if another call was started just now\n"+
 				                        "   pre.style.color='green';\n"+
 				                        "  }catch(e){\n"+
