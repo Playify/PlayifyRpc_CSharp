@@ -31,7 +31,7 @@ public abstract class PendingCall:SendReceive{
 	public PendingCall WithCancellation(CancellationToken token){
 		if(Finished) return this;
 		var registration=token.Register(_rawData.SendCancel);
-		Task.Then(registration.Dispose);
+		Finally(registration.Dispose);
 
 		return this;
 	}

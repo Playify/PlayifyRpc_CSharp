@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks.Dataflow;
 using PlayifyRpc.Internal;
-using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Functions;
 
@@ -15,7 +14,8 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 		var receive=new BufferBlock<object?[]>();
 
 		AddMessageListener(msg=>receive.Post(msg));
-		_=Task.Finally(()=>receive.Complete());
+		// ReSharper disable once MethodSupportsCancellation
+		_=Task.ContinueWith(_=>receive.Complete());
 
 
 		while(await receive.OutputAvailableAsync(cancelToken).ConfigureAwait(false))

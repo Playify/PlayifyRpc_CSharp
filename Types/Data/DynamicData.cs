@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -223,6 +224,7 @@ public static class DynamicData{
 	}
 
 	private static void RegisterAssembly(Assembly assembly){
+		Debug.WriteLine("DynamicData registering "+assembly);
 		foreach(var type in assembly.GetTypes()){
 			var remoteClass=type.GetCustomAttribute<CustomDynamicTypeAttribute>();
 			if(remoteClass==null) continue;
