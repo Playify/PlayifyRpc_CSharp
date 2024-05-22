@@ -12,10 +12,12 @@ public abstract class Invoker{
 	protected internal object? Invoke(string? type,string? method,object?[] args){
 		if(method!=null) return DynamicInvoke(type,method,args);
 
+		if(!StaticallyTypedUtils.TryCast<string>(args.Length==0?null:args[0],out var meta)) meta=null;
+
 		//Meta calls, using null as method
-		return (args.Length==0?null:args[0]) switch{
+		return meta switch{
 			"M"=>GetMethods().Push(out var valueTask).IsCompletedSuccessfully?valueTask.Result:valueTask.AsTask(),
-			var meta=>throw new RpcMetaMethodNotFoundException(type,meta?.ToString()),
+			_=>throw new RpcMetaMethodNotFoundException(type,meta),
 		};
 	}
 
