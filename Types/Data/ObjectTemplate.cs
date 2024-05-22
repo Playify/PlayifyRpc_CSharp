@@ -11,13 +11,13 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Types.Data;
 
 public abstract class ObjectTemplate:DynamicObject{
-	[PublicAPI]
-	public readonly Dictionary<string,object?> ExtraProps=new(StringComparer.OrdinalIgnoreCase);
 	//InsertionOrderDictionary doesn't help here, as keys are already scrambled, due to normal properties
+	private readonly Dictionary<string,object?> _extraProps=new(StringComparer.OrdinalIgnoreCase);
+	public Dictionary<string,object?> GetExtraProps()=>_extraProps;
 
 
 	[PublicAPI]
-	public static T? CreateFromExpando<T>(ExpandoObject? exp) where T:ObjectTemplate,new(){
+	public static T? CreateFromExpando<T>(ExpandoObject? exp) where T : ObjectTemplate,new(){
 		if(exp==null) return null;
 
 		var o=new T();
@@ -28,7 +28,7 @@ public abstract class ObjectTemplate:DynamicObject{
 	}
 
 	[PublicAPI]
-	public static T? CreateFromJson<T>(JsonObject? exp) where T:ObjectTemplate,new(){
+	public static T? CreateFromJson<T>(JsonObject? exp) where T : ObjectTemplate,new(){
 		if(exp==null) return null;
 
 		var o=new T();
@@ -64,29 +64,41 @@ public abstract class ObjectTemplate:DynamicObject{
 		return o;
 	}
 
-	private protected virtual bool TrySetProperty(string key,object? value){
-		var field=GetType().GetField(key);
-		field??=GetType().GetField(key,BindingFlags.IgnoreCase);
+	protected private virtual bool TrySetProperty(string key,object? value){
+		var type=GetType();
 
-		if(field==null){
-			ExtraProps[key]=value;
-			return true;
-		}
+		if(type.GetProperty(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{
+			   CanWrite: true,
+		   } property)
+			if(StaticallyTypedUtils.TryCast(value,property.PropertyType,out var casted)){
+				property.SetValue(this,casted);
+				return true;
+			} else return false;
+		if(type.GetField(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{} field)
+			if(StaticallyTypedUtils.TryCast(value,field.FieldType,out var casted)){
+				field.SetValue(this,casted);
+				return true;
+			} else return false;
 
-		if(!StaticallyTypedUtils.TryCast(value,field.FieldType,out var casted)) return false;
-
-		field.SetValue(this,casted);
+		_extraProps[key]=value;
 		return true;
 	}
 
 	protected internal virtual IEnumerable<(string key,object? value)> GetProperties(){
+		foreach(var property in GetType().GetProperties()){
+			if(property.IsSpecialName) continue;
+			if(!property.CanRead) continue;
+
+			yield return (property.Name,property.GetValue(this));
+		}
 		foreach(var field in GetType().GetFields()){
 			if(field.IsStatic) continue;
 			if(field.IsPrivate) continue;
 
 			yield return (field.Name,field.GetValue(this));
 		}
-		foreach(var (key,value) in ExtraProps) yield return (key,value);
+		foreach(var (key,value) in _extraProps)
+			yield return (key,value);
 	}
 
 
