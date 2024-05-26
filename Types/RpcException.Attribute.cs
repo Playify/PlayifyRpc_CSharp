@@ -12,29 +12,33 @@ public partial class RpcException{
 	}
 
 	private static void RegisterAssembly(Assembly assembly){
-		foreach(var type in assembly.GetTypes()){
-			var attribute=type.GetCustomAttribute<RpcCustomExceptionAttribute>();
-			if(attribute==null) continue;
-			if(!typeof(RpcException).IsAssignableFrom(type)) throw new Exception("Type "+type+" does not inherit from "+nameof(RpcException));
+		try{
+			foreach(var type in assembly.GetTypes()){
+				var attribute=type.GetCustomAttribute<RpcCustomExceptionAttribute>();
+				if(attribute==null) continue;
+				if(!typeof(RpcException).IsAssignableFrom(type)) throw new Exception("Type "+type+" does not inherit from "+nameof(RpcException));
 
-			//Prefer the constructor with 5 parameters, if that's not available, then check for a 4 parameter constructor
-			var constructor=type.GetConstructor(BindingFlags.NonPublic|BindingFlags.Instance,null,new[]{
-				typeof(string),
-				typeof(string),
-				typeof(string),
-				typeof(string),
-				typeof(Exception),
-			},null)??type.GetConstructor(BindingFlags.NonPublic|BindingFlags.Instance,null,new[]{
-				typeof(string),
-				typeof(string),
-				typeof(string),
-				typeof(string),
-			},null)??throw new Exception("Type "+type+" does not implement a "+
-			                             "constructor(string? type,string? from,string? message,string? stackTrace,Exception? cause)"+
-			                             ", nor a "+
-			                             "constructor(string? type,string? from,string? message,string? stackTrace)");
+				//Prefer the constructor with 5 parameters, if that's not available, then check for a 4 parameter constructor
+				var constructor=type.GetConstructor(BindingFlags.NonPublic|BindingFlags.Instance,null,new[]{
+					typeof(string),
+					typeof(string),
+					typeof(string),
+					typeof(string),
+					typeof(Exception),
+				},null)??type.GetConstructor(BindingFlags.NonPublic|BindingFlags.Instance,null,new[]{
+					typeof(string),
+					typeof(string),
+					typeof(string),
+					typeof(string),
+				},null)??throw new Exception("Type "+type+" does not implement a "+
+				                             "constructor(string? type,string? from,string? message,string? stackTrace,Exception? cause)"+
+				                             ", nor a "+
+				                             "constructor(string? type,string? from,string? message,string? stackTrace)");
 
-			Constructors.Add(attribute.TypeTag,constructor);
+				Constructors.Add(attribute.TypeTag,constructor);
+			}
+		} catch(Exception e){
+			Console.WriteLine("Error registering assembly \""+assembly+"\": "+e);
 		}
 	}
 }

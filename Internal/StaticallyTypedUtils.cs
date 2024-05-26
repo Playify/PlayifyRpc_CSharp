@@ -21,6 +21,7 @@ public static partial class StaticallyTypedUtils{
 	public static string Stringify(object? result,bool pretty){
 		if(TryCast<Json>(result,out var json)) return json.ToString(pretty?"\t":null);
 		if(TryCast<string>(result,out var s)) return s;
+		if(TryCast<ExpandoObject>(result,out var ex)) result=ex;
 
 		return result switch{
 			ExpandoObject expando when !expando.Any()=>"{}",

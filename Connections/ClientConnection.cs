@@ -111,6 +111,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 					tcs.TrySetResult(result);
 					await Resolve(callId,result);
 				} catch(Exception e){
+					if(e is TypeInitializationException)
+						Console.WriteLine("Error Initializing Type while receiving RPC: "+e);
 					tcs.TrySetException(e);
 					await Reject(callId,e);
 				} finally{

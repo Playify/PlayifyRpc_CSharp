@@ -44,9 +44,6 @@
         <Compile Update="Rpc.Types.cs">
             <DependentUpon>Rpc.cs</DependentUpon>
         </Compile>
-        <Compile Update="Internal\StaticallyTypedUtils.Cast.cs">
-            <DependentUpon>StaticallyTypedUtils.cs</DependentUpon>
-        </Compile>
         <Compile Update="RpcWebServer.RpcJs.cs">
             <DependentUpon>RpcWebServer.cs</DependentUpon>
         </Compile>
@@ -58,6 +55,9 @@
         </Compile>
         <Compile Update="Types\RpcException.Extensions.cs">
             <DependentUpon>RpcException.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Internal\StaticallyTypedUtils.Cast.cs">
+            <DependentUpon>StaticallyTypedUtils.cs</DependentUpon>
         </Compile>
     </ItemGroup>
 </Project>

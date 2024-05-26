@@ -85,7 +85,7 @@ public static class DynamicData{
 	internal static void Write(DataOutput output,object? d,List<object> already){
 		foreach(var converter in Converters)
 			d=converter(d);
-		
+
 		d=d switch{
 			JsonString j=>j.Value,
 			JsonNumber j=>j.Value,
@@ -225,35 +225,39 @@ public static class DynamicData{
 
 	private static void RegisterAssembly(Assembly assembly){
 		Debug.WriteLine("DynamicData registering "+assembly);
-		foreach(var type in assembly.GetTypes()){
-			var remoteClass=type.GetCustomAttribute<CustomDynamicTypeAttribute>();
-			if(remoteClass==null) continue;
+		try{
+			foreach(var type in assembly.GetTypes()){
+				var remoteClass=type.GetCustomAttribute<CustomDynamicTypeAttribute>();
+				if(remoteClass==null) continue;
 
-			/*
-			var read=type.GetMethod("Read",BindingFlags.Public|BindingFlags.Static,null,new[]{typeof(DataInput),typeof(List<object>)},null);
-			read??=type.GetMethod("Read",BindingFlags.Public|BindingFlags.Static,null,new[]{typeof(DataInput)},null);*/
-			var readConstructor=type.GetConstructor(new[]{typeof(DataInput),typeof(List<object>)});
-			Func<DataInput,List<object>,object> read;
-			if(readConstructor==null){
-				readConstructor=type.GetConstructor(new[]{typeof(DataInput)});
-				if(readConstructor==null) throw new Exception("Type "+type+" does not implement a public constructor(DataInput i,List<object> already) or public constructor(DataInput i)");
+				/*
+				var read=type.GetMethod("Read",BindingFlags.Public|BindingFlags.Static,null,new[]{typeof(DataInput),typeof(List<object>)},null);
+				read??=type.GetMethod("Read",BindingFlags.Public|BindingFlags.Static,null,new[]{typeof(DataInput)},null);*/
+				var readConstructor=type.GetConstructor(new[]{typeof(DataInput),typeof(List<object>)});
+				Func<DataInput,List<object>,object> read;
+				if(readConstructor==null){
+					readConstructor=type.GetConstructor(new[]{typeof(DataInput)});
+					if(readConstructor==null) throw new Exception("Type "+type+" does not implement a public constructor(DataInput i,List<object> already) or public constructor(DataInput i)");
 
-				read=(i,_)=>readConstructor.Invoke(new object[]{i});
-			} else read=(i,already)=>readConstructor.Invoke(new object[]{i,already});
-
-
-			var writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,new[]{typeof(DataOutput),typeof(List<object>)},null);
-			Action<DataOutput,object,List<object>> write;
-			if(writeMethod==null){
-				writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,new[]{typeof(DataOutput)},null);
-				if(writeMethod==null) throw new Exception("Type "+type+" does not implement a public void Write(DataOutput o,List<object> already) or public void Write(DataOutput o) method");
-
-				write=(o,d,_)=>writeMethod.Invoke(d,new object[]{o});
-			} else write=(o,d,already)=>writeMethod.Invoke(d,new object[]{o,already});
+					read=(i,_)=>readConstructor.Invoke(new object[]{i});
+				} else read=(i,already)=>readConstructor.Invoke(new object[]{i,already});
 
 
-			ReadRegistry.Add(remoteClass.Id,read);
-			WriteRegistry.Add((remoteClass.Id,type.IsInstanceOfType,write));
+				var writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,new[]{typeof(DataOutput),typeof(List<object>)},null);
+				Action<DataOutput,object,List<object>> write;
+				if(writeMethod==null){
+					writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,new[]{typeof(DataOutput)},null);
+					if(writeMethod==null) throw new Exception("Type "+type+" does not implement a public void Write(DataOutput o,List<object> already) or public void Write(DataOutput o) method");
+
+					write=(o,d,_)=>writeMethod.Invoke(d,new object[]{o});
+				} else write=(o,d,already)=>writeMethod.Invoke(d,new object[]{o,already});
+
+
+				ReadRegistry.Add(remoteClass.Id,read);
+				WriteRegistry.Add((remoteClass.Id,type.IsInstanceOfType,write));
+			}
+		} catch(Exception e){
+			Console.WriteLine("Error registering assembly \""+assembly+"\": "+e);
 		}
 	}
 
@@ -273,7 +277,7 @@ public static class DynamicData{
 		);
 
 	// Converters are called before a value is being written to the DataOutput, to allow casting from anything to some supported type
-	public static void AddConverter<T>(Func<object?,object?> func)=>Converters.Add(func);
+	public static void AddConverter(Func<object?,object?> func)=>Converters.Add(func);
 
 	internal static void Free(List<object> already){
 		foreach(var d in already.OfType<Delegate>()) RpcFunction.UnregisterFunction(d);

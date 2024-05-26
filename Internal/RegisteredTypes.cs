@@ -16,18 +16,22 @@ internal static class RegisteredTypes{
 		AppDomain.CurrentDomain.AssemblyLoad+=(_,args)=>RegisterAssembly(args.LoadedAssembly);
 		foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) RegisterAssembly(assembly);
 
-		typeof(RpcFunction).RunClassConstructor();//initialize static constructor of RemoteFunction
+		typeof(RpcFunction).RunClassConstructor();//Let RpcFunction register its internal type
 	}
 
 	private static void RegisterAssembly(Assembly assembly){
-		foreach(var type in assembly.GetTypes()){
-			var sharedClass=type.GetCustomAttribute<RpcProviderAttribute>();
-			if(sharedClass!=null){
-				if(typeof(Invoker).IsAssignableFrom(type)){
-					RuntimeHelpers.RunClassConstructor(type.TypeHandle);
-					_=Register(sharedClass.Type??type.Name,(Invoker)Activator.CreateInstance(type)!);
-				} else _=Register(sharedClass.Type??type.Name,new TypeInvoker(type));
+		try{
+			foreach(var type in assembly.GetTypes()){
+				var sharedClass=type.GetCustomAttribute<RpcProviderAttribute>();
+				if(sharedClass!=null){
+					if(typeof(Invoker).IsAssignableFrom(type)){
+						RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+						_=Register(sharedClass.Type??type.Name,(Invoker)Activator.CreateInstance(type)!);
+					} else _=Register(sharedClass.Type??type.Name,new TypeInvoker(type));
+				}
 			}
+		} catch(Exception e){
+			Console.WriteLine("Error registering assembly \""+assembly+"\": "+e);
 		}
 	}
 
