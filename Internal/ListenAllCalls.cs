@@ -53,6 +53,7 @@ internal static class ListenAllCalls{
 
 			Broadcast(type,method,buff.ToByteArray());
 
+			DynamicData.CleanupBeforeFreeing(already);
 			return ()=>DynamicData.Free(already);
 		}
 	}

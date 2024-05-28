@@ -282,4 +282,10 @@ public static class DynamicData{
 	internal static void Free(List<object> already){
 		foreach(var d in already.OfType<Delegate>()) RpcFunction.UnregisterFunction(d);
 	}
+
+	internal static bool NeedsFreeing(object arg)=>arg is Delegate;
+
+	internal static void CleanupBeforeFreeing(List<object> already){
+		already.RemoveAll(o=>!NeedsFreeing(o));
+	}
 }

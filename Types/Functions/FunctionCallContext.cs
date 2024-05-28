@@ -75,6 +75,7 @@ public class FunctionCallContext:SendReceive{
 			buff.WriteString(method);
 			var len=buff.GetBufferAndLength().len;
 			buff.WriteArray(args,buff.WriteDynamic,already);
+			already.RemoveAll(o=>!DynamicData.NeedsFreeing(o));
 
 			ListenAllCalls.Broadcast(type,method,buff,len);
 		} catch(Exception e){
@@ -94,7 +95,8 @@ public class FunctionCallContext:SendReceive{
 			msg.WriteLength(callId);
 			var list=new List<object>();
 			msg.WriteArray(msgArgs,msg.WriteDynamic,list);
-			already.AddRange(list);
+			lock(already)
+				already.AddRange(list.Where(DynamicData.NeedsFreeing));
 
 			connection.SendRaw(msg);
 		};

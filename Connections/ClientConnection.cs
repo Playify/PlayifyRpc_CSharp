@@ -89,22 +89,24 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 					var method=data.ReadString();
 
 					var args=data.ReadArray(data.ReadDynamic,already)??Array.Empty<object?>();
+					DynamicData.CleanupBeforeFreeing(already);
 
 
 					var context=new FunctionCallContext(type,
-					                                    method,
-					                                    sending=>{
-						                                    if(tcs.Task.IsCompleted) return;
-						                                    var msg=new DataOutputBuff();
-						                                    msg.WriteByte((byte)PacketType.MessageToCaller);
-						                                    msg.WriteLength(callId);
-						                                    var list=new List<object>();
-						                                    msg.WriteArray(sending,msg.WriteDynamic,list);
-						                                    already.AddRange(list);
+						method,
+						sending=>{
+							if(tcs.Task.IsCompleted) return;
+							var msg=new DataOutputBuff();
+							msg.WriteByte((byte)PacketType.MessageToCaller);
+							msg.WriteLength(callId);
+							var list=new List<object>();
+							msg.WriteArray(sending,msg.WriteDynamic,list);
+							lock(already)
+								already.AddRange(list.Where(DynamicData.NeedsFreeing));
 
-						                                    SendRaw(msg);
-					                                    },
-					                                    tcs);
+							SendRaw(msg);
+						},
+						tcs);
 					lock(_currentlyExecuting) _currentlyExecuting.Add(callId,context);
 
 					var result=await FunctionCallContext.RunWithContextAsync(()=>local.Invoke(type,method,args),context,type,method,args);
@@ -194,6 +196,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	}
 
 	private bool _disposed;
+
 	public virtual ValueTask DisposeAsync(){
 		if(_disposed) return default;
 		_disposed=true;

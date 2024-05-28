@@ -210,20 +210,20 @@ public static partial class StaticallyTypedUtils{
 
 		public static object Objects(object? value,Type type){
 			if(typeof(ObjectTemplate).IsAssignableFrom(type))
-				return GetObjectProps(type) is{} props?ObjectTemplate.TryCreateTemplate(props,type)??ContinueWithNext:ContinueWithNext;
+				return GetObjectProps(value) is{} props?ObjectTemplate.TryCreateTemplate(props,type)??ContinueWithNext:ContinueWithNext;
 			if(type.IsAssignableFrom(typeof(JsonObject)))
-				return GetObjectProps(type) is{} props?ObjectTemplate.TryCreateJson(props)??ContinueWithNext:ContinueWithNext;
+				return GetObjectProps(value) is{} props?ObjectTemplate.TryCreateJson(props)??ContinueWithNext:ContinueWithNext;
 			if(typeof(ExpandoObject).IsAssignableFrom(type))
-				return GetObjectProps(type) is{} props?ObjectTemplate.TryCreateExpando(props):ContinueWithNext;
+				return GetObjectProps(value) is{} props?ObjectTemplate.TryCreateExpando(props):ContinueWithNext;
 			return ContinueWithNext;
 		}
 
 		public static object? TryParse(object? value,Type type){
 			if(type.GetMethod("TryParse",
-			                  BindingFlags.Public|BindingFlags.Static|BindingFlags.InvokeMethod,
-			                  null,
-			                  new[]{typeof(string),type.MakeByRefType()},
-			                  null) is not{} tryParse) return ContinueWithNext;
+				   BindingFlags.Public|BindingFlags.Static|BindingFlags.InvokeMethod,
+				   null,
+				   new[]{typeof(string),type.MakeByRefType()},
+				   null) is not{} tryParse) return ContinueWithNext;
 			if(!TryCast(value,out string s)) return ContinueWithNext;
 
 			var parameters=new[]{s,type.IsValueType?Activator.CreateInstance(type):null};
