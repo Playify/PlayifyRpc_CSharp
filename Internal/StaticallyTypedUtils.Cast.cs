@@ -115,7 +115,10 @@ public static partial class StaticallyTypedUtils{
 		}
 
 		public static object Primitives(object? value,Type type){
-			if(!type.IsPrimitive||!TryCast(value,out IConvertible number)) return ContinueWithNext;
+			if(!type.IsPrimitive||
+			   type==typeof(bool)||
+			   type==typeof(DateTime)||
+			   !TryCast(value,out IConvertible number)) return ContinueWithNext;
 			try{
 				return Convert.ChangeType(number,Type.GetTypeCode(type));
 			} catch(Exception){

@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Check if unzip is installed, install if it isn't
+if ! command -v unzip &> /dev/null; then
+  echo "unzip command not found. Installing unzip..."
+  if command -v apt-get &> /dev/null; then
+    sudo apt-get update
+    sudo apt-get install -y unzip
+  elif command -v yum &> /dev/null; then
+    sudo yum install -y unzip
+  elif command -v dnf &> /dev/null; then
+    sudo dnf install -y unzip
+  elif command -v zypper &> /dev/null; then
+    sudo zypper install -y unzip
+  else
+    echo "Package manager not found. Please install unzip manually."
+    exit 1
+  fi
+fi
+
 # Download PlayifyRpc
 wget -q --show-progress -O /tmp/PlayifyRpc.nuget https://www.nuget.org/api/v2/package/PlayifyRpc
 unzip -jo /tmp/PlayifyRpc.nuget "lib/net6.0/PlayifyRpc.dll" -d .

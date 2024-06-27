@@ -35,15 +35,19 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	}
 
 	public static StringMap<string[]> GetRegistrations(bool includeHidden=false){
-		lock(ServerConnection.Connections)
-			return ServerConnection
-			       .Connections
-			       .ToDictionary(c=>c.PrettyName,c=>{
-				       lock(Types)
-					       return includeHidden
-						              ?c.Types.ToArray()
-						              :c.Types.Where(t=>t!="$"+c.Id).ToArray();
-			       });
+		lock(ServerConnection.Connections){
+			var map=new StringMap<string[]>();
+			foreach(var c in ServerConnection
+			                 .Connections
+			                 .OrderBy(c=>c.PrettyName))
+				lock(Types)
+					map.Add(c.PrettyName,(includeHidden
+						                      ?c.Types
+						                      :c.Types.Where(t=>t!="$"+c.Id))
+					                     .OrderBy(s=>s)
+					                     .ToArray());
+			return map;
+		}
 	}
 
 	#region Clones from Rpc class
