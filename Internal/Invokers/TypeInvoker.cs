@@ -12,9 +12,23 @@ public class TypeInvoker:Invoker{
 	private readonly object? _instance;
 	private readonly Type _type;
 
+	private BindingFlags BindingFlags=>BindingFlags.InvokeMethod|
+	                                   BindingFlags.IgnoreCase|
+	                                   BindingFlags.Public|
+	                                   BindingFlags.NonPublic|
+	                                   BindingFlags.OptionalParamBinding|
+	                                   BindingFlags.Static|
+	                                   (_instance!=null
+		                                    ?BindingFlags.FlattenHierarchy|
+		                                     BindingFlags.Instance
+		                                    :0);
+
 	protected TypeInvoker(){
 		_type=GetType();
 		_instance=this;
+	}
+
+	public TypeInvoker(object instance):this(instance.GetType(),instance){
 	}
 
 	public TypeInvoker(Type type,object? instance=null){
@@ -29,19 +43,10 @@ public class TypeInvoker:Invoker{
 	protected override object? DynamicInvoke(string? type,string method,object?[] args){
 		try{
 			return _type.InvokeMember(method,
-			                          BindingFlags.InvokeMethod|
-			                          BindingFlags.IgnoreCase|
-			                          BindingFlags.Public|
-			                          BindingFlags.NonPublic|
-			                          BindingFlags.OptionalParamBinding|
-			                          BindingFlags.Static|
-			                          (_instance!=null
-				                           ?BindingFlags.FlattenHierarchy|
-				                            BindingFlags.Instance
-				                           :0),
-			                          DynamicBinder.Instance,
-			                          _instance,
-			                          args);
+				BindingFlags,
+				DynamicBinder.Instance,
+				_instance,
+				args);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
@@ -49,22 +54,15 @@ public class TypeInvoker:Invoker{
 		}
 	}
 
-	protected override ValueTask<string[]> GetMethods(){
-		var members=_type.GetMethods(BindingFlags.InvokeMethod|
-		                             BindingFlags.IgnoreCase|
-		                             BindingFlags.Public|
-		                             BindingFlags.OptionalParamBinding|
-		                             BindingFlags.Static|
-		                             (_instance!=null?BindingFlags.Instance:0));
-
-
-		return new ValueTask<string[]>(members.Where(m=>m.DeclaringType!=typeof(object))
-		                                      .Select(m=>m.Name)
-		                                      .Distinct()
-		                                      .ToArray());
-	}
+	protected override ValueTask<string[]> GetMethods()
+		=>new(_type.GetMethods(BindingFlags)
+		           .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
+		           .Select(m=>m.Name)
+		           .Distinct()
+		           .ToArray());
 }
 
+[PublicAPI]
 public class TypeInvoker<T>:TypeInvoker{
 	public TypeInvoker():base(typeof(T)){}
 	public TypeInvoker(T? instance):base(typeof(T),instance){}

@@ -8,13 +8,8 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc;
 
 public static partial class Rpc{
-	public static Task RegisterType<T>(string type,T instance)
-		=>instance switch{
-			Invoker i=>RegisterType(type,i),
-			Type t=>RegisterType(type,t),
-			null=>RegisterType<T>(type),
-			_=>RegisteredTypes.Register(type,TypeInvoker.Create(instance)),
-		};
+	public static Task RegisterType(string type,object instance)
+		=>instance is Type t?RegisterType(type,t):RegisterType(type,instance as Invoker??new TypeInvoker(instance));
 
 	public static Task RegisterType(string type,Invoker invoker)=>RegisteredTypes.Register(type,invoker);
 
