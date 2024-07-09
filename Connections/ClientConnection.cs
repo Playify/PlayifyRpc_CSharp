@@ -106,7 +106,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 							SendRaw(msg);
 						},
-						tcs);
+						tcs,
+						()=>FunctionCallContext.CallFunction<string>(null,"c",callId));
 					lock(_currentlyExecuting) _currentlyExecuting.Add(callId,context);
 
 					var result=await FunctionCallContext.RunWithContextAsync(()=>local.Invoke(type,method,args),context,type,method,args);

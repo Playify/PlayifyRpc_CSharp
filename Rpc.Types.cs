@@ -21,7 +21,15 @@ public static partial class Rpc{
 
 	public static Task RegisterType<T>(string type)=>RegisterType(type,typeof(T));
 
+	public static Task RegisterType(out string type,object instance){
+		type=GenerateTypeName();
+		return RegisterType(type,instance);
+	}
+
+
 	public static Task UnregisterType(string type)=>RegisteredTypes.Unregister(type);
+	public static Task UnregisterType(RpcObject type)=>RegisteredTypes.Unregister(type.Type);
+	public static string GenerateTypeName()=>"$"+Id+"$"+Guid.NewGuid().ToString("N");
 
 
 	//TODO name doesn't match CreateObject

@@ -15,7 +15,7 @@
         <RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
         <RepositoryType>GitHub</RepositoryType>
         <Authors>Playify</Authors>
-        <Version>1.3.3</Version>
+        <Version>1.4.0</Version>
 
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -23,6 +23,14 @@
 
     <PropertyGroup>
         <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=.../PlayifyRpc_CSharp/</PathMap>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <DebugType>full</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <DebugType>pdbonly</DebugType>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">

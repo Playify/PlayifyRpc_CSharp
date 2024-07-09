@@ -91,7 +91,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				var type=data.ReadString();
 
 				ListenAllCalls.Broadcast(this,type,data.Clone());
-					
+
 				if(type==null) await CallServer(this,data,callId);
 				else{
 					ServerConnection? handler;
@@ -272,4 +272,10 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	}
 	#endregion
 
+	public string GetCaller(int callId){
+		lock(_activeRequests)
+			if(_activeRequests.TryGetValue(callId,out var tuple))
+				return tuple.respondTo.PrettyName;
+		throw new Exception("Error finding caller");
+	}
 }

@@ -44,9 +44,10 @@ public abstract class Invoker{
 	private static PendingCall CallLocal(Func<object?> a,string? type,string? method,object?[]? args){
 		var truth=new PendingCallRawData();
 		var context=new FunctionCallContext(type,
-		                                    method,
-		                                    sending=>Task.Run(()=>truth.DoReceiveMessage(sending)).Catch(e=>Console.WriteLine(e.ToString())),
-		                                    truth.TaskCompletionSource);
+			method,
+			sending=>Task.Run(()=>truth.DoReceiveMessage(sending)).Catch(e=>Console.WriteLine(e.ToString())),
+			truth.TaskCompletionSource,
+			()=>Task.FromResult(Rpc.PrettyName));
 
 		truth.SendFunc=received=>Task.Run(()=>context.DoReceiveMessage(received));
 		truth.CancelFunc=()=>context.CancelSelf();

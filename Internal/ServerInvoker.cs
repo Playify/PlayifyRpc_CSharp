@@ -1,7 +1,5 @@
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal.Invokers;
-using PlayifyRpc.Types;
-using PlayifyRpc.Types.Data;
 
 namespace PlayifyRpc.Internal;
 
@@ -27,36 +25,18 @@ internal class ServerInvoker:TypeInvoker{
 
 	private bool Exists(string type)=>RpcServer.CheckType(type);
 
-	[Obsolete]
-	private int CheckTypes(params string[] types)=>RpcServer.CheckTypes(types);
-
-	[Obsolete]
-	private RpcObject? GetObjectWithFallback(params string[] types)=>RpcServer.GetObjectWithFallback(types);
-
-	[Obsolete]
-	private string[] GetAllTypes()=>RpcServer.GetAllTypes();
-
-	[Obsolete]
-	private string[] GetAllConnections()=>RpcServer.GetAllConnections();
-
-	[Obsolete]
-	private StringMap<string[]> GetRegistrations()=>RpcServer.GetRegistrations();
+	private string GetCaller(int id)=>_connection.GetCaller(id);
 
 	public ServerInvoker(ServerConnection connection)=>_connection=connection;
 
 	private static readonly Dictionary<string,string> MethodMap=new(){
-		{"N",nameof(Name)},
-		{"H",nameof(Handshake)},
-		{"+",nameof(Register)},
-		{"-",nameof(Unregister)},
+		{"N",nameof(Name)},//Rpc.SetName
+		{"H",nameof(Handshake)},//Connections
+		{"+",nameof(Register)},//Rpc.RegisterType
+		{"-",nameof(Unregister)},//Rpc.UnregisterType
 
-		{"E",nameof(Exists)},
-
-		{"?",nameof(CheckTypes)},
-		{"O",nameof(GetObjectWithFallback)},
-		{"T",nameof(GetAllTypes)},
-		{"C",nameof(GetAllConnections)},
-		{"R",nameof(GetRegistrations)},
+		{"E",nameof(Exists)},//RpcObject.Exists
+		{"c",nameof(GetCaller)},//FunctionCallContext.GetCaller
 	};
 	protected override object? DynamicInvoke(string? type,string method,object?[] args)=>base.DynamicInvoke(type,MethodMap.TryGetValue(method,out var m)?m:method,args);
 

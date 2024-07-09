@@ -18,16 +18,18 @@ public class FunctionCallContext:SendReceive{
 	private static readonly ThreadLocal<FunctionCallContext?> ThreadLocal=new();
 	private readonly CancellationTokenSource _cts=new();
 	private readonly MessageFunc _send;
+	private readonly Func<Task<string>> _caller;
 	private readonly TaskCompletionSource<object?> _tcs;
 	public readonly string? Method;
 
 	public readonly string? Type;
 
-	internal FunctionCallContext(string? type,string? method,MessageFunc send,TaskCompletionSource<object?> tcs){
+	internal FunctionCallContext(string? type,string? method,MessageFunc send,TaskCompletionSource<object?> tcs,Func<Task<string>> caller){
 		Type=type;
 		Method=method;
 		_send=send;
 		_tcs=tcs;
+		_caller=caller;
 	}
 
 	public override bool Finished=>_tcs.Task.IsCompleted;
@@ -36,7 +38,7 @@ public class FunctionCallContext:SendReceive{
 	public CancellationToken CancellationToken=>_cts.Token;
 	public void CancelSelf()=>_cts.Cancel();
 	public void CancelSelfAfter(TimeSpan delay)=>_cts.CancelAfter(delay);
-	//TODO public Task<{id,name,prettyName}> GetCaller()
+	public Task<string> GetCaller()=>_caller();
 
 
 	public override void SendMessage(params object?[] args)=>_send(args);

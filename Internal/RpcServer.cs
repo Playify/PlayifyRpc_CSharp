@@ -61,12 +61,6 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 		return call;
 	}
 
-	[Obsolete]
-	public static Task<string> Eval(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
-
-	[Obsolete]
-	public static Task<object?> EvalAny(string expression)=>Evaluate.EvalObject(expression);
-
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
 	public static Task<object?> EvalObject(string expression)=>Evaluate.EvalObject(expression);
 	public static Task ListenCalls()=>ListenAllCalls.Listen(Rpc.GetContext());
@@ -84,4 +78,5 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	public static object?[] ReturnArguments(params object?[] o)=>o;
 	public static void Throw(string? msg=null)=>throw new Exception(msg);
 	#endregion
+
 }
