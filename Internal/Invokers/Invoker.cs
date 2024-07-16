@@ -1,5 +1,6 @@
 using System.Reflection;
 using JetBrains.Annotations;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
@@ -12,7 +13,7 @@ public abstract class Invoker{
 	protected internal object? Invoke(string? type,string? method,object?[] args){
 		if(method!=null) return DynamicInvoke(type,method,args);
 
-		if(!StaticallyTypedUtils.TryCast<string>(args.Length==0?null:args[0],out var meta)) meta=null;
+		var meta=args.Length==0?null:DynamicCaster.Cast<string>(args[0]);
 
 		//Meta calls, using null as method
 		return meta switch{

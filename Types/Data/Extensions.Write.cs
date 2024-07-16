@@ -1,3 +1,4 @@
+using PlayifyRpc.Internal.Data;
 using PlayifyUtility.Streams.Data;
 
 namespace PlayifyRpc.Types.Data;

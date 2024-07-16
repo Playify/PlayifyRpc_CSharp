@@ -1,7 +1,7 @@
 using System.Dynamic;
 using System.Reflection;
 using JetBrains.Annotations;
-using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Streams.Data;
 #if NETFRAMEWORK
@@ -22,7 +22,7 @@ public abstract class ObjectTemplate:DynamicObject{
 
 		var o=new T();
 		foreach(var (key,value) in exp)
-			if(!o.TrySetProperty(key,value))
+			if(!o.TrySetProperty(key,value,true))
 				throw new InvalidCastException("Error setting property \""+key+"\" of "+typeof(T).Name);
 		return o;
 	}
@@ -33,49 +33,49 @@ public abstract class ObjectTemplate:DynamicObject{
 
 		var o=new T();
 		foreach(var (key,value) in exp)
-			if(!o.TrySetProperty(key,value))
+			if(!o.TrySetProperty(key,value,true))
 				throw new InvalidCastException("Error setting property \""+key+"\" of "+typeof(T).Name);
 		return o;
 	}
 
-	internal static ObjectTemplate? TryCreateTemplate(IEnumerable<(string key,object? value)> properties,Type targetType){
+	internal static ObjectTemplate? TryCreateTemplate(IEnumerable<(string key,object? value)> properties,Type targetType,bool throwOnError){
 		if(!typeof(ObjectTemplate).IsAssignableFrom(targetType)) return null;
 
 		var o=(ObjectTemplate)Activator.CreateInstance(targetType)!;
 		foreach(var (key,value) in properties)
-			if(!o.TrySetProperty(key,value))
+			if(!o.TrySetProperty(key,value,throwOnError))
 				return null;
 		return o;
 	}
 
-	internal static JsonObject? TryCreateJson(IEnumerable<(string key,object? value)> properties){
+	internal static JsonObject? TryCreateJson(IEnumerable<(string key,object? value)> properties,bool throwOnError){
 		var o=new JsonObject();
 		foreach(var (key,value) in properties)
-			if(StaticallyTypedUtils.TryCast<Json>(value,out var casted))
+			if(DynamicCaster.TryCast(value,out Json casted,throwOnError))
 				o[key]=casted;
 			else return null;
 		return o;
 	}
 
-	internal static ExpandoObject TryCreateExpando(IEnumerable<(string key,object? value)> properties){
+	internal static ExpandoObject TryCreateExpando(IEnumerable<(string key,object? value)> properties,bool throwOnError){
 		var o=new ExpandoObject();
 		foreach(var (key,value) in properties)
-			((IDictionary<string,object?>)o)[key]=StaticallyTypedUtils.TryCast<object?>(value,out var casted)?casted:value;
+			((IDictionary<string,object?>)o)[key]=DynamicCaster.TryCast(value,out object? casted,throwOnError)?casted:value;
 		return o;
 	}
 
-	protected private virtual bool TrySetProperty(string key,object? value){
+	protected virtual bool TrySetProperty(string key,object? value,bool throwOnError){
 		var type=GetType();
 
 		if(type.GetProperty(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{
 			   CanWrite: true,
 		   } property)
-			if(StaticallyTypedUtils.TryCast(value,property.PropertyType,out var casted)){
+			if(DynamicCaster.TryCast(value,property.PropertyType,out var casted,throwOnError)){
 				property.SetValue(this,casted);
 				return true;
 			} else return false;
 		if(type.GetField(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{} field)
-			if(StaticallyTypedUtils.TryCast(value,field.FieldType,out var casted)){
+			if(DynamicCaster.TryCast(value,field.FieldType,out var casted,throwOnError)){
 				field.SetValue(this,casted);
 				return true;
 			} else return false;
@@ -117,12 +117,12 @@ public abstract class ObjectTemplate:DynamicObject{
 	public override bool TryGetMember(GetMemberBinder binder,out object result){
 		foreach(var (key,value) in GetProperties())
 			if(binder.Name.Equals(key,binder.IgnoreCase?StringComparison.OrdinalIgnoreCase:StringComparison.Ordinal))
-				return StaticallyTypedUtils.TryCast(value,binder.ReturnType,out result!);
+				return DynamicCaster.TryCast(value,binder.ReturnType,out result!,true);
 		result=null!;
 		return false;
 	}
 
-	public override bool TrySetMember(SetMemberBinder binder,object? value)=>TrySetProperty(binder.Name,value);
+	public override bool TrySetMember(SetMemberBinder binder,object? value)=>TrySetProperty(binder.Name,value,true);
 
 	public override IEnumerable<string> GetDynamicMemberNames()=>GetProperties().Select(t=>t.key);
 }

@@ -64,8 +64,14 @@
         <Compile Update="Types\RpcException.Extensions.cs">
             <DependentUpon>RpcException.cs</DependentUpon>
         </Compile>
-        <Compile Update="Internal\StaticallyTypedUtils.Cast.cs">
-            <DependentUpon>StaticallyTypedUtils.cs</DependentUpon>
+        <Compile Update="Internal\Data\DynamicCaster.Defaults.cs">
+            <DependentUpon>DynamicCaster.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Internal\Data\DynamicBinder.Helpers.cs">
+            <DependentUpon>DynamicBinder2.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Internal\Data\DynamicBinder.Specific.cs">
+            <DependentUpon>DynamicBinder2.cs</DependentUpon>
         </Compile>
     </ItemGroup>
 </Project>

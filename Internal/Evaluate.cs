@@ -1,3 +1,4 @@
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Jsons;
 
@@ -61,5 +62,5 @@ internal static class Evaluate{
 		return await Rpc.CallFunction(type,method,args.ToArray());
 	}
 
-	internal static async Task<string> EvalString(string s,bool pretty)=>StaticallyTypedUtils.Stringify(await EvalObject(s),pretty);
+	internal static async Task<string> EvalString(string s,bool pretty)=>DynamicStringifier.Stringify(await EvalObject(s),pretty);
 }

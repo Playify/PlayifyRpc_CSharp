@@ -1,7 +1,7 @@
 using System.Reflection;
 using JetBrains.Annotations;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
-using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Utils.Extensions;
 
@@ -12,16 +12,17 @@ public class TypeInvoker:Invoker{
 	private readonly object? _instance;
 	private readonly Type _type;
 
-	private BindingFlags BindingFlags=>BindingFlags.InvokeMethod|
-	                                   BindingFlags.IgnoreCase|
-	                                   BindingFlags.Public|
-	                                   BindingFlags.NonPublic|
-	                                   BindingFlags.OptionalParamBinding|
-	                                   BindingFlags.Static|
-	                                   (_instance!=null
-		                                    ?BindingFlags.FlattenHierarchy|
-		                                     BindingFlags.Instance
-		                                    :0);
+	private BindingFlags BindingFlags
+		=>BindingFlags.InvokeMethod|
+		  BindingFlags.IgnoreCase|
+		  BindingFlags.Public|
+		  BindingFlags.NonPublic|
+		  BindingFlags.OptionalParamBinding|
+		  BindingFlags.Static|
+		  (_instance!=null
+			   ?BindingFlags.FlattenHierarchy|
+			    BindingFlags.Instance
+			   :0);
 
 	protected TypeInvoker(){
 		_type=GetType();
@@ -43,14 +44,22 @@ public class TypeInvoker:Invoker{
 	protected override object? DynamicInvoke(string? type,string method,object?[] args){
 		try{
 			return _type.InvokeMember(method,
-				BindingFlags,
-				DynamicBinder.Instance,
-				_instance,
-				args);
+			                          BindingFlags,
+			                          DynamicBinder.Instance,
+			                          _instance,
+			                          args);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
 			throw new RpcMethodNotFoundException(type,method);
+		} catch(MethodAccessException e){
+			throw new RpcMethodNotFoundException(type,method,e.Message);
+		} catch(AmbiguousMatchException){
+			throw new RpcMethodNotFoundException(type,method,"Call is ambiguous"){Data={{"ambiguous",true}}};
+		} catch(RpcDataException e){
+			throw new RpcMethodNotFoundException(type,method,"Error casting arguments",e);
+		} catch(Exception e){
+			throw RpcException.WrapAndFreeze(e);
 		}
 	}
 

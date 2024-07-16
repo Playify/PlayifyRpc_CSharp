@@ -1,6 +1,7 @@
 ﻿using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;

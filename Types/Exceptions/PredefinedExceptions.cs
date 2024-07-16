@@ -2,7 +2,7 @@
 namespace PlayifyRpc.Types.Exceptions;
 
 public abstract class RpcCallException:RpcException{
-	protected RpcCallException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
+	protected RpcCallException(string? type,string? from,string? message,string? stackTrace,Exception? cause=null):base(type,from,message,stackTrace){}
 
 	private protected static string Quoted(string? s)=>s==null?"null":"\""+s+"\"";
 }
@@ -21,8 +21,8 @@ public class RpcTypeNotFoundException:RpcCallException{
 public class RpcMethodNotFoundException:RpcCallException{
 	protected RpcMethodNotFoundException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
 
-	public RpcMethodNotFoundException(string? type,string? method)
-		:base(null,null,$"Method {Quoted(method)} does not exist on type {Quoted(type)}",""){
+	public RpcMethodNotFoundException(string? type,string? method,string? message=null,Exception? cause=null)
+		:base(null,null,message??$"Method {Quoted(method)} does not exist on type {Quoted(type)}","",cause){
 		Data["type"]=type;
 		Data["method"]=method;
 	}
@@ -50,4 +50,10 @@ public class RpcConnectionException:RpcCallException{
 public class RpcEvalException:RpcCallException{
 	internal RpcEvalException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
 	public RpcEvalException(string message):base(null,null,message,""){}
+}
+
+[RpcCustomException("$data")]
+public class RpcDataException:RpcException{
+	internal RpcDataException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
+	public RpcDataException(string message):base(null,null,message,""){}
 }

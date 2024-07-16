@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Functions;
@@ -74,8 +74,8 @@ public abstract class PendingCall:SendReceive{
 	#region Cast
 	public PendingCall<T> Cast<T>()=>this as PendingCall<T>??new PendingCall<T>(this);
 	public PendingCall Cast(Type t)=>new PendingCallCasted(this,t);
-	protected internal static async Task<TTo> DoCast<TFrom,TTo>(Task<TFrom> task)=>StaticallyTypedUtils.Cast<TTo>(await task);
-	protected internal static async Task<object?> DoCast<TFrom>(Task<TFrom> task,Type to)=>StaticallyTypedUtils.Cast(await task,to);
+	protected internal static async Task<TTo> DoCast<TFrom,TTo>(Task<TFrom> task)=>DynamicCaster.Cast<TTo>(await task);
+	protected internal static async Task<object?> DoCast<TFrom>(Task<TFrom> task,Type to)=>DynamicCaster.Cast(await task,to);
 	#endregion
 }
 

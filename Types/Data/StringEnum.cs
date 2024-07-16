@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using PlayifyRpc.Internal.Data;
 
 namespace PlayifyRpc.Types.Data;
 

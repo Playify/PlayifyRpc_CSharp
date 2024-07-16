@@ -1,5 +1,5 @@
 using System.Dynamic;
-using PlayifyRpc.Internal;
+using System.Reflection;
 using PlayifyRpc.Types.Functions;
 
 namespace PlayifyRpc.Types;
@@ -14,7 +14,7 @@ public class RpcObject:DynamicObject{
 	public PendingCall<T> CallFunction<T>(string name,params object?[] args)=>Rpc.CallFunction<T>(Type,name,args);
 
 	public override bool TryInvokeMember(InvokeMemberBinder binder,object?[]? args,out object? result){
-		var list=StaticallyTypedUtils.GetGenericTypeArguments(binder)??Array.Empty<Type>();
+		var list=GetGenericTypeArguments(binder)??Array.Empty<Type>();
 		result=list.Count switch{
 			1=>Rpc.CallFunction(Type,binder.Name,args!).Cast(list[0]),
 			0=>Rpc.CallFunction(Type,binder.Name,args!),
@@ -30,4 +30,17 @@ public class RpcObject:DynamicObject{
 
 	public Task<string[]> GetMethods()=>FunctionCallContext.CallFunction<string[]>(Type,null,"M");
 	public Task<bool> Exists()=>FunctionCallContext.CallFunction<bool>(null,"E",Type);
+
+
+	private static IList<Type>? GetGenericTypeArguments(InvokeMemberBinder binder)
+		=>System.Type.GetType("Mono.Runtime")!=null
+			  ?binder
+			   .GetType()
+			   .GetField("typeArguments",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static)
+			   ?.GetValue(binder) as IList<Type>
+			  :binder
+			   .GetType()
+			   .GetInterface("Microsoft.CSharp.RuntimeBinder.ICSharpInvokeOrInvokeMemberBinder")
+			   ?.GetProperty("TypeArguments")
+			   ?.GetValue(binder,null) as IList<Type>;
 }

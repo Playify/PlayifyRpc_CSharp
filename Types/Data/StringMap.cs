@@ -1,12 +1,12 @@
 using System.Collections;
 using JetBrains.Annotations;
-using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyUtility.HelperClasses;
 
 namespace PlayifyRpc.Types.Data;
 
 /**
-This has to be used instead of using Dictionary<string,?> directly,
+This has to be used instead of using Dictionary&lt;string,?&gt; directly,
 as Dictionary would better assembles a JavaScript Map, instead of a JavaScript Object
 Otherwise, an ExpandoObject can be used as well
 */
@@ -26,8 +26,8 @@ public class StringMap<T>:ObjectTemplate,IEnumerable<KeyValuePair<string,T>>{
 	#endregion
 
 	#region ObjectTemplate
-	private protected override bool TrySetProperty(string key,object? value){
-		if(!StaticallyTypedUtils.TryCast<T>(value,out var t)) return false;
+	protected override bool TrySetProperty(string key,object? value,bool throwOnError){
+		if(!DynamicCaster.TryCast(value,out T t,throwOnError)) return false;
 		Dictionary[key]=t;
 		return true;
 	}

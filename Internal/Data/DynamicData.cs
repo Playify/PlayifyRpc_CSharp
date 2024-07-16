@@ -5,13 +5,15 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
+using PlayifyRpc.Types;
+using PlayifyRpc.Types.Data;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Streams.Data;
 #if NETFRAMEWORK
 using PlayifyUtility.Utils.Extensions;
 #endif
 
-namespace PlayifyRpc.Types.Data;
+namespace PlayifyRpc.Internal.Data;
 
 [PublicAPI]
 public static class DynamicData{

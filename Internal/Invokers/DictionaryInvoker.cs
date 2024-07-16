@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Reflection;
 using JetBrains.Annotations;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
-using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Utils.Extensions;
 
@@ -36,6 +36,16 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 			                          null!);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
+		} catch(MissingMethodException){
+			throw new RpcMethodNotFoundException(type,method);
+		} catch(MethodAccessException e){
+			throw new RpcMethodNotFoundException(type,method,e.Message);
+		} catch(AmbiguousMatchException){
+			throw new RpcMethodNotFoundException(type,method,"Call is ambiguous"){Data={{"ambiguous",true}}};
+		} catch(RpcDataException e){
+			throw new RpcMethodNotFoundException(type,method,"Error casting arguments",e);
+		} catch(Exception e){
+			throw RpcException.WrapAndFreeze(e);
 		}
 	}
 

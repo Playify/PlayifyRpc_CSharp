@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 #if NETFRAMEWORK
@@ -91,5 +92,5 @@ public partial class RpcException{
 		=>Append(args==null
 			         ?"<<"+nameof(Rpc.CallLocal)+">>"
 			         :(type??"<<null>>")+"."+(method??"<<null>>")+"("+
-			          args.Select(r=>StaticallyTypedUtils.Stringify(r,false)).Join(",")+")");
+			          args.Select(r=>DynamicStringifier.Stringify(r,false)).Join(",")+")");
 }

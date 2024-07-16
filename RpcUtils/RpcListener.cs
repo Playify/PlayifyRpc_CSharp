@@ -1,5 +1,5 @@
 using JetBrains.Annotations;
-using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.RpcUtils;
@@ -12,7 +12,7 @@ public static class RpcListener{
 	public static RpcListener<T?> Create<T>(string type,string method="listen")
 		=>new(type,
 		      method,
-		      t=>StaticallyTypedUtils.Cast<T>(t[0]),
+		      t=>DynamicCaster.Cast<T>(t[0]),
 		      _=>default);
 
 	public static RpcListener<T?> Create<T>(string type,Action<T?> onChange)=>Create(type,"listen",onChange);
