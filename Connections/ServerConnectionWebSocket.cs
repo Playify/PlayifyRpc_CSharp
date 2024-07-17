@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using PlayifyUtility.Streams.Data;
+using PlayifyUtility.Utils.Extensions;
 using PlayifyUtility.Web;
 
 namespace PlayifyRpc.Connections;
@@ -14,12 +15,12 @@ public class ServerConnectionWebSocket:ServerConnection{
 		try{
 			if(query.GetValues("name") is{} names)
 				Name=names.SingleOrDefault()??throw new ArgumentException("Multiple 'name' parameters");
-			Register(query.GetValues("type")??Array.Empty<string>(),false);
+			Register(query.GetValues("type")??[],false);
 
 			WebSocketTask=webSocket();
 		} catch(Exception e){
 			ForceUnregister();
-			Console.WriteLine(this+" rejected ("+e.Message+")");
+			Logger.Warning($"Connection rejected ({e.Message})");
 			throw;
 		}
 	}
@@ -35,7 +36,7 @@ public class ServerConnectionWebSocket:ServerConnection{
 
 	public async Task ReceiveLoop(){
 		await foreach(var (s,b) in await WebSocketTask)
-			if(s!=null) Console.WriteLine($"{this}: {s}");
-			else _=Receive(new DataInputBuff(b)).ConfigureAwait(false);
+			if(s!=null) Logger.Log("WebSocket Message: "+s);
+			else Receive(new DataInputBuff(b)).Background(e=>Logger.Warning("Error receiving Packet: "+e));
 	}
 }

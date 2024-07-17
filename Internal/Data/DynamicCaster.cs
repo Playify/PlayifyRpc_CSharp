@@ -12,11 +12,11 @@ public static partial class DynamicCaster{
 	public delegate object? CasterDelegate(object? obj,Type type,bool throwOnError);
 
 	/// Used to convert values beforehand
-	public static readonly List<CasterDelegate> PreCasters=new(){
+	public static readonly List<CasterDelegate> PreCasters=[
 		DefaultPreCasters.Json,
-	};
+	];
 	/// Used to cast values to another type. if no success, return <value>ContinueWithNext</value>
-	public static readonly List<CasterDelegate> Casters=new(){
+	public static readonly List<CasterDelegate> Casters=[
 		DefaultCasters.Null,
 		DefaultCasters.Primitives,
 		DefaultCasters.Enums,
@@ -26,7 +26,7 @@ public static partial class DynamicCaster{
 		DefaultCasters.Arrays,
 		DefaultCasters.Objects,
 		DefaultCasters.TryParse,
-	};
+	];
 	#endregion
 
 
@@ -37,7 +37,7 @@ public static partial class DynamicCaster{
 		foreach(var caster in Casters)
 			if(caster(value,type,true).Push(out var result)!=ContinueWithNext)
 				return result;
-		throw new RpcDataException("Error casting \""+value+"\" to "+type.Name);
+		throw new RpcDataException("Error casting \""+value+"\" to "+type.Name,null);
 	}
 
 	public static bool TryCast<T>(object? value,out T result)=>TryCast(value,out result,false);

@@ -2,9 +2,11 @@
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Internal.Invokers;
+using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
+using PlayifyUtility.Loggers;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
 
@@ -21,6 +23,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	private readonly Dictionary<int,PendingCall> _activeRequests=new();
 	private readonly Dictionary<int,FunctionCallContext> _currentlyExecuting=new();
 
+	protected static Logger Logger=>Rpc.Logger.WithName("Connection");
+
 
 	protected static void StartConnect(bool reconnect){
 		if(!reconnect&&_tcsOnce!=null) throw new RpcConnectionException("Already connected");
@@ -30,7 +34,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	protected static async Task DoConnect(ClientConnection connection,string? reportedName=null,HashSet<string>? reportedTypes=null){
 		HashSet<string> toRegister;
 		lock(RegisteredTypes.Registered) toRegister=RegisteredTypes.Registered.Keys.ToHashSet();
-		var toDelete=reportedTypes??new HashSet<string>{"$"+Rpc.Id};
+		var toDelete=reportedTypes??["$"+Rpc.Id];
 		toRegister.RemoveWhere(toDelete.Remove);
 
 		Instance=connection;
@@ -49,7 +53,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	protected static void FailConnect(Exception e){
 		Instance=null;
 		Rpc.IsConnected=false;
-		Console.WriteLine("Error connecting to RPC: "+e);
+		Logger.Error("Error connecting to RPC: "+e);
 		var tcs=_tcsOnce;
 		_tcsOnce=new TaskCompletionSource();
 		tcs?.TrySetException(e);
@@ -89,7 +93,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 					var method=data.ReadString();
 
-					var args=data.ReadArray(data.ReadDynamic,already)??Array.Empty<object?>();
+					var args=data.ReadArray(data.ReadDynamic,already)??[];
 					DynamicData.CleanupBeforeFreeing(already);
 
 
@@ -111,12 +115,23 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						()=>FunctionCallContext.CallFunction<string>(null,"c",callId));
 					lock(_currentlyExecuting) _currentlyExecuting.Add(callId,context);
 
-					var result=await FunctionCallContext.RunWithContextAsync(()=>local.Invoke(type,method,args),context,type,method,args);
-					tcs.TrySetResult(result);
-					await Resolve(callId,result);
-				} catch(Exception e){
-					if(e is TypeInitializationException)
-						Console.WriteLine("Error Initializing Type while receiving RPC: "+e);
+					try{
+						var result=await FunctionCallContext.RunWithContextAsync(()=>local.Invoke(type,method,args),context,type,method,args);
+						tcs.TrySetResult(result);
+						await Resolve(callId,result);
+					} catch(Exception e){//Inner catch handles normal errors, outer catch handles data exceptions
+						tcs.TrySetException(e);
+						await Reject(callId,e);
+					}
+				} catch(TypeInitializationException e){
+					Rpc.Logger.Critical("Error Initializing Type while receiving RPC: "+e);
+					tcs.TrySetException(e);
+					await Reject(callId,e);
+				} catch(RpcException e){
+					tcs.TrySetException(e);
+					await Reject(callId,e);
+				} catch(Exception cause){
+					var e=new RpcDataException($"Error reading binary stream ({packetType})",cause);
 					tcs.TrySetException(e);
 					await Reject(callId,e);
 				} finally{
@@ -130,13 +145,13 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				PendingCall? pending;
 				lock(_activeRequests)
 					if(!_activeRequests.Remove(callId,out pending)){
-						Console.WriteLine($"{Rpc.PrettyName} has no ActiveRequest with id: {callId}");
+						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
 				try{
 					pending.Resolve(data.ReadDynamic());
 				} catch(Exception e){
-					pending.Reject(e);
+					pending.Reject(new RpcDataException($"Error reading binary stream ({packetType})",e));
 				}
 				break;
 			}
@@ -145,13 +160,13 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				PendingCall? pending;
 				lock(_activeRequests)
 					if(!_activeRequests.Remove(callId,out pending)){
-						Console.WriteLine($"{Rpc.PrettyName} has no ActiveRequest with id: {callId}");
+						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
 				try{
 					pending.Reject(data.ReadException());
 				} catch(Exception e){
-					pending.Reject(e);
+					pending.Reject(new RpcDataException($"Error reading binary stream ({packetType})",e));
 				}
 				break;
 			}
@@ -160,7 +175,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				FunctionCallContext? ctx;
 				lock(_currentlyExecuting)
 					if(!_currentlyExecuting.TryGetValue(callId,out ctx)){
-						Console.WriteLine($"{Rpc.PrettyName} has no CurrentlyExecuting with id: {callId}");
+						Logger.Warning($"Invalid State: No CurrentlyExecuting[{callId}] ({packetType})");
 						break;
 					}
 				ctx.CancelSelf();
@@ -171,11 +186,11 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				FunctionCallContext? ctx;
 				lock(_currentlyExecuting)
 					if(!_currentlyExecuting.TryGetValue(callId,out ctx)){
-						Console.WriteLine($"{Rpc.PrettyName} has no CurrentlyExecuting with id: {callId}");
+						Logger.Warning($"Invalid State: No CurrentlyExecuting[{callId}] ({packetType})");
 						break;
 					}
 				var already=new List<object>();
-				var args=data.ReadArray(data.ReadDynamic,already)??Array.Empty<object?>();
+				var args=data.ReadArray(data.ReadDynamic,already)??[];
 				ctx.DoReceiveMessage(args);
 				break;
 			}
@@ -184,11 +199,11 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				PendingCall? pending;
 				lock(_activeRequests)
 					if(!_activeRequests.TryGetValue(callId,out pending)){
-						Console.WriteLine($"{Rpc.PrettyName} has no ActiveRequest with id: {callId}");
+						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
 				var already=new List<object>();
-				var args=data.ReadArray(data.ReadDynamic,already)??Array.Empty<object?>();
+				var args=data.ReadArray(data.ReadDynamic,already)??[];
 
 				pending.DoReceiveMessage(args);
 				break;

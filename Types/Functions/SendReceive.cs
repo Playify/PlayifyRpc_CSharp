@@ -42,7 +42,7 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 					try{
 						a(objects);
 					} catch(Exception e){
-						Console.WriteLine("Error receiving pending: "+e);
+						Rpc.Logger.Warning("Error while handling pending message: "+e);
 					}
 				_initialPending=null;
 			} else _receivers.Add(a);
@@ -64,7 +64,7 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 			try{
 				func(args);
 			} catch(Exception e){
-				Console.WriteLine("Error receiving: "+e);
+				Rpc.Logger.Warning("Error while receiving message: "+e);
 			}
 	}
 }

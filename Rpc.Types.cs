@@ -32,7 +32,6 @@ public static partial class Rpc{
 	public static string GenerateTypeName()=>"$"+Id+"$"+Guid.NewGuid().ToString("N");
 
 
-	//TODO name doesn't match CreateObject
 	public static async Task<RpcObject?> GetObjectWithFallback(string type,params string[] fallback)//
 		=>await CallFunction<RpcObject>("Rpc","GetObjectWithFallback",fallback.Prepend(type).Cast<object?>().ToArray());
 

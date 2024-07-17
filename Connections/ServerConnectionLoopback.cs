@@ -13,7 +13,7 @@ internal class ServerConnectionLoopback:ServerConnection{
 	internal ServerConnectionLoopback(ServerConnectionLoopbackClient otherSide):base(Rpc.Id)=>_otherSide=otherSide;
 
 	protected internal override Task SendRaw(DataOutputBuff buff){
-		Task.Run((Action)(()=>_otherSide.Receive(new DataInputBuff(buff)).Catch(Console.Error.WriteLine)));
+		Task.Run(()=>_otherSide.Receive(new DataInputBuff(buff)).Background(e=>Logger.Warning("Error receiving Packet: "+e)));
 		return Task.CompletedTask;
 	}
 
@@ -51,13 +51,13 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 				FailConnect(e);
 
 				await Task.Delay(1000);
-				Console.WriteLine("Reconnecting to RPC...");
+				Logger.Error("Reconnecting to RPC...");
 			}
 		// ReSharper disable once FunctionNeverReturns
 	}
 
 	protected internal override Task SendRaw(DataOutputBuff buff){
-		Task.Run((Action)(()=>_otherSide.Receive(new DataInputBuff(buff)).Catch(Console.Error.WriteLine)));
+		Task.Run(()=>_otherSide.Receive(new DataInputBuff(buff)).Background(e=>Logger.Warning("Error receiving Packet: "+e)));
 		return Task.CompletedTask;
 	}
 

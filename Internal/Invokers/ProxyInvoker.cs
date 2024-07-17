@@ -1,6 +1,5 @@
 using JetBrains.Annotations;
 using PlayifyRpc.Types;
-using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Invokers;
 
@@ -10,18 +9,24 @@ public class ProxyInvoker:Invoker{
 
 	public ProxyInvoker(Func<Task<RpcObject>> @object)=>_object=@object;
 	public ProxyInvoker(Func<RpcObject> @object)=>_object=()=>Task.Run(@object);
+	public ProxyInvoker(RpcObject @object)=>_object=()=>Task.FromResult(@object);
 
-	//TODO remove from RpcException stacktrace
-	protected override object DynamicInvoke(string? type,string method,object?[] args){
+	protected override object DynamicInvoke(string? type,string method,object?[] args)=>InvokeAsync(type,method,args);
+
+	private async Task<object?> InvokeAsync(string? type,string method,object?[] args){
 		var ctx=Rpc.GetContext();
-		return _object().ThenAsync(o=>{
+
+		try{
+			var o=await _object();
 			var call=o.CallFunction(method,args)
 			          .WithCancellation(ctx.CancellationToken);
 			call.AddMessageListener(ctx.SendMessage);
 			ctx.AddMessageListener(call.SendMessage);
 
-			return call;
-		});
+			return await call;
+		} catch(Exception e){
+			throw RpcException.WrapAndFreeze(e).Remove(((Delegate)InvokeAsync).Method);
+		}
 	}
 
 	protected override async ValueTask<string[]> GetMethods()=>await (await _object()).GetMethods();

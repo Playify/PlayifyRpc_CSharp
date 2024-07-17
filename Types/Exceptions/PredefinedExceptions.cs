@@ -55,5 +55,5 @@ public class RpcEvalException:RpcCallException{
 [RpcCustomException("$data")]
 public class RpcDataException:RpcException{
 	internal RpcDataException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
-	public RpcDataException(string message):base(null,null,message,""){}
+	public RpcDataException(string message,Exception? cause):base(null,null,message,"",cause){}
 }

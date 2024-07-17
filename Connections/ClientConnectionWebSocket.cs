@@ -22,7 +22,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 
 	private async Task ReceiveLoop(){
 		await foreach(var (s,b) in _webSocket)
-			if(s!=null) Console.WriteLine($"{this}: {s}");
+			if(s!=null) Rpc.Logger.Log("WebSocket Message: "+s);
 			else _=Receive(new DataInputBuff(b)).ConfigureAwait(false);
 	}
 
@@ -54,7 +54,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 				uri=new UriBuilder(uri){Query=query}.Uri;
 
 				await using var connection=new ClientConnectionWebSocket(await WebSocket.CreateWebSocketTo(uri,headers));
-				Console.WriteLine("Connected to RPC");
+				Rpc.Logger.Info("Connected to RPC");
 				var loop=connection.ReceiveLoop();//receive loop must start before, otherwise a deadlock would occur, because no answers can be received
 
 				await DoConnect(connection,reportedName,reportedTypes);
@@ -66,7 +66,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 				FailConnect(e);
 
 				await Task.Delay(1000);
-				Console.WriteLine("Reconnecting to RPC");
+				Rpc.Logger.Info("Reconnecting to RPC");
 			}
 		// ReSharper disable once FunctionNeverReturns
 	}

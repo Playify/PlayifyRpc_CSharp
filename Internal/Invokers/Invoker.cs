@@ -46,7 +46,7 @@ public abstract class Invoker{
 		var truth=new PendingCallRawData();
 		var context=new FunctionCallContext(type,
 			method,
-			sending=>Task.Run(()=>truth.DoReceiveMessage(sending)).Catch(e=>Console.WriteLine(e.ToString())),
+		                                    sending=>Task.Run(()=>truth.DoReceiveMessage(sending)).Catch(e=>Rpc.Logger.Warning("Error while handling message: "+e)),
 			truth.TaskCompletionSource,
 			()=>Task.FromResult(Rpc.PrettyName));
 

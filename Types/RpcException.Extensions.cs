@@ -12,13 +12,13 @@ using AsyncFriendlyStackTrace;
 namespace PlayifyRpc.Types;
 
 public partial class RpcException{
-	private static readonly List<string> HiddenMethods=new(){
+	private static readonly List<string> HiddenMethods=[
 		$"{typeof(FunctionCallContext).FullName}.{nameof(FunctionCallContext.RunWithContextAsync)}(",
 		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.DoCast)}[",
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalObject)}(",
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalString)}(",
 		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleRequest)}(",
-	};
+	];
 
 	private static string GetOwnStackTrace(Exception e){
 		var str=new StringBuilder();

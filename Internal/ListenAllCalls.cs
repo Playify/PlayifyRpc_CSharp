@@ -18,9 +18,10 @@ internal static class ListenAllCalls{
 		}
 	}
 
-	internal static void Broadcast(ServerConnection respondTo,string? type,DataInputBuff clone){
+	internal static void Broadcast(ServerConnection respondTo,string? type,DataInputBuff data){
 		lock(Listening){
 			if(Listening.Count==0) return;
+			var clone=data.Clone();
 
 
 			var msg=new StringMap<object?>{

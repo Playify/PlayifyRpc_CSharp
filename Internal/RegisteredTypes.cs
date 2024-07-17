@@ -31,7 +31,7 @@ internal static class RegisteredTypes{
 				}
 			}
 		} catch(Exception e){
-			Console.WriteLine("Error registering assembly \""+assembly+"\": "+e);
+			Rpc.Logger.Critical("Error registering assembly \""+assembly+"\": "+e);
 		}
 	}
 
@@ -41,7 +41,7 @@ internal static class RegisteredTypes{
 		try{
 			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"+",type);
 		} catch(Exception e){
-			Console.Error.WriteLine(e);
+			Rpc.Logger.Error($"Error registering type \"{type}\": {e}");
 
 			lock(Registered)
 				if(Registered.TryGetValue(type,out var revert)&&revert==invoker)
@@ -56,7 +56,7 @@ internal static class RegisteredTypes{
 		try{
 			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"-",type);
 		} catch(Exception e){
-			Console.Error.WriteLine(e);
+			Rpc.Logger.Error($"Error unregistering type \"{type}\": {e}");
 
 			//Also delete locally, as it won't be listened to, and on the server it probably is already unregistered
 		} finally{
@@ -69,7 +69,7 @@ internal static class RegisteredTypes{
 		try{
 			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"N",name);
 		} catch(Exception e){
-			Console.Error.WriteLine(e);
+			Rpc.Logger.Error($"Error changing name to \"{name}\": {e}");
 		}
 	}
 }

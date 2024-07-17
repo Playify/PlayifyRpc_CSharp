@@ -121,7 +121,7 @@ public partial class DynamicBinder{
 		return (widerCodes&targetCode)!=0;
 	}
 
-	private static readonly Primitives[] PrimitiveConversions={
+	private static readonly Primitives[] PrimitiveConversions=[
 		/* Empty    */ 0,// not primitive
 		/* Object   */ 0,// not primitive
 		/* DBNull   */ 0,// not primitive
@@ -141,7 +141,7 @@ public partial class DynamicBinder{
 		/* DateTime */ Primitives.DateTime,
 		/* [Unused] */ 0,
 		/* String   */ Primitives.String,
-	};
+	];
 
 	[Flags]
 	private enum Primitives{

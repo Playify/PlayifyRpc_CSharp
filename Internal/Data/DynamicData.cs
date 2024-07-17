@@ -17,9 +17,9 @@ namespace PlayifyRpc.Internal.Data;
 
 [PublicAPI]
 public static class DynamicData{
-	private static readonly List<(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)> WriteRegistry=new();
+	private static readonly List<(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)> WriteRegistry=[];
 	private static readonly Dictionary<string,Func<DataInput,List<object>,object>> ReadRegistry=new();
-	private static readonly List<Func<object?,object?>> Converters=new();
+	private static readonly List<Func<object?,object?>> Converters=[];
 
 	static DynamicData(){
 		AppDomain.CurrentDomain.AssemblyLoad+=(_,args)=>RegisterAssembly(args.LoadedAssembly);
@@ -226,6 +226,8 @@ public static class DynamicData{
 	}
 
 	private static void RegisterAssembly(Assembly assembly){
+		if(assembly.FullName?.StartsWith("System.")??false) return;//Skip System assemblies
+		
 		Debug.WriteLine("DynamicData registering "+assembly);
 		try{
 			foreach(var type in assembly.GetTypes()){
@@ -235,31 +237,31 @@ public static class DynamicData{
 				/*
 				var read=type.GetMethod("Read",BindingFlags.Public|BindingFlags.Static,null,new[]{typeof(DataInput),typeof(List<object>)},null);
 				read??=type.GetMethod("Read",BindingFlags.Public|BindingFlags.Static,null,new[]{typeof(DataInput)},null);*/
-				var readConstructor=type.GetConstructor(new[]{typeof(DataInput),typeof(List<object>)});
+				var readConstructor=type.GetConstructor([typeof(DataInput),typeof(List<object>)]);
 				Func<DataInput,List<object>,object> read;
 				if(readConstructor==null){
-					readConstructor=type.GetConstructor(new[]{typeof(DataInput)});
+					readConstructor=type.GetConstructor([typeof(DataInput)]);
 					if(readConstructor==null) throw new Exception("Type "+type+" does not implement a public constructor(DataInput i,List<object> already) or public constructor(DataInput i)");
 
-					read=(i,_)=>readConstructor.Invoke(new object[]{i});
-				} else read=(i,already)=>readConstructor.Invoke(new object[]{i,already});
+					read=(i,_)=>readConstructor.Invoke([i]);
+				} else read=(i,already)=>readConstructor.Invoke([i,already]);
 
 
-				var writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,new[]{typeof(DataOutput),typeof(List<object>)},null);
+				var writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,[typeof(DataOutput),typeof(List<object>)],null);
 				Action<DataOutput,object,List<object>> write;
 				if(writeMethod==null){
-					writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,new[]{typeof(DataOutput)},null);
+					writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,[typeof(DataOutput)],null);
 					if(writeMethod==null) throw new Exception("Type "+type+" does not implement a public void Write(DataOutput o,List<object> already) or public void Write(DataOutput o) method");
 
-					write=(o,d,_)=>writeMethod.Invoke(d,new object[]{o});
-				} else write=(o,d,already)=>writeMethod.Invoke(d,new object[]{o,already});
+					write=(o,d,_)=>writeMethod.Invoke(d,[o]);
+				} else write=(o,d,already)=>writeMethod.Invoke(d,[o,already]);
 
 
 				ReadRegistry.Add(remoteClass.Id,read);
 				WriteRegistry.Add((remoteClass.Id,type.IsInstanceOfType,write));
 			}
 		} catch(Exception e){
-			Console.WriteLine("Error registering assembly \""+assembly+"\": "+e);
+			Rpc.Logger.Critical("Error registering assembly \""+assembly+"\": "+e);
 		}
 	}
 

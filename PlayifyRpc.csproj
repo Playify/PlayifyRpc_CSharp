@@ -3,7 +3,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFrameworks>net6.0;net48</TargetFrameworks>
-        <LangVersion>latest</LangVersion>
+        <LangVersion>12</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <OutputPath>_run</OutputPath>
@@ -68,10 +68,10 @@
             <DependentUpon>DynamicCaster.cs</DependentUpon>
         </Compile>
         <Compile Update="Internal\Data\DynamicBinder.Helpers.cs">
-            <DependentUpon>DynamicBinder2.cs</DependentUpon>
+            <DependentUpon>DynamicBinder.cs</DependentUpon>
         </Compile>
         <Compile Update="Internal\Data\DynamicBinder.Specific.cs">
-            <DependentUpon>DynamicBinder2.cs</DependentUpon>
+            <DependentUpon>DynamicBinder.cs</DependentUpon>
         </Compile>
     </ItemGroup>
 </Project>

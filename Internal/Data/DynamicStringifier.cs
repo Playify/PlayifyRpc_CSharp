@@ -7,19 +7,14 @@ namespace PlayifyRpc.Internal.Data;
 
 [PublicAPI]
 public static class DynamicStringifier{
-	private static readonly List<Func<object?,bool,string?>> Stringifiers=new(){
+	public static readonly List<Func<object?,bool,string?>> Stringifiers=[
 		(o,_)=>o==null?"null":null,
 		(o,_)=>o is float.NaN or double.NaN?"NaN":null,
 		(o,pretty)=>DynamicCaster.TryCast(o,out Json json)?json.ToString(pretty?"\t":null):null,
 		(o,_)=>DynamicCaster.TryCast(o,out string s)?s:null,
 		DefaultStringifiers.Expando,
 		DefaultStringifiers.Array,
-	};
-
-
-	/// Used to cast values to another type. if no success, return <value>ContinueWithNext</value>
-	public static void Register(Func<object?,bool,string?> caster)=>Stringifiers.Add(caster);
-
+	];
 
 	public static string Stringify(object? result,bool pretty){
 		foreach(var stringifier in Stringifiers)

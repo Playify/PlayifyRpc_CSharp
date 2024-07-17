@@ -14,10 +14,10 @@ public static partial class DynamicCaster{
 			_=>null,
 		};
 
-	public static readonly List<(Type,object?)> Nulls=new(){
+	public static readonly List<(Type,object?)> Nulls=[
 		(typeof(JsonNull),JsonNull.Null),
-	};
-	private static readonly Type[] ValueTupleTypes={
+	];
+	private static readonly Type[] ValueTupleTypes=[
 		typeof(ValueTuple),
 		typeof(ValueTuple<>),
 		typeof(ValueTuple<,>),
@@ -27,7 +27,7 @@ public static partial class DynamicCaster{
 		typeof(ValueTuple<,,,,,>),
 		typeof(ValueTuple<,,,,,,>),
 		typeof(ValueTuple<,,,,,,,>),
-	};
+	];
 
 
 	private static class DefaultPreCasters{
@@ -107,7 +107,7 @@ public static partial class DynamicCaster{
 				if(!type.IsAssignableFrom(mi.ReturnType)) continue;
 				if(mi.GetParameters().FirstOrDefault() is not{} param) continue;
 				if(TryCast(value,param.ParameterType,out var par,false)){
-					return mi.Invoke(null,new[]{par});
+					return mi.Invoke(null,[par]);
 				}
 			}
 			return ContinueWithNext;
@@ -173,7 +173,7 @@ public static partial class DynamicCaster{
 			if(type.GetMethod("TryParse",
 			                  BindingFlags.Public|BindingFlags.Static|BindingFlags.InvokeMethod,
 			                  null,
-			                  new[]{typeof(string),type.MakeByRefType()},
+			                  [typeof(string),type.MakeByRefType()],
 			                  null) is not{} tryParse) return ContinueWithNext;
 			if(!TryCast(value,out string s)) return ContinueWithNext;
 

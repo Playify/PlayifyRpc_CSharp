@@ -33,14 +33,13 @@ public partial class RpcException{
 
 	private static RpcException Read(string? type,string from,string? message,string stackTrace,JsonObject? data,Exception? cause=null){
 		RpcException exception;
-		if(data?.Get("$type")?.AsString() is{} typeTag&&Constructors.TryGetValue(typeTag,out var constructor)){
-			var parameters=constructor.GetParameters().Length switch{
-				4=>new object?[]{type,from,message,stackTrace},
-				5=>new object?[]{type,from,message,stackTrace,cause},
-				_=>throw new Exception("Constructor for "+constructor.MemberType+" has an invalid number of parameters"),
-			};
-			exception=(RpcException)constructor.Invoke(parameters);
-		} else exception=new RpcException(type,from,message,stackTrace,cause);
+		if(data?.Get("$type")?.AsString() is{} typeTag&&Constructors.TryGetValue(typeTag,out var constructor))
+			exception=(RpcException)(constructor.GetParameters().Length switch{
+					                        4=>constructor.Invoke([type,from,message,stackTrace]),
+					                        5=>constructor.Invoke([type,from,message,stackTrace,cause]),
+					                        _=>throw new Exception("Constructor for "+constructor.MemberType+" has an invalid number of parameters"),
+				                        });
+		else exception=new RpcException(type,from,message,stackTrace,cause);
 
 		if(data!=null)
 			foreach(var (key,value) in data)

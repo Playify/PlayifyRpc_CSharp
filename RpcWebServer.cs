@@ -47,11 +47,11 @@ public partial class RpcWebServer:WebBase{
 					Console.WriteLine();
 					break;
 				default:
-					Console.WriteLine("Commands:");
-					Console.WriteLine("\tE/X/Q : exit");
-					Console.WriteLine("\t    C : list connections");
-					Console.WriteLine("\t    T : list types");
-					Console.WriteLine("\t    R : list registrations");
+					Console.WriteLine("Commands:"+
+					                  "\n\tE/X/Q : exit"+
+					                  "\n\t    C : list connections"+
+					                  "\n\t    T : list types"+
+					                  "\n\t    R : list registrations");
 					break;
 			}
 		}
@@ -66,7 +66,7 @@ public partial class RpcWebServer:WebBase{
 
 	[PublicAPI]
 	public static async Task RunWebServer(IPEndPoint endPoint,string rpcJs,string? rpcToken){
-		if(rpcToken==null) Console.WriteLine("RPC_TOKEN is not defined, connections will not be secure");
+		if(rpcToken==null) Rpc.Logger.Warning("RPC_TOKEN is not defined, connections will not be secure");
 		var server=new RpcWebServer(rpcJs,rpcToken);
 		var task=server.RunHttp(endPoint);
 
@@ -77,10 +77,10 @@ public partial class RpcWebServer:WebBase{
 
 	internal static async Task Main(string[] args){
 		if(args.Length!=0&&args[0]=="help"){
-			Console.WriteLine("use args: [IP:Port or Port] [rpcToken] [rpc.js path]");
-			Console.WriteLine("default port: 4590");
-			Console.WriteLine("rpcToken will be used from RPC_TOKEN environment variable");
-			Console.WriteLine("rpc.js path if omitted will download when the file doesn't exist");
+			Console.WriteLine("use args: [IP:Port or Port] [rpcToken] [rpc.js path]\n"+
+			                  "default port: 4590\n"+
+			                  "rpcToken will be used from RPC_TOKEN environment variable\n"+
+			                  "rpc.js path if omitted will download when the file doesn't exist");
 			return;
 		}
 		const int defaultPort=4590;
@@ -101,10 +101,10 @@ public partial class RpcWebServer:WebBase{
 
 		RunConsoleThread();
 		try{
-			Console.WriteLine("Listening on "+ipEndPoint);
+			Rpc.Logger.Info("Listening on "+ipEndPoint);
 			await RunWebServer(ipEndPoint,rpcJs,rpcToken);
 		} catch(Exception e){
-			Console.WriteLine(e);
+			Rpc.Logger.Critical(e);
 			Environment.Exit(-1);
 		}
 	}
@@ -142,13 +142,14 @@ public partial class RpcWebServer:WebBase{
 
 				string types;
 				lock(RpcServer.Types) types=connection.Types.Where(t=>t!="$"+connection.Id).Select(t=>$"\"{t}\"").Join(",");
-				Console.WriteLine(types==""
-					                  ?$"{connection} connected (no Types)"
-					                  :$"{connection} connected (Types: {(types!=""?types:"<<none>>")})");
+
+				connection.Logger.Info(types==""
+					                       ?"Connected (no Types)"
+					                       :$"Connected (Types: {(types!=""?types:"<<none>>")})");
 
 				await connection.ReceiveLoop();
 			} finally{
-				Console.WriteLine($"{connection} disconnected");
+				connection.Logger.Info("Disconnected");
 
 				await connection.DisposeAsync();
 			}
@@ -196,25 +197,30 @@ public partial class RpcWebServer:WebBase{
 			case "/":
 			case "/rpc":
 			case "/rpc.html":
-				await session.Send.Html("<!DOCTYPE html>"+
-				                        "<title>RPC Test</title><script type=\"module\" src=\"/rpc.js\"></script>\n"+
-				                        "<input type=\"text\" value=\"Rpc.getRegistrations()\" style=\"width:100%\"/>\n"+
-				                        "<pre></pre>\n"+
-				                        "<script>var input=document.querySelector('input'),pre=document.querySelector('pre'),curr=0;\n"+
-				                        "input.addEventListener(\"keydown\",async e=>{\n"+
-				                        "  if(e.key!='Enter') return;\n"+
-				                        "  try{\n"+
-				                        "   pre.style.color='blue';\n"+
-				                        "   const now=++curr;\n"+
-				                        "   pre.textContent=await Rpc.evalString(input.value);\n"+
-				                        "   if(now!=curr) return;//Don't update if another call was started just now\n"+
-				                        "   pre.style.color='green';\n"+
-				                        "  }catch(e){\n"+
-				                        "   pre.textContent=''+e;\n"+
-				                        "   pre.style.color='red';\n"+
-				                        "  }\n"+
-				                        "});\n"+
-				                        "</script>");
+				await session.Send.Html("""
+				                        <!DOCTYPE html><title>RPC Test</title><script type="module" src="/rpc.js"></script>
+				                        <input type="text" value="Rpc.getRegistrations()" style="width:100%"/>
+				                        <pre></pre>
+				                        <script>
+				                        const input=document.querySelector("input"),pre=document.querySelector("pre");
+				                        let curr=0;
+				                        input.addEventListener("keydown",async e=>{
+				                        	if(e.key!="Enter") return;
+				                        	
+				                        	const now=++curr;
+				                        	try{
+				                        		pre.style.color="blue";
+				                        		pre.textContent= await Rpc.evalString(input.value);
+				                        		if(now!=curr) return;
+				                        		pre.style.color="green";
+				                        	}catch(e){
+				                        		if(now!=curr) return;
+				                        		pre.textContent=""+e.trashLocalStack();
+				                        		pre.style.color="red";
+				                        	}
+				                        });
+				                        </script>
+				                        """);
 				return;
 			default:
 				await session.Send.Error(404);

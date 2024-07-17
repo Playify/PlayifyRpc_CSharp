@@ -3,6 +3,7 @@ using System.Text;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyUtility.Loggers;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
@@ -15,30 +16,34 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	private readonly Dictionary<int,(ServerConnection respondTo,int respondId)> _activeRequests=new();
 	internal readonly HashSet<string> Types=new();
 	private readonly ServerInvoker _invoker;
-
 	private int _nextId;
 
+	public Logger Logger{get;private set;}
 
 	protected ServerConnection(string? id){
 		Id=id??"???";
-		_invoker=new ServerInvoker(this);
-		ServerConnection[] toKick;
-		lock(Connections){
-			toKick=id==null
-				       ?Array.Empty<ServerConnection>()
-				       :Connections.Where(c=>c.Id==id).ToArray();
-			Connections.Add(this);
-		}
-		TaskUtils.WhenAll(toKick.Select(k=>{
-			Console.WriteLine("Kicking client "+k+" as new client with same id joined.");
-			return k.DisposeAsync();
-		})).AsTask().Background();
+		Logger=Rpc.Logger;
+		Name=null;
 
-		if(id!=null)
+		_invoker=new ServerInvoker(this);
+
+		if(id!=null){
+			ServerConnection[] toKick;
+			lock(Connections){
+				toKick=Connections.Where(c=>c.Id==id).ToArray();
+				Connections.Add(this);
+			}
+
+			TaskUtils.WhenAll(toKick.Select(k=>{
+				k.Logger.Warning("Kicked, new client with same id joined.");
+				return k.DisposeAsync();
+			})).AsTask().Background();
+
 			lock(RpcServer.Types){
 				RpcServer.Types["$"+id]=this;
 				Types.Add("$"+id);
 			}
+		}
 	}
 
 	//Used when the constructor fails
@@ -82,7 +87,6 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		lock(_activeExecutions) _activeExecutions.Remove(callId);
 	}
 
-
 	protected override async Task Receive(DataInputBuff data){
 		var packetType=(PacketType)data.ReadByte();
 		switch(packetType){
@@ -90,7 +94,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				var callId=data.ReadLength();
 				var type=data.ReadString();
 
-				ListenAllCalls.Broadcast(this,type,data.Clone());
+				ListenAllCalls.Broadcast(this,type,data);
 
 				if(type==null) await CallServer(this,data,callId);
 				else{
@@ -112,7 +116,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				(ServerConnection respondTo,int respondId) tuple;
 				lock(_activeRequests)
 					if(!_activeRequests.Remove(callId,out tuple)){
-						Console.WriteLine($"{this} has no ActiveRequest with id: {callId}");
+						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
 				await tuple.respondTo.ResolveRaw(tuple.respondId,data);
@@ -123,7 +127,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				(ServerConnection respondTo,int respondId) tuple;
 				lock(_activeRequests)
 					if(!_activeRequests.Remove(callId,out tuple)){
-						Console.WriteLine($"{this} has no ActiveRequest with id: {callId}");
+						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
 				await tuple.respondTo.RejectRaw(tuple.respondId,data);
@@ -134,7 +138,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				(ServerConnection respondTo,int respondId) tuple;
 				lock(_activeExecutions)
 					if(!_activeExecutions.TryGetValue(callId,out tuple)){
-						Console.WriteLine($"{this} has no ActiveExecution with id: {callId}");
+						Logger.Warning($"Invalid State: No ActiveExecution[{callId}] ({packetType})");
 						break;
 					}
 				await tuple.respondTo.CancelRaw(tuple.respondId,data);
@@ -145,7 +149,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				(ServerConnection respondTo,int respondId) tuple;
 				lock(_activeExecutions)
 					if(!_activeExecutions.TryGetValue(callId,out tuple)){
-						Console.WriteLine($"{this} has no ActiveExecution with id: {callId}");
+						Logger.Warning($"Invalid State: No ActiveExecution[{callId}] ({packetType})");
 						break;
 					}
 				var buff=new DataOutputBuff();
@@ -160,7 +164,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				(ServerConnection respondTo,int respondId) tuple;
 				lock(_activeRequests)
 					if(!_activeRequests.TryGetValue(callId,out tuple)){
-						Console.WriteLine($"{this} has no ActiveRequest with id: {callId}");
+						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
 				var buff=new DataOutputBuff();
@@ -192,16 +196,20 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	}
 
 	private static async Task CallServer(ServerConnection connection,DataInput data,int callId){
-		var method=data.ReadString();
-
-		var already=new List<object>();
-		var args=data.ReadArray(data.ReadDynamic,already)??Array.Empty<object?>();
-
 		try{
-			var result=connection._invoker.Invoke(null!,method,args);
-			await connection.Resolve(callId,result);
+			var method=data.ReadString();
+
+			var already=new List<object>();
+			var args=data.ReadArray(data.ReadDynamic,already)??[];
+
+			try{
+				var result=connection._invoker.Invoke(null!,method,args);
+				await connection.Resolve(callId,result);
+			} catch(Exception e){
+				await connection.Reject(callId,e);
+			}
 		} catch(Exception e){
-			await connection.Reject(callId,e);
+			await connection.Reject(callId,new RpcDataException($"Error reading binary stream ({nameof(CallServer)})",e));
 		}
 	}
 	#endregion
@@ -209,7 +217,14 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 
 	#region Local
 	public readonly string Id;
-	public string? Name{get;internal set;}
+	private string? _name;
+	public string? Name{
+		get=>_name;
+		internal set{
+			_name=value;
+			Logger=Rpc.Logger.WithName("Connection: "+PrettyName);
+		}
+	}
 	public string PrettyName=>Name is{} name?$"{name} ({Id})":Id;
 
 
@@ -233,17 +248,17 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 
 		if(failed.Length!=0){
 			if(log)
-				Console.WriteLine(types.Length==1
-					                  ?$"{PrettyName} tried registering Type \"{types[0]}\""
-					                  :$"{PrettyName} tried registering Types \"{types.Join("\",\"")}\"");
+				Logger.Warning(types.Length==1
+					               ?$"Tried registering Type \"{types[0]}\""
+					               :$"Tried registering Types \"{types.Join("\",\"")}\"");
 			throw new Exception(failed.Length==1
 				                    ?$"Type \"{failed[0]}\" was already registered"
 				                    :$"Types \"{failed.Join("\",\"")}\" were already registered");
 		}
 		if(log)
-			Console.WriteLine(types.Length==1
-				                  ?$"{PrettyName} registered Type \"{types[0]}\""
-				                  :$"{PrettyName} registered Types \"{types.Join("\",\"")}\"");
+			Logger.Info(types.Length==1
+				            ?$"Registered Type \"{types[0]}\""
+				            :$"Registered Types \"{types.Join("\",\"")}\"");
 	}
 
 	internal void Unregister(string[] types,bool log){
@@ -258,17 +273,17 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 
 		if(failed.Length!=0){
 			if(log)
-				Console.WriteLine(types.Length==1
-					                  ?$"{PrettyName} tried unregistering Type \"{types[0]}\""
-					                  :$"{PrettyName} tried unregistering Types \"{types.Join("\",\"")}\"");
+				Logger.Warning(types.Length==1
+					               ?$"Tried unregistering Type \"{types[0]}\""
+					               :$"Tried unregistering Types \"{types.Join("\",\"")}\"");
 			throw new Exception(failed.Length==1
 				                    ?$"Type \"{failed[0]}\" was not registered"
 				                    :$"Types \"{failed.Join("\",\"")}\" were not registered");
 		}
 		if(log)
-			Console.WriteLine(types.Length==1
-				                  ?$"{PrettyName} unregistered Type \"{types[0]}\""
-				                  :$"{PrettyName} unregistered Types \"{types.Join("\",\"")}\"");
+			Logger.Info(types.Length==1
+				            ?$"Unregistered Type \"{types[0]}\""
+				            :$"Unregistered Types \"{types.Join("\",\"")}\"");
 	}
 	#endregion
 

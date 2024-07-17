@@ -47,7 +47,7 @@ internal static class Evaluate{
 
 
 		var argsString=s.Substring(bracket+1,s.Length-(bracket+1)-1);
-		var argsStrings=argsString.Trim().Length==0?Array.Empty<string>():argsString.Split(',');
+		var argsStrings=argsString.Trim().Length==0?[]:argsString.Split(',');
 		for(var i=0;i<argsStrings.Length;){
 			var argString=argsStrings[i++];
 
