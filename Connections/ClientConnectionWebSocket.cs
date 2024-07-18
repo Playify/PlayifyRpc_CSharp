@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.Net;
 using PlayifyRpc.Internal;
 using PlayifyUtility.Streams.Data;
+using PlayifyUtility.Utils.Extensions;
 using PlayifyUtility.Web;
 
 namespace PlayifyRpc.Connections;
@@ -23,7 +24,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 	private async Task ReceiveLoop(){
 		await foreach(var (s,b) in _webSocket)
 			if(s!=null) Rpc.Logger.Log("WebSocket Message: "+s);
-			else _=Receive(new DataInputBuff(b)).ConfigureAwait(false);
+			else Receive(new DataInputBuff(b)).Background(e=>Logger.Warning("Error receiving Packet: "+e));
 	}
 
 	public override async ValueTask DisposeAsync(){

@@ -1,7 +1,7 @@
 using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Types;
-using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Data.Objects;
 
 namespace PlayifyRpc.Internal;
 

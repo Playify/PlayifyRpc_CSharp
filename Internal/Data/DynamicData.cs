@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Data.Objects;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Streams.Data;
 #if NETFRAMEWORK
@@ -178,7 +179,7 @@ public static class DynamicData{
 				output.WriteLength(-(bytes.Length*4+1));
 				output.Write(bytes);
 				return;
-			case ObjectTemplate obj:
+			case ObjectTemplateBase obj:
 				obj.WriteDynamic(output,already);
 				return;
 			case ExpandoObject obj:

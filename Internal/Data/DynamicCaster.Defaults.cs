@@ -1,6 +1,6 @@
 using System.Dynamic;
 using System.Reflection;
-using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Data.Objects;
 using PlayifyUtility.Jsons;
 
 namespace PlayifyRpc.Internal.Data;
@@ -8,9 +8,9 @@ namespace PlayifyRpc.Internal.Data;
 public static partial class DynamicCaster{
 	private static IEnumerable<(string,object?)>? TryGetObjectProps(object? x)
 		=>x switch{
-			ExpandoObject exp=>exp.Select(pair=>(pair.Key,(object?)pair.Value)),
+			ExpandoObject exp=>exp.Select(pair=>(pair.Key,pair.Value)),
 			JsonObject jsonObject=>jsonObject.Select(pair=>(pair.Key,(object?)pair.Value)),
-			ObjectTemplate obj=>obj.GetProperties(),
+			ObjectTemplateBase obj=>obj.GetProperties(),
 			_=>null,
 		};
 
@@ -160,12 +160,26 @@ public static partial class DynamicCaster{
 		}
 
 		public static object Objects(object? value,Type type,bool throwOnError){
-			if(typeof(ObjectTemplate).IsAssignableFrom(type))
-				return TryGetObjectProps(value) is{} props?ObjectTemplate.TryCreateTemplate(props,type,throwOnError)??ContinueWithNext:ContinueWithNext;
-			if(type.IsAssignableFrom(typeof(JsonObject)))
-				return TryGetObjectProps(value) is{} props?ObjectTemplate.TryCreateJson(props,throwOnError)??ContinueWithNext:ContinueWithNext;
-			if(typeof(ExpandoObject).IsAssignableFrom(type))
-				return TryGetObjectProps(value) is{} props?ObjectTemplate.TryCreateExpando(props,throwOnError):ContinueWithNext;
+			if(typeof(ObjectTemplateBase).IsAssignableFrom(type)&&TryGetObjectProps(value) is{} props){
+				var o=(ObjectTemplateBase)Activator.CreateInstance(type)!;
+				foreach(var (k,v) in props)
+					if(!o.TrySetProperty(k,v,throwOnError))
+						return ContinueWithNext;
+				return o;
+			}
+			if(type.IsAssignableFrom(typeof(JsonObject))&&(props=TryGetObjectProps(value))!=null){
+				var o=new JsonObject();
+				foreach(var (k,v) in props)
+					if(TryCast(v,out Json casted,throwOnError)) o[k]=casted;
+					else return ContinueWithNext;
+				return o;
+			}
+			if(typeof(ExpandoObject).IsAssignableFrom(type)&&(props=TryGetObjectProps(value))!=null){
+				var o=new ExpandoObject();
+				foreach(var (k,v) in props)
+					((IDictionary<string,object?>)o)[k]=TryCast(v,out object? casted,false)?casted:v;
+				return o;
+			}
 			return ContinueWithNext;
 		}
 

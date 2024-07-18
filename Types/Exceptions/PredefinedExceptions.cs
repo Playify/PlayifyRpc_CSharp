@@ -1,4 +1,3 @@
-
 namespace PlayifyRpc.Types.Exceptions;
 
 public abstract class RpcCallException:RpcException{

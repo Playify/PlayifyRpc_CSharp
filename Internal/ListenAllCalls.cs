@@ -1,6 +1,7 @@
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Streams.Data;
 
