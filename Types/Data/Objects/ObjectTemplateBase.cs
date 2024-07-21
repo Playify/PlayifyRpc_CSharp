@@ -38,15 +38,21 @@ public abstract class ObjectTemplateBase:DynamicObject{
 
 	internal bool? TrySetReflectionProperty(string key,object? value,bool throwOnError){
 		var type=GetType();
-		if(type.GetProperty(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{
-			   CanWrite: true,
-			   IsSpecialName: false,
-		   } property)
+		if(
+			type.GetProperty(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{
+				CanWrite: true,
+				IsSpecialName: false,
+			} property&&
+			property.GetCustomAttribute<RpcHiddenAttribute>()==null
+		)
 			if(DynamicCaster.TryCast(value,property.PropertyType,out var casted,throwOnError)){
 				property.SetValue(this,casted);
 				return true;
 			} else return false;
-		if(type.GetField(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{} field)
+		if(
+			type.GetField(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{} field&&
+			field.GetCustomAttribute<RpcHiddenAttribute>()==null
+		)
 			if(DynamicCaster.TryCast(value,field.FieldType,out var casted,throwOnError)){
 				field.SetValue(this,casted);
 				return true;
@@ -57,14 +63,20 @@ public abstract class ObjectTemplateBase:DynamicObject{
 
 	internal bool TryGetReflectionProperty(string key,out object? value){
 		var type=GetType();
-		if(type.GetProperty(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{
-			   CanRead: true,
-			   IsSpecialName: false,
-		   } property){
+		if(
+			type.GetProperty(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{
+				CanRead: true,
+				IsSpecialName: false,
+			} property&&
+			property.GetCustomAttribute<RpcHiddenAttribute>()==null
+		){
 			value=property.GetValue(this);
 			return true;
 		}
-		if(type.GetField(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{} field){
+		if(
+			type.GetField(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{} field&&
+			field.GetCustomAttribute<RpcHiddenAttribute>()==null
+		){
 			value=field.GetValue(this);
 			return true;
 		}
@@ -77,12 +89,14 @@ public abstract class ObjectTemplateBase:DynamicObject{
 		foreach(var property in type.GetProperties()){
 			if(property.IsSpecialName) continue;
 			if(!property.CanRead) continue;
+			if(property.GetCustomAttribute<RpcHiddenAttribute>()!=null) continue;
 
 			yield return (property.Name,property.GetValue(this));
 		}
 		foreach(var field in type.GetFields()){
 			if(field.IsStatic) continue;
 			if(field.IsPrivate) continue;
+			if(field.GetCustomAttribute<RpcHiddenAttribute>()!=null) continue;
 
 			yield return (field.Name,field.GetValue(this));
 		}

@@ -66,6 +66,7 @@ public class TypeInvoker:Invoker{
 	protected override ValueTask<string[]> GetMethods()
 		=>new(_type.GetMethods(BindingFlags)
 		           .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
+		           .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder
 		           .Select(m=>m.Name)
 		           .Distinct()
 		           .ToArray());

@@ -1,4 +1,5 @@
 using System.Reflection;
+using PlayifyRpc.Types;
 
 namespace PlayifyRpc.Internal.Data;
 
@@ -7,6 +8,7 @@ public partial class DynamicBinder{
 		var candidates=new (MethodBase method,ParameterInfo[] par)?[match.Length];
 		for(var i=0;i<match.Length;i++){
 			if(match[i].DeclaringType==typeof(object)) continue;
+			if(match[i].GetCustomAttribute<RpcHiddenAttribute>()!=null) continue;
 			var par=match[i].GetParameters();
 
 			candidates[i]=(match[i],par);
