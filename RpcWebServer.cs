@@ -189,38 +189,15 @@ public partial class RpcWebServer:WebBase{
 
 		switch(session.Path){
 			case "/rpc.js":
-				await session.Send.File(rpcJs);
+				await session.Send.File(Path.ChangeExtension(rpcJs,".js"));
 				return;
 			case "/rpc.js.map":
-				await session.Send.File(rpcJs+".map");
+				await session.Send.File(Path.ChangeExtension(rpcJs,".js.map"));
 				return;
 			case "/":
 			case "/rpc":
 			case "/rpc.html":
-				await session.Send.Html("""
-				                        <!DOCTYPE html><title>RPC Test</title><script type="module" src="/rpc.js"></script>
-				                        <input type="text" value="Rpc.getRegistrations()" style="width:100%"/>
-				                        <pre></pre>
-				                        <script>
-				                        const input=document.querySelector("input"),pre=document.querySelector("pre");
-				                        let curr=0;
-				                        input.addEventListener("keydown",async e=>{
-				                        	if(e.key!="Enter") return;
-				                        	
-				                        	const now=++curr;
-				                        	try{
-				                        		pre.style.color="blue";
-				                        		pre.textContent= await Rpc.evalString(input.value);
-				                        		if(now!=curr) return;
-				                        		pre.style.color="green";
-				                        	}catch(e){
-				                        		if(now!=curr) return;
-				                        		pre.textContent=""+e.trashLocalStack();
-				                        		pre.style.color="red";
-				                        	}
-				                        });
-				                        </script>
-				                        """);
+				await session.Send.File(Path.ChangeExtension(rpcJs,".html"));
 				return;
 			default:
 				await session.Send.Error(404);

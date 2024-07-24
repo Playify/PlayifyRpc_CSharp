@@ -8,7 +8,8 @@ namespace PlayifyRpc.Internal.Data;
 public static partial class DynamicCaster{
 	private static IEnumerable<(string,object?)>? TryGetObjectProps(object? x)
 		=>x switch{
-			ExpandoObject exp=>exp.Select(pair=>(pair.Key,pair.Value)),
+			// ReSharper disable once RedundantCast
+			ExpandoObject exp=>exp.Select(pair=>(pair.Key,(object?)pair.Value)),
 			JsonObject jsonObject=>jsonObject.Select(pair=>(pair.Key,(object?)pair.Value)),
 			ObjectTemplateBase obj=>obj.GetProperties(),
 			_=>null,
