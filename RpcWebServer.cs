@@ -83,24 +83,24 @@ public partial class RpcWebServer:WebBase{
 			                  "rpc.js path if omitted will download when the file doesn't exist");
 			return;
 		}
-		const int defaultPort=4590;
-		var ipEndPoint=args.Length!=0
-			               ?args[0] switch{
-				               var s when Parsers.TryParseIpEndPoint(s,defaultPort,out var ep)=>ep,
-				               var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
-				               var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,defaultPort),
-				               _=>throw new ArgumentException("Invalid IP or Port"),
-			               }
-			               :new IPEndPoint(IPAddress.Any,defaultPort);
-
-		var rpcToken=args.Length>1?args[1]:Environment.GetEnvironmentVariable("RPC_TOKEN")??null;
-
-		var rpcJs="rpc.js";
-		if(args.Length>2) rpcJs=args[2];
-		else if(!File.Exists("rpc.js")) DownloadRpcJs().Background();
-
-		RunConsoleThread();
 		try{
+			const int defaultPort=4590;
+			var ipEndPoint=args.Length!=0
+				               ?args[0] switch{
+					               var s when Parsers.TryParseIpEndPoint(s,defaultPort,out var ep)=>ep,
+					               var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
+					               var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,defaultPort),
+					               _=>throw new ArgumentException($"Invalid IP or Port: \"{args[0]}\""),
+				               }
+				               :new IPEndPoint(IPAddress.Any,defaultPort);
+
+			var rpcToken=args.Length>1?args[1]:Environment.GetEnvironmentVariable("RPC_TOKEN")??null;
+
+			var rpcJs="rpc.js";
+			if(args.Length>2) rpcJs=args[2];
+			else if(!File.Exists("rpc.js")) DownloadRpcJs().Background();
+
+			RunConsoleThread();
 			Rpc.Logger.Info("Listening on "+ipEndPoint);
 			await RunWebServer(ipEndPoint,rpcJs,rpcToken);
 		} catch(Exception e){
@@ -129,7 +129,7 @@ public partial class RpcWebServer:WebBase{
 			} catch(Exception e){
 				await session.Send
 				             .Cache(false)
-				             .Text(e.ToString(),code:500);
+				             .Text(e.ToString(),500);
 				return;
 			}
 			try{
@@ -174,7 +174,7 @@ public partial class RpcWebServer:WebBase{
 			} catch(Exception e){
 				await session.Send
 				             .Cache(false)
-				             .Text(e.ToString(),code:500);
+				             .Text(e.ToString(),500);
 				return;
 			}
 			if(voidResponse)
