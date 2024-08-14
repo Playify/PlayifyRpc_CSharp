@@ -16,7 +16,6 @@ public class TypeInvoker:Invoker{
 		=>BindingFlags.InvokeMethod|
 		  BindingFlags.IgnoreCase|
 		  BindingFlags.Public|
-		  BindingFlags.NonPublic|
 		  BindingFlags.OptionalParamBinding|
 		  BindingFlags.Static|
 		  (_instance!=null
@@ -44,10 +43,10 @@ public class TypeInvoker:Invoker{
 	protected override object? DynamicInvoke(string? type,string method,object?[] args){
 		try{
 			return _type.InvokeMember(method,
-			                          BindingFlags,
-			                          DynamicBinder.Instance,
-			                          _instance,
-			                          args);
+				BindingFlags,
+				DynamicBinder.Instance,
+				_instance,
+				args);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){

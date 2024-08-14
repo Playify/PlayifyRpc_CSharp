@@ -43,7 +43,7 @@ Windows:
 powershell "irm https://raw.githubusercontent.com/Playify/PlayifyRpc_CSharp/master/_run/get-rpc.ps1|iex"
 ```
 
-Now you can use the `rpc.bat` or the `rpc.sh` script to run the RPC server.
+Now you can use the `rpc.sh` or the `rpc.bat` script to run the RPC server.
 
 ## Security
 
