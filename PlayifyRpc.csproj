@@ -15,25 +15,18 @@
         <RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
         <RepositoryType>GitHub</RepositoryType>
         <Authors>Playify</Authors>
-        <Version>1.4.1</Version>
+		<Version>1.4.2</Version>
 
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <PropertyGroup>
         <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=.../PlayifyRpc_CSharp/</PathMap>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-        <DebugType>full</DebugType>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-		<DebugType>portable</DebugType>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">
+	<ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">
         <Using Remove="System.Net.Http" />
         <PackageReference Include="AsyncFriendlyStackTrace" Version="1.7.0" />
     </ItemGroup>
@@ -73,5 +66,6 @@
         <Compile Update="Internal\Data\DynamicBinder.Specific.cs">
             <DependentUpon>DynamicBinder.cs</DependentUpon>
         </Compile>
+		<None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 </Project>
