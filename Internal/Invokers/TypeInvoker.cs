@@ -37,7 +37,7 @@ public class TypeInvoker:Invoker{
 		type.RunClassConstructor();
 	}
 
-	protected override object? DynamicInvoke(string? type,string method,object?[] args){
+	protected sealed override object? DynamicInvoke(string? type,string method,object?[] args){
 		try{
 			return _type.InvokeMember(method,
 				BindingFlags,
@@ -47,6 +47,8 @@ public class TypeInvoker:Invoker{
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
+			if(GetMethodsDirect().Any(m=>m.Equals(method,StringComparison.OrdinalIgnoreCase)))
+				throw new RpcMethodNotFoundException(type,method,"Method doesn't accept "+args.Length+" arguments");
 			throw new RpcMethodNotFoundException(type,method);
 		} catch(MethodAccessException e){
 			throw new RpcMethodNotFoundException(type,method,e.Message);
@@ -59,15 +61,15 @@ public class TypeInvoker:Invoker{
 		}
 	}
 
-	protected override ValueTask<string[]> GetMethods()
-		=>new(_type.GetMethods(BindingFlags)
-		           .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
-		           .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder
-		           .Select(m=>m.Name)
-		           .Distinct()
-		           .ToArray());
+	private IEnumerable<string> GetMethodsDirect()=>_type.GetMethods(BindingFlags)
+	                                                     .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
+	                                                     .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder
+	                                                     .Select(m=>m.Name)
+	                                                     .Distinct();
 
-	protected override ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts)=>new(
+	protected sealed override ValueTask<string[]> GetMethods()=>new(GetMethodsDirect().ToArray());
+
+	protected sealed override ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts)=>new(
 		_type.GetMethods(BindingFlags)
 		     .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
 		     .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder

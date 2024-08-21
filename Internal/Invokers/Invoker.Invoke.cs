@@ -18,7 +18,7 @@ public abstract partial class Invoker{
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
-			throw new RpcMethodNotFoundException(type,method);
+			throw new RpcMethodNotFoundException(type,method,"Method doesn't accept "+args.Length+" arguments");
 		} catch(MethodAccessException e){
 			throw new RpcMethodNotFoundException(type,method,e.Message);
 		} catch(AmbiguousMatchException){
@@ -43,7 +43,7 @@ public abstract partial class Invoker{
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
-			throw new RpcMetaMethodNotFoundException(type,meta);
+			throw new RpcMetaMethodNotFoundException(type,meta,"Method doesn't accept "+args.Length+" arguments");
 		} catch(MethodAccessException e){
 			throw new RpcMetaMethodNotFoundException(type,meta,e.Message);
 		} catch(AmbiguousMatchException){
