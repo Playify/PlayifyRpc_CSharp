@@ -9,7 +9,7 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Internal.Invokers;
 
 [PublicAPI]
-public abstract partial class Invoker{
+public abstract class Invoker{
 	protected internal object? Invoke(string? type,string? method,object?[] args){
 		if(method!=null) return DynamicInvoke(type,method,args);
 
@@ -18,10 +18,10 @@ public abstract partial class Invoker{
 		//Meta calls, using null as method
 		Delegate @delegate=meta switch{
 			"M"=>GetMethods,
-			"A"=>GetMethodSignaturesBase,
+			"S"=>GetMethodSignaturesBase,
 			_=>throw new RpcMetaMethodNotFoundException(type,meta),
 		};
-		return InvokeMeta(@delegate,type,meta,args.Skip(1).ToArray());
+		return DynamicBinder.InvokeMeta(@delegate,type,meta,args.Skip(1).ToArray());
 	}
 
 	protected abstract object? DynamicInvoke(string? type,string method,object?[] args);
@@ -31,7 +31,7 @@ public abstract partial class Invoker{
 		if(method!=null) return GetMethodSignatures(method,ts);
 		return new ValueTask<(string[] arguments,string @return)[]>([
 			DynamicTypeStringifier.MethodSignature(GetMethods,ts,"M"),
-			DynamicTypeStringifier.MethodSignature(GetMethodSignaturesBase,ts,"A"),
+			DynamicTypeStringifier.MethodSignature(GetMethodSignaturesBase,ts,"S"),
 		]);
 	}
 

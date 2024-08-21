@@ -23,7 +23,8 @@ public readonly struct RpcFunction{
 	[PublicAPI]
 	public PendingCall<T> Call<T>(params object?[] args)=>Rpc.CallFunction<T>(Type,Method,args);
 
-	public async Task<(string[] parameters,string @return)[]> GetMethodSignatures(bool typeScript=false)=>await FunctionCallContext.CallFunction<(string[] parameters,string @return)[]>(Type,null,"A",Method,typeScript);
+	public async Task<(string[] parameters,string @return)[]> GetMethodSignatures(bool typeScript=false)=>
+		await FunctionCallContext.CallFunction<(string[] parameters,string @return)[]>(Type,null,"S",Method,typeScript);
 
 
 	public static RpcFunction RegisterFunction(Delegate func){

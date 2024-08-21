@@ -23,7 +23,7 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 
 			if(@delegate==null) throw new RpcMethodNotFoundException(type,method);
 		}
-		return Invoke(@delegate,type,method,args);
+		return DynamicBinder.Invoke(@delegate,type,method,args);
 	}
 
 	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());

@@ -6,6 +6,7 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Internal.Data;
 
 public partial class DynamicBinder:Binder{
+	private static readonly ThreadLocal<MethodInfo?> CurrentMethod=new();
 	private static DynamicBinder? _instance;
 	public static DynamicBinder Instance=>_instance??=new DynamicBinder();
 
@@ -17,6 +18,11 @@ public partial class DynamicBinder:Binder{
 		ParameterModifier[]? modifiers,CultureInfo? cultureInfo,string[]? names,out object? state){
 		if(names!=null) throw new NotSupportedException("Named arguments are not supported");
 		if(match==null||match.Length==0) throw new ArgumentException(nameof(match));
+
+		if(CurrentMethod.Value is{} only){
+			match=match.Contains(only)?[only]:[];
+			CurrentMethod.Value=null;
+		}
 
 		state=null;
 
@@ -91,11 +97,11 @@ public partial class DynamicBinder:Binder{
 
 			#region Walk all of the methods looking the most specific method to invoke
 			var newMin=FindMostSpecificMethod(oldTuple,
-			                                  paramArrayTypes[currentMin],
-			                                  newTuple,
-			                                  paramArrayTypes[canIndex],
-			                                  argTypes,
-			                                  args);
+				paramArrayTypes[currentMin],
+				newTuple,
+				paramArrayTypes[canIndex],
+				argTypes,
+				args);
 
 			if(newMin==0) ambiguous=true;
 			else if(newMin==2){

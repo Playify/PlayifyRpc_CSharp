@@ -49,7 +49,7 @@ internal class ServerInvoker:Invoker{
 		foreach(var (name,i,@delegate) in _methods)
 			if(method.Equals(name,StringComparison.OrdinalIgnoreCase)
 			   &&(!i.TryGet(out var argCount)||argCount==args.Length))
-				return Invoke(@delegate,type,method,args);
+				return DynamicBinder.Invoke(@delegate,type,method,args);
 		throw new RpcMethodNotFoundException(type,method);
 	}
 

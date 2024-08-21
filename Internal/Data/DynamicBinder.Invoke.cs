@@ -1,20 +1,21 @@
 using System.Reflection;
-using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Exceptions;
 
-namespace PlayifyRpc.Internal.Invokers;
+namespace PlayifyRpc.Internal.Data;
 
-public abstract partial class Invoker{
-	protected static object? Invoke(Delegate func,string? type,string method,object?[] args){
+public partial class DynamicBinder{
+	internal static object? Invoke(Delegate func,string? type,string method,object?[] args){
 		try{
-			return func.Method.Invoke(func.Target,
-				BindingFlags.OptionalParamBinding|
-				BindingFlags.FlattenHierarchy|
-				BindingFlags.InvokeMethod,
-				DynamicBinder.Instance,
-				args,
-				null!);
+			CurrentMethod.Value=func.Method;
+			const BindingFlags all=BindingFlags.Public|
+			                       BindingFlags.NonPublic|
+			                       BindingFlags.OptionalParamBinding|
+			                       BindingFlags.FlattenHierarchy|
+			                       BindingFlags.Static|
+			                       BindingFlags.Instance|
+			                       BindingFlags.InvokeMethod;
+			return func.Method.DeclaringType!.InvokeMember(func.Method.Name,all,Instance,func.Target,args,null!);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
@@ -27,19 +28,22 @@ public abstract partial class Invoker{
 			throw new RpcMethodNotFoundException(type,method,"Error casting arguments",e);
 		} catch(Exception e){
 			throw RpcException.WrapAndFreeze(e);
+		} finally{
+			CurrentMethod.Value=null;
 		}
 	}
 
-	private protected static object? InvokeMeta(Delegate func,string? type,string meta,object?[] args){
-
+	internal static object? InvokeMeta(Delegate func,string? type,string meta,object?[] args){
 		try{
-			return func.Method.Invoke(func.Target,
-				BindingFlags.OptionalParamBinding|
-				BindingFlags.FlattenHierarchy|
-				BindingFlags.InvokeMethod,
-				DynamicBinder.Instance,
-				args,
-				null!);
+			CurrentMethod.Value=func.Method;
+			const BindingFlags all=BindingFlags.Public|
+			                       BindingFlags.NonPublic|
+			                       BindingFlags.OptionalParamBinding|
+			                       BindingFlags.FlattenHierarchy|
+			                       BindingFlags.Static|
+			                       BindingFlags.Instance|
+			                       BindingFlags.InvokeMethod;
+			return func.Method.DeclaringType!.InvokeMember(func.Method.Name,all,Instance,func.Target,args,null!);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
@@ -52,8 +56,8 @@ public abstract partial class Invoker{
 			throw new RpcMetaMethodNotFoundException(type,meta,"Error casting arguments",e);
 		} catch(Exception e){
 			throw RpcException.WrapAndFreeze(e);
+		} finally{
+			CurrentMethod.Value=null;
 		}
 	}
-
-
 }
