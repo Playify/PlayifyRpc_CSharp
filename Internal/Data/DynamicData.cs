@@ -8,6 +8,7 @@ using JetBrains.Annotations;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Data.Objects;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Streams.Data;
 #if NETFRAMEWORK
@@ -20,7 +21,16 @@ namespace PlayifyRpc.Internal.Data;
 public static class DynamicData{
 	private static readonly List<(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)> WriteRegistry=[];
 	private static readonly Dictionary<string,Func<DataInput,List<object>,object>> ReadRegistry=new();
-	private static readonly List<Func<object?,object?>> Converters=[];
+	private static readonly List<Func<object?,object?>> Converters=[
+		d=>d switch{
+			JsonString j=>j.Value,
+			JsonNumber j=>j.Value,
+			JsonBool j=>j.Value,
+			JsonNull=>null,
+			_=>d,
+		},
+		d=>d is char c?c.ToString():d,
+	];
 
 	static DynamicData(){
 		AppDomain.CurrentDomain.AssemblyLoad+=(_,args)=>RegisterAssembly(args.LoadedAssembly);
@@ -86,17 +96,7 @@ public static class DynamicData{
 	}
 
 	internal static void Write(DataOutput output,object? d,List<object> already){
-		foreach(var converter in Converters)
-			d=converter(d);
-
-		d=d switch{
-			JsonString j=>j.Value,
-			JsonNumber j=>j.Value,
-			JsonBool j=>j.Value,
-			JsonNull=>null,
-			_=>d,
-		};
-
+		foreach(var converter in Converters) d=converter(d);
 
 		switch(d){
 			case null:
@@ -223,12 +223,12 @@ public static class DynamicData{
 			write(output,d,already);
 			return;
 		}
-		throw new Exception("Unknown Type: "+d.GetType().Name+" for "+d);
+		throw new RpcDataException("Type is not supported by DynamicData: "+DynamicTypeStringifier.FromType(d.GetType())+" for value "+d,null);
 	}
 
 	private static void RegisterAssembly(Assembly assembly){
 		if(assembly.FullName?.StartsWith("System.")??false) return;//Skip System assemblies
-		
+
 		Debug.WriteLine("DynamicData registering "+assembly);
 		try{
 			foreach(var type in assembly.GetTypes()){
@@ -290,7 +290,5 @@ public static class DynamicData{
 
 	internal static bool NeedsFreeing(object arg)=>arg is Delegate;
 
-	internal static void CleanupBeforeFreeing(List<object> already){
-		already.RemoveAll(o=>!NeedsFreeing(o));
-	}
+	internal static void CleanupBeforeFreeing(List<object> already)=>already.RemoveAll(o=>!NeedsFreeing(o));
 }

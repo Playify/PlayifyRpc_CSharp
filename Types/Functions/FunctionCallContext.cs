@@ -137,18 +137,26 @@ public class FunctionCallContext:SendReceive{
 #pragma warning disable CS1998// Async method lacks 'await' operators and will run synchronously
 		object? result=System.Threading.Tasks.Task.Run(async ()=>RunWithContext(func,context));
 #pragma warning restore CS1998// Async method lacks 'await' operators and will run synchronously
-		while(result is Task task){
-			try{
-				await task;
-			} catch(Exception e){
-				throw RpcException.WrapAndFreeze(e).Append(type,method,args);
-			}
-			result=result.GetType().GetProperty("Result")?.GetValue(result);
-			if(result is VoidType) result=null;
-			else if(result?.GetType().FullName=="System.Threading.Tasks.VoidTaskResult") result=null;
+
+		try{
+			Type t;
+			while(true)
+				if(result is VoidType or null) return null;
+				else if((t=result.GetType()).FullName=="System.Threading.Tasks.VoidTaskResult") return null;
+				else if(result is Task task){
+					await task;
+					result=t.GetProperty("Result")?.GetValue(result);
+				} else if(result is ValueTask valueTask){
+					await valueTask;
+					return null;
+				} else if(t.IsGenericType&&t.GetGenericTypeDefinition()==typeof(ValueTask<>))
+					result=t.GetMethod(nameof(ValueTask<object>.AsTask))?.Invoke(result,[]);
+				else return result;
+		} catch(Exception e){
+			throw RpcException.WrapAndFreeze(e).Append(type,method,args);
 		}
-		return result;
 	}
+
 
 	public static FunctionCallContext GetContext()=>ThreadLocal.Value??throw new InvalidOperationException("FunctionCallContext not available");
 }

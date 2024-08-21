@@ -9,25 +9,37 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Internal.Invokers;
 
 [PublicAPI]
-public abstract class Invoker{
+public abstract partial class Invoker{
 	protected internal object? Invoke(string? type,string? method,object?[] args){
 		if(method!=null) return DynamicInvoke(type,method,args);
 
-		var meta=args.Length==0?null:DynamicCaster.Cast<string>(args[0]);
+		var meta=args.Length<1?null:DynamicCaster.Cast<string>(args[0]);
 
 		//Meta calls, using null as method
-		return meta switch{
-			"M"=>GetMethods().Push(out var valueTask).IsCompletedSuccessfully?valueTask.Result:valueTask.AsTask(),
+		Delegate @delegate=meta switch{
+			"M"=>GetMethods,
+			"A"=>GetMethodSignaturesBase,
 			_=>throw new RpcMetaMethodNotFoundException(type,meta),
 		};
+		return InvokeMeta(@delegate,type,meta,args.Skip(1).ToArray());
 	}
 
 	protected abstract object? DynamicInvoke(string? type,string method,object?[] args);
 	protected abstract ValueTask<string[]> GetMethods();
 
+	protected ValueTask<(string[] arguments,string @return)[]> GetMethodSignaturesBase(string? method,bool ts){
+		if(method!=null) return GetMethodSignatures(method,ts);
+		return new ValueTask<(string[] arguments,string @return)[]>([
+			DynamicTypeStringifier.MethodSignature(GetMethods,ts,"M"),
+			DynamicTypeStringifier.MethodSignature(GetMethodSignaturesBase,ts,"A"),
+		]);
+	}
 
-	public PendingCall Call(string type,string? method,object?[] args)=>CallLocal(()=>Invoke(type,method,args),type,method,args);
-	public PendingCall<T> Call<T>(string type,string method,object?[] args)=>Call(type,method,args).Cast<T>();
+	protected abstract ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts);
+
+
+	protected internal PendingCall Call(string type,string? method,object?[] args)=>CallLocal(()=>Invoke(type,method,args),type,method,args);
+	protected internal PendingCall<T> Call<T>(string type,string method,object?[] args)=>Call(type,method,args).Cast<T>();
 
 	internal static PendingCall CallLocal(Action a)
 		=>CallLocal(()=>{
@@ -46,7 +58,7 @@ public abstract class Invoker{
 		var truth=new PendingCallRawData();
 		var context=new FunctionCallContext(type,
 			method,
-		                                    sending=>Task.Run(()=>truth.DoReceiveMessage(sending)).Catch(e=>Rpc.Logger.Warning("Error while handling message: "+e)),
+			sending=>Task.Run(()=>truth.DoReceiveMessage(sending)).Catch(e=>Rpc.Logger.Warning("Error while handling message: "+e)),
 			truth.TaskCompletionSource,
 			()=>Task.FromResult(Rpc.PrettyName));
 
@@ -61,7 +73,7 @@ public abstract class Invoker{
 		return call;
 	}
 
-	internal static async Task TaskToCall(Task<object?> task,PendingCall call){
+	private static async Task TaskToCall(Task<object?> task,PendingCall call){
 		try{
 			call.Resolve(await task);
 		} catch(Exception e){

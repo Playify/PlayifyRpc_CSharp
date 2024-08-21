@@ -29,6 +29,7 @@ public class RpcObject:DynamicObject{
 	}
 
 	public Task<string[]> GetMethods()=>FunctionCallContext.CallFunction<string[]>(Type,null,"M");
+	public Task<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool typeScript=false)=>GetFunction(method).GetMethodSignatures(typeScript);
 	public Task<bool> Exists()=>FunctionCallContext.CallFunction<bool>(null,"E",Type);
 
 
@@ -43,4 +44,5 @@ public class RpcObject:DynamicObject{
 			   .GetInterface("Microsoft.CSharp.RuntimeBinder.ICSharpInvokeOrInvokeMemberBinder")
 			   ?.GetProperty("TypeArguments")
 			   ?.GetValue(binder,null) as IList<Type>;
+
 }

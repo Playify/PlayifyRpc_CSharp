@@ -6,6 +6,7 @@ namespace PlayifyRpc.Internal.Data;
 
 [PublicAPI]
 public static partial class DynamicCaster{
+
 	#region Fields
 	public static readonly object ContinueWithNext=new();
 
@@ -19,6 +20,7 @@ public static partial class DynamicCaster{
 	public static readonly List<CasterDelegate> Casters=[
 		DefaultCasters.Null,
 		DefaultCasters.Primitives,
+		DefaultCasters.Char,
 		DefaultCasters.Enums,
 		DefaultCasters.InstanceOfCheck,
 		DefaultCasters.ImplicitConversion,
@@ -37,7 +39,7 @@ public static partial class DynamicCaster{
 		foreach(var caster in Casters)
 			if(caster(value,type,true).Push(out var result)!=ContinueWithNext)
 				return result;
-		throw new RpcDataException("Error casting \""+value+"\" to "+type.Name,null);
+		throw new RpcDataException("Error casting \""+value+"\" to "+DynamicTypeStringifier.FromType(type),null);
 	}
 
 	public static bool TryCast<T>(object? value,out T result)=>TryCast(value,out result,false);

@@ -69,6 +69,7 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	#region Extension Methods, not available via eval
 	public static bool Exists(string type)=>CheckType(type);
 	public static Task<string[]> GetMethods(string type)=>new RpcObject(type).GetMethods();
+	public static Task<(string[] parameters,string @return)[]> GetMethodSignatures(string type,string method,bool typescript=false)=>new RpcFunction(type,method).GetMethodSignatures(typescript);
 	#endregion
 
 	#region Test functions

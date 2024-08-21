@@ -20,6 +20,7 @@ public class RpcTypeNotFoundException:RpcCallException{
 public class RpcMethodNotFoundException:RpcCallException{
 	protected RpcMethodNotFoundException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
 
+
 	public RpcMethodNotFoundException(string? type,string? method,string? message=null,Exception? cause=null)
 		:base(null,null,message??$"Method {Quoted(method)} does not exist on type {Quoted(type)}","",cause){
 		Data["type"]=type;
@@ -31,8 +32,8 @@ public class RpcMethodNotFoundException:RpcCallException{
 public class RpcMetaMethodNotFoundException:RpcMethodNotFoundException{
 	protected RpcMetaMethodNotFoundException(string? type,string? from,string? message,string? stackTrace):base(type,from,message,stackTrace){}
 
-	public RpcMetaMethodNotFoundException(string? type,string? meta)
-		:base(null,null,$"Meta-method {Quoted(meta)} does not exist on type {Quoted(type)}",""){
+	public RpcMetaMethodNotFoundException(string? type,string? meta,string? message=null,Exception? cause=null)
+		:base(null,null,message??$"Meta-method {Quoted(meta)} does not exist on type {Quoted(type)}",cause){
 		Data["type"]=type;
 		Data["method"]=null;
 		Data["meta"]=meta;

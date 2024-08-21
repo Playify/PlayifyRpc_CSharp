@@ -10,6 +10,7 @@ public static class DynamicStringifier{
 	public static readonly List<Func<object?,bool,string?>> Stringifiers=[
 		(o,_)=>o==null?"null":null,
 		(o,_)=>o is float.NaN or double.NaN?"NaN":null,
+		(o,_)=>o is char c?$"'{c}'":null,
 		(o,pretty)=>DynamicCaster.TryCast(o,out Json json)?json.ToString(pretty?"\t":null):null,
 		(o,_)=>DynamicCaster.TryCast(o,out string s)?s:null,
 		DefaultStringifiers.Expando,

@@ -1,10 +1,31 @@
 using PlayifyRpc.Connections;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Internal.Invokers;
+using PlayifyRpc.Types.Exceptions;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
-internal class ServerInvoker:TypeInvoker{
+internal class ServerInvoker:Invoker{
 	private readonly ServerConnection _connection;
+	private readonly List<(string name,int? args,Delegate @delegate)> _methods;
+
+	public ServerInvoker(ServerConnection connection){
+		_connection=connection;
+		_methods=[
+			("N",null,Name),
+			("H",1,(Action<string>)Handshake),//Connections
+			("H",2,(Action<string[],string[]>)Handshake),//Connections
+			("H",3,(Action<string,string[],string[]>)Handshake),//Connections
+			("+",null,Register),//Rpc.RegisterType
+			("-",null,Unregister),//Rpc.UnregisterType
+
+			("E",null,RpcServer.CheckType),//RpcObject.Exists
+			("c",null,_connection.GetCaller),//FunctionCallContext.GetCaller
+		];
+	}
+
+
 	private void Name(string? name)=>_connection.Name=name;
 
 	private void Handshake(string? name)=>Name(name);
@@ -23,22 +44,21 @@ internal class ServerInvoker:TypeInvoker{
 
 	private void Unregister(params string[] types)=>_connection.Unregister(types,true);
 
-	private bool Exists(string type)=>RpcServer.CheckType(type);
 
-	private string GetCaller(int id)=>_connection.GetCaller(id);
+	protected override object? DynamicInvoke(string? type,string method,object?[] args){
+		foreach(var (name,i,@delegate) in _methods)
+			if(method.Equals(name,StringComparison.OrdinalIgnoreCase)
+			   &&(!i.TryGet(out var argCount)||argCount==args.Length))
+				return Invoke(@delegate,type,method,args);
+		throw new RpcMethodNotFoundException(type,method);
+	}
 
-	public ServerInvoker(ServerConnection connection)=>_connection=connection;
+	protected override ValueTask<string[]> GetMethods()=>new(_methods.Select(t=>t.name).Distinct().Ordered().ToArray());
 
-	private static readonly Dictionary<string,string> MethodMap=new(){
-		{"N",nameof(Name)},//Rpc.SetName
-		{"H",nameof(Handshake)},//Connections
-		{"+",nameof(Register)},//Rpc.RegisterType
-		{"-",nameof(Unregister)},//Rpc.UnregisterType
-
-		{"E",nameof(Exists)},//RpcObject.Exists
-		{"c",nameof(GetCaller)},//FunctionCallContext.GetCaller
-	};
-	protected override object? DynamicInvoke(string? type,string method,object?[] args)=>base.DynamicInvoke(type,MethodMap.TryGetValue(method,out var m)?m:method,args);
-
-	protected override ValueTask<string[]> GetMethods()=>new(MethodMap.Keys.ToArray());
+	protected override ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts)
+		=>new(_methods
+		      .Where(t=>t.name.Equals(method,StringComparison.OrdinalIgnoreCase))
+		      .Select(t=>DynamicTypeStringifier.MethodSignature(t.@delegate,ts))
+		      .ToArray()
+		);
 }

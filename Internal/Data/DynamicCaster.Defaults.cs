@@ -1,7 +1,10 @@
+using System.Collections;
 using System.Dynamic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using PlayifyRpc.Types.Data.Objects;
 using PlayifyUtility.Jsons;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
 
@@ -15,10 +18,18 @@ public static partial class DynamicCaster{
 			_=>null,
 		};
 
+	private static (IEnumerable values,int size)? TryGetArrayValues(object? x)
+		=>x switch{
+			Array array=>(array,array.Length),
+			JsonArray json=>(json,json.Count),
+			ITuple tuple=>(Enumerable.Range(0,tuple.Length).Select(i=>tuple[i]),tuple.Length),
+			_=>null,
+		};
+
 	public static readonly List<(Type,object?)> Nulls=[
 		(typeof(JsonNull),JsonNull.Null),
 	];
-	private static readonly Type[] ValueTupleTypes=[
+	internal static readonly Type[] ValueTupleTypes=[
 		typeof(ValueTuple),
 		typeof(ValueTuple<>),
 		typeof(ValueTuple<,>),
@@ -58,6 +69,7 @@ public static partial class DynamicCaster{
 		}
 
 		public static object Primitives(object? value,Type type,bool throwOnError){
+			if(type==typeof(char)&&value is string{Length: 1} s) return s[0];
 			if(!type.IsPrimitive||
 			   type==typeof(bool)||
 			   type==typeof(DateTime)||
@@ -67,6 +79,12 @@ public static partial class DynamicCaster{
 			} catch(Exception){
 				return ContinueWithNext;
 			}
+		}
+
+		public static object Char(object? value,Type type,bool throwOnError){
+			if(type==typeof(char)&&value is string{Length: 1} s) return s[0];
+			if(type==typeof(string)&&value is char c) return c.ToString();
+			return ContinueWithNext;
 		}
 
 		public static object Enums(object? value,Type type,bool throwOnError){
@@ -123,35 +141,36 @@ public static partial class DynamicCaster{
 		}
 
 		public static object Arrays(object? value,Type type,bool throwOnError){
-			if(value is not Array array) return ContinueWithNext;
 
-			if(type.IsArray){
+			if(type.IsArray&&TryGetArrayValues(value).TryGet(out var tuple)){
 				var elementType=type.GetElementType()!;
-				var target=Array.CreateInstance(elementType,array.Length);
+				var target=Array.CreateInstance(elementType,tuple.size);
 				var i=0;
-				foreach(var o in array){
+				foreach(var o in tuple.values){
 					if(!TryCast(o,elementType,out var element,throwOnError)) return ContinueWithNext;
 					target.SetValue(element,i);
 					i++;
 				}
 				return target;
 			}
-			if(type.IsGenericType&&ValueTupleTypes.Contains(type.GetGenericTypeDefinition())){
+			if(type.IsGenericType&&ValueTupleTypes.Contains(type.GetGenericTypeDefinition())&&TryGetArrayValues(value).TryGet(out tuple)){
 				var argsTypes=type.GetGenericArguments();
-				if(array.Length!=argsTypes.Length) return ContinueWithNext;
+				if(tuple.size!=argsTypes.Length) return ContinueWithNext;
 
-				var args=new object?[array.Length];
-				for(var i=0;i<array.Length;i++)
-					if(TryCast(array.GetValue(i),argsTypes[i],out var element,throwOnError))
-						args[i]=element;
-					else return ContinueWithNext;
+				var args=new object?[tuple.size];
 
+				var i=0;
+				foreach(var o in tuple.values){
+					if(!TryCast(o,argsTypes[i],out var element,throwOnError)) return ContinueWithNext;
+					args[i]=element;
+					i++;
+				}
 
 				return type.GetConstructor(argsTypes)!.Invoke(args);
 			}
-			if(type.IsAssignableFrom(typeof(JsonArray))){
+			if(type.IsAssignableFrom(typeof(JsonArray))&&TryGetArrayValues(value).TryGet(out tuple)){
 				var jsonArray=new JsonArray();
-				foreach(var o in array)
+				foreach(var o in tuple.values)
 					if(TryCast(o,out Json element,throwOnError))
 						jsonArray.Add(element);
 					else return ContinueWithNext;
@@ -186,10 +205,10 @@ public static partial class DynamicCaster{
 
 		public static object? TryParse(object? value,Type type,bool throwOnError){
 			if(type.GetMethod("TryParse",
-			                  BindingFlags.Public|BindingFlags.Static|BindingFlags.InvokeMethod,
-			                  null,
-			                  [typeof(string),type.MakeByRefType()],
-			                  null) is not{} tryParse) return ContinueWithNext;
+				   BindingFlags.Public|BindingFlags.Static|BindingFlags.InvokeMethod,
+				   null,
+				   [typeof(string),type.MakeByRefType()],
+				   null) is not{} tryParse) return ContinueWithNext;
 			if(!TryCast(value,out string s)) return ContinueWithNext;
 
 			var parameters=new[]{s,type.IsValueType?Activator.CreateInstance(type):null};

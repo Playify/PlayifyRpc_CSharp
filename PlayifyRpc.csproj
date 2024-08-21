@@ -45,9 +45,6 @@
         <Compile Update="Rpc.Types.cs">
             <DependentUpon>Rpc.cs</DependentUpon>
         </Compile>
-        <Compile Update="RpcWebServer.RpcJs.cs">
-            <DependentUpon>RpcWebServer.cs</DependentUpon>
-        </Compile>
         <Compile Update="Types\RpcException.Data.cs">
             <DependentUpon>RpcException.cs</DependentUpon>
         </Compile>
@@ -67,5 +64,11 @@
             <DependentUpon>DynamicBinder.cs</DependentUpon>
         </Compile>
 		<None Include="README.md" Pack="true" PackagePath="\" />
+		<Compile Update="Internal\Invokers\Invoker.Invoke.cs">
+			<DependentUpon>Invoker.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\DynamicTypeStringifier.Defaults.cs">
+			<DependentUpon>DynamicTypeStringifier.cs</DependentUpon>
+		</Compile>
     </ItemGroup>
 </Project>

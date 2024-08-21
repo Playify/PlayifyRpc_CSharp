@@ -98,7 +98,6 @@ public partial class RpcWebServer:WebBase{
 
 			var rpcJs="rpc.js";
 			if(args.Length>2) rpcJs=args[2];
-			else if(!File.Exists("rpc.js")) DownloadRpcJs().Background();
 
 			RunConsoleThread();
 			Rpc.Logger.Info("Listening on "+ipEndPoint);

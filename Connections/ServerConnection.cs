@@ -3,6 +3,7 @@ using System.Text;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Loggers;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils;
@@ -203,7 +204,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			var args=data.ReadArray(data.ReadDynamic,already)??[];
 
 			try{
-				var result=connection._invoker.Invoke(null!,method,args);
+				var result=await FunctionCallContext.RunWithContextAsync(()=>connection._invoker.Invoke(null!,method,args),null!,null,method,args);
 				await connection.Resolve(callId,result);
 			} catch(Exception e){
 				await connection.Reject(callId,e);

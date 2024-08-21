@@ -1,8 +1,6 @@
 using System.Collections;
-using System.Reflection;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
-using PlayifyRpc.Types;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Utils.Extensions;
 
@@ -20,36 +18,21 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 	IEnumerator IEnumerable.GetEnumerator()=>Dictionary.GetEnumerator();
 
 	protected override object? DynamicInvoke(string? type,string method,object?[] args){
-		if(!Dictionary.TryGetValue(method,out var func)){
-			func=Dictionary.FirstOrNull(p=>p.Key.Equals(method,StringComparison.OrdinalIgnoreCase))?.Value;
+		if(!Dictionary.TryGetValue(method,out var @delegate)){
+			@delegate=Dictionary.FirstOrNull(p=>p.Key.Equals(method,StringComparison.OrdinalIgnoreCase))?.Value;
 
-			if(func==null) throw new RpcMethodNotFoundException(type,method);
+			if(@delegate==null) throw new RpcMethodNotFoundException(type,method);
 		}
-		
-		try{
-			return func.Method.Invoke(func.Target,
-			                          BindingFlags.OptionalParamBinding|
-			                          BindingFlags.FlattenHierarchy|
-			                          BindingFlags.InvokeMethod,
-			                          DynamicBinder.Instance,
-			                          args,
-			                          null!);
-		} catch(TargetInvocationException e){
-			throw RpcException.WrapAndFreeze(e.InnerException??e);
-		} catch(MissingMethodException){
-			throw new RpcMethodNotFoundException(type,method);
-		} catch(MethodAccessException e){
-			throw new RpcMethodNotFoundException(type,method,e.Message);
-		} catch(AmbiguousMatchException){
-			throw new RpcMethodNotFoundException(type,method,"Call is ambiguous"){Data={{"ambiguous",true}}};
-		} catch(RpcDataException e){
-			throw new RpcMethodNotFoundException(type,method,"Error casting arguments",e);
-		} catch(Exception e){
-			throw RpcException.WrapAndFreeze(e);
-		}
+		return Invoke(@delegate,type,method,args);
 	}
 
 	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());
+
+	protected override ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts){
+		if(!Dictionary.TryGetValue(method,out var d)) return new ValueTask<(string[] parameters,string @return)[]>([]);
+		return new ValueTask<(string[] parameters,string @return)[]>([DynamicTypeStringifier.MethodSignature(d,ts)]);
+	}
+
 
 	//Used for collection initializer
 	public void Add(string key,Delegate value)=>Dictionary.Add(key,value);
@@ -68,4 +51,5 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 
 	public bool ContainsKey(string key)=>Dictionary.ContainsKey(key);
 	public bool Remove(string key)=>Dictionary.Remove(key);
+
 }

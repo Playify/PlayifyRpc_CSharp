@@ -37,9 +37,6 @@ public class TypeInvoker:Invoker{
 		type.RunClassConstructor();
 	}
 
-	[PublicAPI]
-	public static TypeInvoker Create<T>(T? instance)=>new(typeof(T),instance);
-
 	protected override object? DynamicInvoke(string? type,string method,object?[] args){
 		try{
 			return _type.InvokeMember(method,
@@ -69,6 +66,14 @@ public class TypeInvoker:Invoker{
 		           .Select(m=>m.Name)
 		           .Distinct()
 		           .ToArray());
+
+	protected override ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts)=>new(
+		_type.GetMethods(BindingFlags)
+		     .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
+		     .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder
+		     .Where(m=>m.Name.Equals(method,StringComparison.OrdinalIgnoreCase))
+		     .Select(m=>DynamicTypeStringifier.MethodSignature(m,ts))
+		     .ToArray());
 }
 
 [PublicAPI]
