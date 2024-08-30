@@ -69,13 +69,17 @@ public class TypeInvoker:Invoker{
 
 	protected sealed override ValueTask<string[]> GetMethods()=>new(GetMethodsDirect().ToArray());
 
-	protected sealed override ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts)=>new(
-		_type.GetMethods(BindingFlags)
-		     .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
-		     .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder
-		     .Where(m=>m.Name.Equals(method,StringComparison.OrdinalIgnoreCase))
-		     .Select(m=>DynamicTypeStringifier.MethodSignature(m,ts))
-		     .ToArray());
+	protected sealed override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts){
+		var signatures=_type.GetMethods(BindingFlags)
+		                    .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
+		                    .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder
+		                    .Where(m=>m.Name.Equals(method,StringComparison.OrdinalIgnoreCase))
+		                    .SelectMany(m=>DynamicTypeStringifier.MethodSignatures(m,ts))
+		                    .ToArray();
+		return signatures.Length==0
+			       ?new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)))
+			       :new ValueTask<(string[] parameters,string returns)[]>(signatures);
+	}
 }
 
 [PublicAPI]

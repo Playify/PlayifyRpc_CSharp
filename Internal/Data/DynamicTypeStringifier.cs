@@ -18,18 +18,21 @@ public static partial class DynamicTypeStringifier{
 
 	public static string FromType(Type type,bool typescript=false)=>StringifyType(new State(type,typescript));
 
-	public static (string[] parameters,string @return) MethodSignature(Delegate method,bool typescript,params string[] prevParameters)=>MethodSignature(method.Method,typescript,prevParameters);
+	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(Delegate method,bool typescript,params string[] prevParameters)=>MethodSignatures(method.Method,typescript,prevParameters);
 
-	public static (string[] parameters,string @return) MethodSignature(MethodInfo method,bool typescript,params string[] prevParameters)
-		=>([
-				  ..prevParameters,
-				  ..method.GetParameters().Select(parameter=>{
-					  var @params=parameter.ParameterType.IsArray&&parameter.GetCustomAttribute<ParamArrayAttribute>()!=null?typescript?"...":"params ":"";
-					  var parameterType=ParameterType(parameter,true,typescript,out var state);
-					  return @params+state.Parameter(parameter.Name,parameterType);
-				  }),
-				  // ReSharper disable once AssignNullToNotNullAttribute
-			  ],ParameterType(method.ReturnParameter,false,typescript,out _));
+	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(MethodInfo method,bool typescript,params string[] prevParameters){
+		var returns=ParameterType(method.ReturnParameter,false,typescript,out _);
+		var list=new List<string>(prevParameters);
+
+		foreach(var parameter in method.GetParameters()){
+			if(parameter.IsOptional) yield return (list.ToArray(),returns);
+
+			var @params=parameter.ParameterType.IsArray&&parameter.GetCustomAttribute<ParamArrayAttribute>()!=null?typescript?"...":"params ":"";
+			var parameterType=ParameterType(parameter,true,typescript,out var state);
+			list.Add(@params+state.Parameter(parameter.Name,parameterType));
+		}
+		yield return (list.ToArray(),returns);
+	}
 
 
 	private static string ParameterType(ParameterInfo parameter,bool input,bool typescript,out State state){
@@ -62,12 +65,12 @@ public static partial class DynamicTypeStringifier{
 			   null,
 			   [typeof(string),state.Type.MakeByRefType()],
 			   null)!=null)
-			return $"string{nullable} /*{state.Type.Name}{state.Generics().Replace("/*","/#").Replace("*/","#/")}*/";
+			return $"string{nullable} /*{state.TypeName}{state.Generics().Replace("/*","/#").Replace("*/","#/")}*/";
 
 
 		return state.TypeScript
-			       ?$"unknown{nullable} /*{state.Type.Name}{state.Generics().Replace("/*","/#").Replace("*/","#/")}*/"
-			       :$"Unknown<{state.Type.Name}{state.Generics()}>{nullable}";
+			       ?$"unknown{nullable} /*{state.TypeName}{state.Generics().Replace("/*","/#").Replace("*/","#/")}*/"
+			       :$"Unknown<{state.TypeName}{state.Generics()}>{nullable}";
 	}
 
 	public struct State{
@@ -78,6 +81,13 @@ public static partial class DynamicTypeStringifier{
 		public readonly bool Input;
 		public NullabilityInfo? NullabilityInfo;
 		private readonly Func<string?>? _tupleName;
+		public string TypeName{
+			get{
+				var s=Type.Name;
+				var i=s.IndexOf('`');
+				return i==-1?s:s.Substring(0,i);
+			}
+		}
 
 		public State(Type type,bool typeScript,bool input,Func<string?>? tupleName,NullabilityInfo nullabilityInfo){
 			_tupleName=tupleName;
@@ -97,8 +107,8 @@ public static partial class DynamicTypeStringifier{
 
 		public string Parameter(string? name,string type){
 			if(name==null) return type;
+			if(Keywords.Contains(name)) name=(TypeScript?"_":"@")+name;
 			if(TypeScript) return name+":"+type;
-			if(Keywords.Contains(name)) name="@"+name;
 			return type+" "+name;
 		}
 

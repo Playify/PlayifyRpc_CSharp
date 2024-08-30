@@ -55,10 +55,13 @@ internal class ServerInvoker:Invoker{
 
 	protected override ValueTask<string[]> GetMethods()=>new(_methods.Select(t=>t.name).Distinct().Ordered().ToArray());
 
-	protected override ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts)
-		=>new(_methods
-		      .Where(t=>t.name.Equals(method,StringComparison.OrdinalIgnoreCase))
-		      .Select(t=>DynamicTypeStringifier.MethodSignature(t.@delegate,ts))
-		      .ToArray()
-		);
+	protected override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts){
+		var signatures=_methods
+		               .Where(t=>t.name.Equals(method,StringComparison.OrdinalIgnoreCase))
+		               .SelectMany(t=>DynamicTypeStringifier.MethodSignatures(t.@delegate,ts))
+		               .ToArray();
+		return signatures.Length==0
+			       ?new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)))
+			       :new ValueTask<(string[] parameters,string returns)[]>(signatures);
+	}
 }

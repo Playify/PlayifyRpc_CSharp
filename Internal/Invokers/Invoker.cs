@@ -10,11 +10,14 @@ namespace PlayifyRpc.Internal.Invokers;
 
 [PublicAPI]
 public abstract class Invoker{
+	private static readonly ThreadLocal<string?> MetaCallType=new();
+
 	protected internal object? Invoke(string? type,string? method,object?[] args){
 		if(method!=null) return DynamicInvoke(type,method,args);
 
 		var meta=args.Length<1?null:DynamicCaster.Cast<string>(args[0]);
 
+		MetaCallType.Value=type;
 		//Meta calls, using null as method
 		Delegate @delegate=meta switch{
 			"M"=>GetMethods,
@@ -27,15 +30,15 @@ public abstract class Invoker{
 	protected abstract object? DynamicInvoke(string? type,string method,object?[] args);
 	protected abstract ValueTask<string[]> GetMethods();
 
-	protected ValueTask<(string[] arguments,string @return)[]> GetMethodSignaturesBase(string? method,bool ts){
-		if(method!=null) return GetMethodSignatures(method,ts);
-		return new ValueTask<(string[] arguments,string @return)[]>([
-			DynamicTypeStringifier.MethodSignature(GetMethods,ts,"M"),
-			DynamicTypeStringifier.MethodSignature(GetMethodSignaturesBase,ts,"S"),
+	protected ValueTask<(string[] arguments,string returns)[]> GetMethodSignaturesBase(string? method,bool ts=false){
+		if(method!=null) return GetMethodSignatures(MetaCallType.Value,method,ts);
+		return new ValueTask<(string[] arguments,string returns)[]>([
+			..DynamicTypeStringifier.MethodSignatures(GetMethods,ts,"M"),
+			..DynamicTypeStringifier.MethodSignatures(GetMethodSignaturesBase,ts,"S"),
 		]);
 	}
 
-	protected abstract ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts);
+	protected abstract ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts);
 
 
 	protected internal PendingCall Call(string type,string? method,object?[] args)=>CallLocal(()=>Invoke(type,method,args),type,method,args);

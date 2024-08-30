@@ -40,7 +40,7 @@ public static partial class DynamicTypeStringifier{
 		}
 
 		public static string? Enums(State state){
-			if(state.Type.IsEnum) return state.Type.Name;
+			if(state.Type.IsEnum) return state.TypeName+state.Generics();
 			if(state.Type.IsGenericType&&state.Type.GetGenericTypeDefinition()==typeof(StringEnum<>))
 				return state.TypeScript
 					       ?$"(keyof typeof {state.Type.GetGenericArguments()[0].Name})"
@@ -49,7 +49,7 @@ public static partial class DynamicTypeStringifier{
 		}
 
 		public static string? Jsons(State state){
-			if(state.Type==typeof(Json)) return state.TypeScript?"any":"object?";
+			if(state.Type==typeof(Json)) return state.TypeScript?"any":"object";
 			if(state.Type==typeof(JsonBool)) return state.TypeScript?"boolean":"bool";
 			if(state.Type==typeof(JsonNumber)) return state.TypeScript?"number":"double";
 			if(state.Type==typeof(JsonNull)) return "null";
@@ -78,9 +78,10 @@ public static partial class DynamicTypeStringifier{
 			if(typeof(Regex).IsAssignableFrom(state.Type)) return state.TypeScript?"RegExp":nameof(Regex);
 			if(typeof(RpcObject).IsAssignableFrom(state.Type)) return nameof(RpcObject);
 			if(typeof(RpcFunction).IsAssignableFrom(state.Type)) return nameof(RpcFunction);
-			if(typeof(ExpandoObject).IsAssignableFrom(state.Type)) return state.TypeScript?"object":nameof(ExpandoObject);
-			if(typeof(ObjectTemplateBase).IsAssignableFrom(state.Type)) return state.TypeScript?"object":state.Type.Name+state.Generics();
-			if(state.Type.GetCustomAttribute<CustomDynamicTypeAttribute>()!=null) return state.Type.Name+state.Generics();
+			if(state.Type==typeof(ExpandoObject)) return state.TypeScript?"object":nameof(ExpandoObject);
+			if(state.Type.IsGenericType&&state.Type.GetGenericTypeDefinition()==typeof(StringEnum<>)) return state.TypeScript?"{[key:string]:"+state.GenericTypes().Single()+"}":state.TypeName+state.Generics();
+			if(typeof(ObjectTemplateBase).IsAssignableFrom(state.Type)) return/*state.TypeScript?"object":*/state.TypeName+state.Generics();
+			if(state.Type.GetCustomAttribute<CustomDynamicTypeAttribute>()!=null) return state.TypeName+state.Generics();
 			return null;
 		}
 	}

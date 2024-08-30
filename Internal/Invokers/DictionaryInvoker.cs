@@ -28,9 +28,9 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 
 	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());
 
-	protected override ValueTask<(string[] parameters,string @return)[]> GetMethodSignatures(string method,bool ts){
-		if(!Dictionary.TryGetValue(method,out var d)) return new ValueTask<(string[] parameters,string @return)[]>([]);
-		return new ValueTask<(string[] parameters,string @return)[]>([DynamicTypeStringifier.MethodSignature(d,ts)]);
+	protected override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts){
+		if(!Dictionary.TryGetValue(method,out var d)) return new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)));
+		return new ValueTask<(string[] parameters,string returns)[]>([..DynamicTypeStringifier.MethodSignatures(d,ts)]);
 	}
 
 

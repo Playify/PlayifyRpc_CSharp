@@ -1,6 +1,7 @@
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Jsons;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
@@ -35,6 +36,8 @@ internal static class Evaluate{
 			if(s.EndsWith("?"))
 				return await Rpc.CreateObject(s.Substring(0,s.Length-1)).Exists();
 
+			if(s.LastIndexOf('.').Push(out var dotPos)!=-1)
+				return await Rpc.CreateFunction(s.Substring(0,dotPos),s.Substring(dotPos+1)).GetMethodSignatures();
 			throw new RpcEvalException("No opening bracket");
 		}
 		if(!s.EndsWith(")")) throw new RpcEvalException("No closing bracket");
