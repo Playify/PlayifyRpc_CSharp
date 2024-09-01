@@ -66,7 +66,9 @@ public abstract class PendingCall:SendReceive{
 	public Task<T> ToTask<T>()=>DoCast<object?,T>(AsTask());
 
 	public Task Then(Action<object?> a)=>((Task<object?>)this).Then(a);
+	public Task Then<T>(Action<T> a)=>((Task<T>)this).Then(a);
 	public Task<T> Then<T>(Func<object?,T> a)=>((Task<object?>)this).Then(a);
+	public Task<TReturn> Then<T,TReturn>(Func<T,TReturn> a)=>((Task<T>)this).Then(a);
 	public Task Catch(Action<Exception> a)=>((Task<object?>)this).Catch(a);
 	public Task Finally(Action a)=>((Task<object?>)this).ContinueWith(_=>a());
 	#endregion
@@ -92,6 +94,8 @@ public class PendingCall<T>:PendingCall{
 	public static implicit operator Task<T>(PendingCall<T> call)=>call.ToTask();
 
 	public Task<T> ToTask()=>DoCast<object?,T>(base.AsTask());
+	public Task Then(Action<T> a)=>((Task<T>)this).Then(a);
+	public Task<TReturn> Then<TReturn>(Func<T,TReturn> a)=>((Task<T>)this).Then(a);
 
 	public new TaskAwaiter<T> GetAwaiter()=>ToTask().GetAwaiter();
 	public new PendingCall<T> WithCancellation(CancellationToken token)=>(PendingCall<T>)base.WithCancellation(token);
