@@ -12,6 +12,8 @@ public partial class RpcException{
 	}
 
 	private static void RegisterAssembly(Assembly assembly){
+		if(assembly.FullName?.StartsWith("System.")??false) return;//Skip System assemblies
+		
 		try{
 			foreach(var type in assembly.GetTypes()){
 				var attribute=type.GetCustomAttribute<RpcCustomExceptionAttribute>();

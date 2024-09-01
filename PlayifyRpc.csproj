@@ -1,68 +1,68 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFrameworks>net6.0;net48</TargetFrameworks>
-        <LangVersion>12</LangVersion>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <OutputPath>_run</OutputPath>
-        <DefineConstants>TRACE;JETBRAINS_ANNOTATIONS</DefineConstants>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFrameworks>net6.0;net48</TargetFrameworks>
+		<LangVersion>12</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<OutputPath>_run</OutputPath>
+		<DefineConstants>TRACE;JETBRAINS_ANNOTATIONS</DefineConstants>
 
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Title>PlayifyRpc</Title>
-        <Description>Remote Procedure Call (Client and Server)</Description>
-        <RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
-        <RepositoryType>GitHub</RepositoryType>
-        <Authors>Playify</Authors>
-		<Version>1.4.2</Version>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Title>PlayifyRpc</Title>
+		<Description>Remote Procedure Call (Client and Server)</Description>
+		<RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
+		<RepositoryType>GitHub</RepositoryType>
+		<Authors>Playify</Authors>
+		<Version>1.5.0</Version>
 
-        <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-    </PropertyGroup>
+	</PropertyGroup>
 
-    <PropertyGroup>
-        <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=.../PlayifyRpc_CSharp/</PathMap>
-    </PropertyGroup>
+	<PropertyGroup>
+		<PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=.../PlayifyRpc_CSharp/</PathMap>
+	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">
-        <Using Remove="System.Net.Http" />
-        <PackageReference Include="AsyncFriendlyStackTrace" Version="1.7.0" />
-    </ItemGroup>
+		<Using Remove="System.Net.Http" />
+		<PackageReference Include="AsyncFriendlyStackTrace" Version="1.7.0" />
+	</ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="PlayifyUtility" Version="1.3.0" />
-    </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="PlayifyUtility" Version="1.3.0" />
+	</ItemGroup>
 
-    <ItemGroup>
-        <Compile Update="Rpc.Connection.cs">
-            <DependentUpon>Rpc.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Rpc.Functions.cs">
-            <DependentUpon>Rpc.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Rpc.Types.cs">
-            <DependentUpon>Rpc.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Types\RpcException.Data.cs">
-            <DependentUpon>RpcException.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Types\RpcException.Attribute.cs">
-            <DependentUpon>RpcException.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Types\RpcException.Extensions.cs">
-            <DependentUpon>RpcException.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Internal\Data\DynamicCaster.Defaults.cs">
-            <DependentUpon>DynamicCaster.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Internal\Data\DynamicBinder.Helpers.cs">
-            <DependentUpon>DynamicBinder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="Internal\Data\DynamicBinder.Specific.cs">
-            <DependentUpon>DynamicBinder.cs</DependentUpon>
-        </Compile>
+	<ItemGroup>
+		<Compile Update="Rpc.Connection.cs">
+			<DependentUpon>Rpc.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Rpc.Functions.cs">
+			<DependentUpon>Rpc.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Rpc.Types.cs">
+			<DependentUpon>Rpc.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Types\RpcException.Data.cs">
+			<DependentUpon>RpcException.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Types\RpcException.Attribute.cs">
+			<DependentUpon>RpcException.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Types\RpcException.Extensions.cs">
+			<DependentUpon>RpcException.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\DynamicCaster.Defaults.cs">
+			<DependentUpon>DynamicCaster.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\DynamicBinder.Helpers.cs">
+			<DependentUpon>DynamicBinder.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\DynamicBinder.Specific.cs">
+			<DependentUpon>DynamicBinder.cs</DependentUpon>
+		</Compile>
 		<None Include="README.md" Pack="true" PackagePath="\" />
 		<Compile Update="Internal\Data\DynamicTypeStringifier.Defaults.cs">
 			<DependentUpon>DynamicTypeStringifier.cs</DependentUpon>
@@ -70,5 +70,5 @@
 		<Compile Update="Internal\Data\DynamicBinder.Invoke.cs">
 			<DependentUpon>DynamicBinder.cs</DependentUpon>
 		</Compile>
-    </ItemGroup>
+	</ItemGroup>
 </Project>

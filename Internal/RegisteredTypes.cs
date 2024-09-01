@@ -20,6 +20,8 @@ internal static class RegisteredTypes{
 	}
 
 	private static void RegisterAssembly(Assembly assembly){
+		if(assembly.FullName?.StartsWith("System.")??false) return;//Skip System assemblies
+		
 		try{
 			foreach(var type in assembly.GetTypes()){
 				var sharedClass=type.GetCustomAttribute<RpcProviderAttribute>();
