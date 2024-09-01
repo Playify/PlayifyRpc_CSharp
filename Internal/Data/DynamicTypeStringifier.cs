@@ -9,7 +9,6 @@ namespace PlayifyRpc.Internal.Data;
 public static partial class DynamicTypeStringifier{
 	[PublicAPI]public static readonly List<Func<State,string?>> Stringifiers=[
 		DefaultStringifiers.Primitives,
-		DefaultStringifiers.Nullables,
 		DefaultStringifiers.Enums,
 		DefaultStringifiers.Jsons,
 		DefaultStringifiers.ArraysTuples,
@@ -43,7 +42,7 @@ public static partial class DynamicTypeStringifier{
 
 		if(!input)
 			while(true)
-				if(state.Type==typeof(Task)||state.Type==typeof(ValueTask)){
+				if(state.Type==typeof(void)||state.Type==typeof(Task)||state.Type==typeof(ValueTask)){
 					return "void";
 				} else if(state.Type.IsGenericType&&(state.Type.GetGenericTypeDefinition()==typeof(Task<>)||state.Type.GetGenericTypeDefinition()==typeof(ValueTask<>))){
 					state.Type=state.Type.GetGenericArguments()[0];
@@ -54,7 +53,12 @@ public static partial class DynamicTypeStringifier{
 
 
 	private static string StringifyType(State state){
-		var nullable=(state.Input?state.NullabilityInfo?.ReadState:state.NullabilityInfo?.WriteState)==NullabilityState.Nullable?state.TypeScript?"|null":"?":"";
+		var isNullable=(state.Input?state.NullabilityInfo?.ReadState:state.NullabilityInfo?.WriteState)==NullabilityState.Nullable;
+		if(Nullable.GetUnderlyingType(state.Type) is{} underlying){
+			isNullable=true;
+			state.Type=underlying;
+		}
+		var nullable=isNullable?state.TypeScript?"|null":"?":"";
 		foreach(var stringifier in Stringifiers)
 			if(stringifier(state) is{} s)
 				return s+nullable;
@@ -123,6 +127,4 @@ public static partial class DynamicTypeStringifier{
 
 		public IEnumerable<string> GenericTypes()=>Type.IsGenericType?Type.GetGenericArguments().Zip(NullabilityInfo?.GenericTypeArguments??EnumerableUtils.RepeatForever<NullabilityInfo?>(null),SubType):[];
 	}
-
-
 }

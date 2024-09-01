@@ -34,11 +34,6 @@ public static partial class DynamicTypeStringifier{
 				_=>null,
 			};
 
-		public static string? Nullables(State state){
-			if(Nullable.GetUnderlyingType(state.Type) is{} nullable) return state.SubType(nullable,state.NullabilityInfo?.GenericTypeArguments[0])+(state.TypeScript?"|null":"?");
-			return null;
-		}
-
 		public static string? Enums(State state){
 			if(state.Type.IsEnum) return state.TypeName+state.Generics();
 			if(state.Type.IsGenericType&&state.Type.GetGenericTypeDefinition()==typeof(StringEnum<>))

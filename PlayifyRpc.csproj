@@ -15,7 +15,7 @@
 		<RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
 		<RepositoryType>GitHub</RepositoryType>
 		<Authors>Playify</Authors>
-		<Version>1.5.0</Version>
+		<Version>1.5.1</Version>
 
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -32,7 +32,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="PlayifyUtility" Version="1.3.0" />
+		<PackageReference Include="PlayifyUtility" Version="1.3.3" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -70,5 +70,11 @@
 		<Compile Update="Internal\Data\DynamicBinder.Invoke.cs">
 			<DependentUpon>DynamicBinder.cs</DependentUpon>
 		</Compile>
+		<Compile Remove="Tests\**" />
+		<None Remove="Tests\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Remove="Tests\**" />
 	</ItemGroup>
 </Project>

@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayifyRpc", "PlayifyRpc.csproj", "{AD1F9AA6-8EAE-4D2C-B8FA-BC981FE48C09}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{935B2A18-EEB4-4DFD-9517-7FF06D413060}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{AD1F9AA6-8EAE-4D2C-B8FA-BC981FE48C09}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD1F9AA6-8EAE-4D2C-B8FA-BC981FE48C09}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD1F9AA6-8EAE-4D2C-B8FA-BC981FE48C09}.Release|Any CPU.Build.0 = Release|Any CPU
+		{935B2A18-EEB4-4DFD-9517-7FF06D413060}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{935B2A18-EEB4-4DFD-9517-7FF06D413060}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{935B2A18-EEB4-4DFD-9517-7FF06D413060}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{935B2A18-EEB4-4DFD-9517-7FF06D413060}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
