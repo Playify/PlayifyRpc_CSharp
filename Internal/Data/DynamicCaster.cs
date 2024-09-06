@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Utils.Extensions;
 
@@ -58,5 +59,14 @@ public static partial class DynamicCaster{
 				return true;
 		result=default;
 		return false;
+	}
+
+
+	public static T Clone<T>(this T t) where T : ObjectTemplateBase{
+		var clone=Activator.CreateInstance<T>();
+		foreach(var (key,value) in t.GetProperties())
+			if(!clone.TrySetProperty(key,value,true))
+				throw new InvalidCastException("Error cloning "+typeof(T).Name);
+		return clone;
 	}
 }
