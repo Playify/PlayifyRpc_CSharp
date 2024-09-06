@@ -24,6 +24,11 @@ public class StringMap<T>:ObjectTemplateBase,IEnumerable<KeyValuePair<string,T>>
 	public IEnumerator<KeyValuePair<string,T>> GetEnumerator()=>Dictionary.GetEnumerator();
 
 	IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();
+
+	public T this[string key]{
+		get=>Dictionary.TryGetValue(key,out var value)?value:throw new KeyNotFoundException(key);
+		set=>TrySetProperty(key,value,true);
+	}
 	#endregion
 
 	#region ObjectTemplate

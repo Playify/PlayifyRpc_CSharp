@@ -24,15 +24,29 @@ internal static class ListenAllCalls{
 			if(Listening.Count==0) return;
 			var clone=data.Clone();
 
+			var method=clone.ReadString();
 
+			var (b,off,len)=clone.GetBufferOffsetAndLength();
+			var argsBytes=new byte[len];
+			Array.Copy(b,off,argsBytes,0,len);
+			
+			
 			var msg=new StringMap<object?>{
 				{"name",respondTo.Name},
 				{"id",respondTo.Id},
 				{"prettyName",respondTo.PrettyName},
 				{"type",type},
-				{"method",clone.ReadString()},
-				{"args",clone.ReadAll()},
+				{"method",method},
+				{"argsBytes",argsBytes},
 			};
+
+			try{
+				var already=new Dictionary<int,object>();
+				msg["args"]=clone.ReadArray(clone.ReadDynamic,already)??[];
+			} catch(Exception e){
+				msg["argsError"]=e;
+			}
+
 
 			foreach(var context in Listening){
 				context.SendMessage(msg);
@@ -45,19 +59,19 @@ internal static class ListenAllCalls{
 			if(Listening.Count==0) return null;
 
 			var buff=new DataOutputBuff();
-			var already=new List<object>();
+			var toFree=new List<object>();
 
 			try{
-				buff.WriteArray(args,buff.WriteDynamic,already);
+				var writeAlready=new Dictionary<object,int>();
+				buff.WriteArray(args,buff.WriteDynamic,writeAlready);
+				toFree.AddRange(writeAlready.Keys.Where(DynamicData.NeedsFreeing));
 			} catch(Exception){
 				Broadcast(type,method,(byte[]?)null);
 				return null;
 			}
 
 			Broadcast(type,method,buff.ToByteArray());
-
-			DynamicData.CleanupBeforeFreeing(already);
-			return ()=>DynamicData.Free(already);
+			return ()=>DynamicData.Free(toFree);
 		}
 	}
 

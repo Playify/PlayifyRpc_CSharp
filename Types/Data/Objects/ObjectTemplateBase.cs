@@ -11,8 +11,8 @@ public abstract class ObjectTemplateBase:DynamicObject{
 	public abstract IEnumerable<(string key,object? value)> GetProperties();
 
 
-	internal void WriteDynamic(DataOutput output,List<object> already){
-		already.Add(this);
+	internal void WriteDynamic(DataOutputBuff output,Dictionary<object,int> already){
+		already[this]=output.Length;
 
 		var tuples=GetProperties().ToArray();
 		output.WriteLength(-(tuples.Length*4+2));

@@ -11,6 +11,7 @@ using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Streams.Data;
+using PlayifyUtility.Utils.Extensions;
 #if NETFRAMEWORK
 using PlayifyUtility.Utils.Extensions;
 #endif
@@ -19,8 +20,8 @@ namespace PlayifyRpc.Internal.Data;
 
 [PublicAPI]
 public static class DynamicData{
-	private static readonly List<(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)> WriteRegistry=[];
-	private static readonly Dictionary<string,Func<DataInput,List<object>,object>> ReadRegistry=new();
+	private static readonly List<(string id,Predicate<object> check,Action<DataOutput,object,Dictionary<object,int>> write)> WriteRegistry=[];
+	private static readonly Dictionary<string,Func<DataInput,Func<object,object>,object>> ReadRegistry=new();
 	private static readonly List<Func<object?,object?>> Converters=[
 		d=>d switch{
 			JsonString j=>j.Value,
@@ -37,7 +38,9 @@ public static class DynamicData{
 		foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) RegisterAssembly(assembly);
 	}
 
-	internal static object? Read(DataInput incoming,List<object> already){
+	internal static object? Read(DataInputBuff incoming,Dictionary<int,object> already){
+		var index=incoming.GetBufferOffsetAndLength().off;
+
 		var objectId=incoming.ReadLength();
 
 		if(objectId<0){
@@ -45,10 +48,9 @@ public static class DynamicData{
 			objectId=-objectId;
 			switch(objectId%4){
 				case 0:return already[objectId/4];
-				case 1:return Encoding.UTF8.GetString(incoming.ReadFully(objectId/4));
+				case 1:return AlreadyFunc(Encoding.UTF8.GetString(incoming.ReadFully(objectId/4)));
 				case 2:{
-					var o=new ExpandoObject();
-					already.Add(o);
+					var o=AlreadyFunc(new ExpandoObject());
 					for(var i=0;i<objectId/4;i++){
 						var key=incoming.ReadString()!;
 						var value=Read(incoming,already);
@@ -57,8 +59,7 @@ public static class DynamicData{
 					return o;
 				}
 				case 3:{
-					var o=new object?[objectId/4];
-					already.Add(o);
+					var o=AlreadyFunc(new object?[objectId/4]);
 					for(var i=0;i<o.Length;i++) o[i]=Read(incoming,already);
 					return o;
 				}
@@ -68,15 +69,9 @@ public static class DynamicData{
 		if(objectId>=128){
 			var type=Encoding.UTF8.GetString(incoming.ReadFully(objectId-128));
 			if(ReadRegistry.TryGetValue(type,out var read))
-				return read(incoming,already);
+				return read(incoming,AlreadyFunc);
 			throw new ArgumentException();
 		}
-		if(objectId=='F'){
-			var func=new RpcFunction(incoming.ReadString()??throw new NullReferenceException(),incoming.ReadString()??throw new NullReferenceException());
-			already.Add(func);
-			return func;
-		}
-
 		return objectId switch{
 			'n'=>null,
 			't'=>true,
@@ -84,18 +79,22 @@ public static class DynamicData{
 			'i'=>incoming.ReadInt(),
 			'd'=>incoming.ReadDouble(),
 			'l'=>incoming.ReadLong(),
-			//'s'=>incoming.ReadString(),
-			//'a'=>already[incoming.ReadInt()],
-			'b'=>incoming.ReadFully(incoming.ReadLength()),
+			'b'=>AlreadyFunc(incoming.ReadFully(incoming.ReadLength())),
 			'D'=>DateTimeOffset.FromUnixTimeMilliseconds(incoming.ReadLong()).LocalDateTime,
-			'R'=>new Regex(incoming.ReadString()??"",(RegexOptions)incoming.ReadByte()),
-			'E'=>incoming.ReadException(),
-			'O'=>new RpcObject(incoming.ReadString()??throw new NullReferenceException()),
+			'R'=>AlreadyFunc(new Regex(incoming.ReadString()??"",(RegexOptions)incoming.ReadByte())),
+			'E'=>AlreadyFunc(incoming.ReadException()),
+			'O'=>AlreadyFunc(new RpcObject(incoming.ReadString()??throw new NullReferenceException())),
+			'F'=>AlreadyFunc(new RpcFunction(incoming.ReadString()??throw new NullReferenceException(),incoming.ReadString()??throw new NullReferenceException())),
 			_=>throw new ArgumentException(),
 		};
+
+		T AlreadyFunc<T>(T t) where T : notnull{
+			already[index]=t;
+			return t;
+		}
 	}
 
-	internal static void Write(DataOutput output,object? d,List<object> already){
+	internal static void Write(DataOutputBuff output,object? d,Dictionary<object,int> already){
 		foreach(var converter in Converters) d=converter(d);
 
 		switch(d){
@@ -130,14 +129,23 @@ public static class DynamicData{
 				output.WriteLength('l');
 				output.WriteLong(Convert.ToInt64(d));
 				return;
+			case DateTime dateTime:
+				output.WriteLength('D');
+				output.WriteLong(new DateTimeOffset(dateTime).ToUnixTimeMilliseconds());
+				return;
+		}
+
+		if(already.TryGetValue(d,out var index)){
+			output.WriteLength(-(index*4+0));
+			return;
+		}
+		already[d]=output.Length;
+
+		switch(d){
 			case byte[] buffer:
 				output.WriteLength('b');
 				output.WriteLength(buffer.Length);
 				output.Write(buffer);
-				return;
-			case DateTime dateTime:
-				output.WriteLength('D');
-				output.WriteLong(new DateTimeOffset(dateTime).ToUnixTimeMilliseconds());
 				return;
 			case Regex regex:
 				output.WriteLength('R');
@@ -152,24 +160,14 @@ public static class DynamicData{
 				output.WriteLength('O');
 				output.WriteString(obj.Type);
 				return;
-		}
-
-		var index=already.IndexOf(d);
-		if(index!=-1){
-			output.WriteLength(-(index*4+0));
-			return;
-		}
-
-		switch(d){
 			case RpcFunction func:
-				already.Add(func);
 				output.WriteLength('F');
 				output.WriteString(func.Type);
 				output.WriteString(func.Method);
 				return;
 			case Delegate func:
-				already.Add(func);
 				var rpcFunc=RpcFunction.RegisterFunction(func);
+				already[rpcFunc]=output.Length;
 				output.WriteLength('F');
 				output.WriteString(rpcFunc.Type);
 				output.WriteString(rpcFunc.Method);
@@ -183,7 +181,6 @@ public static class DynamicData{
 				obj.WriteDynamic(output,already);
 				return;
 			case ExpandoObject obj:
-				already.Add(obj);
 				var dict=(IDictionary<string,object?>)obj;
 				output.WriteLength(-(dict.Count*4+2));
 				foreach(var (key,value) in dict){
@@ -192,7 +189,6 @@ public static class DynamicData{
 				}
 				return;
 			case JsonObject obj:
-				already.Add(obj);
 				output.WriteLength(-(obj.Count*4+2));
 				foreach(var (key,value) in obj){
 					output.WriteString(key);
@@ -200,17 +196,14 @@ public static class DynamicData{
 				}
 				return;
 			case Array arr:
-				already.Add(arr);
 				output.WriteLength(-(arr.Length*4+3));
 				foreach(var o in arr) Write(output,o,already);
 				return;
 			case ITuple arr:
-				already.Add(arr);
 				output.WriteLength(-(arr.Length*4+3));
 				for(var i=0;i<arr.Length;i++) Write(output,arr[i],already);
 				return;
 			case JsonArray arr:
-				already.Add(arr);
 				output.WriteLength(-(arr.Count*4+3));
 				foreach(var o in arr) Write(output,o,already);
 				return;
@@ -238,21 +231,21 @@ public static class DynamicData{
 				/*
 				var read=type.GetMethod("Read",BindingFlags.Public|BindingFlags.Static,null,new[]{typeof(DataInput),typeof(List<object>)},null);
 				read??=type.GetMethod("Read",BindingFlags.Public|BindingFlags.Static,null,new[]{typeof(DataInput)},null);*/
-				var readConstructor=type.GetConstructor([typeof(DataInput),typeof(List<object>)]);
-				Func<DataInput,List<object>,object> read;
+				var readConstructor=type.GetConstructor([typeof(DataInput),typeof(Func<object,object>)]);
+				Func<DataInput,Func<object,object>,object> read;
 				if(readConstructor==null){
 					readConstructor=type.GetConstructor([typeof(DataInput)]);
-					if(readConstructor==null) throw new Exception("Type "+type+" does not implement a public constructor(DataInput i,List<object> already) or public constructor(DataInput i)");
+					if(readConstructor==null) throw new Exception("Type "+type+" does not implement a public constructor(DataInput i,Func<object,object> already) or public constructor(DataInput i)");
 
 					read=(i,_)=>readConstructor.Invoke([i]);
 				} else read=(i,already)=>readConstructor.Invoke([i,already]);
 
 
-				var writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,[typeof(DataOutput),typeof(List<object>)],null);
-				Action<DataOutput,object,List<object>> write;
+				var writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,[typeof(DataOutput),typeof(Dictionary<object,int>)],null);
+				Action<DataOutput,object,Dictionary<object,int>> write;
 				if(writeMethod==null){
 					writeMethod=type.GetMethod("Write",BindingFlags.Public|BindingFlags.Instance,null,[typeof(DataOutput)],null);
-					if(writeMethod==null) throw new Exception("Type "+type+" does not implement a public void Write(DataOutput o,List<object> already) or public void Write(DataOutput o) method");
+					if(writeMethod==null) throw new Exception("Type "+type+" does not implement a public void Write(DataOutput o,Dictionary<object,int> already) or public void Write(DataOutput o) method");
 
 					write=(o,d,_)=>writeMethod.Invoke(d,[o]);
 				} else write=(o,d,already)=>writeMethod.Invoke(d,[o,already]);
@@ -266,14 +259,14 @@ public static class DynamicData{
 		}
 	}
 
-	public static void Register(string id,Func<DataInput,List<object>,object> read,Predicate<object> check,Action<DataOutput,object,List<object>> write){
+	public static void Register(string id,Func<DataInput,Func<object,object>,object> read,Predicate<object> check,Action<DataOutput,object,Dictionary<object,int>> write){
 		ReadRegistry.Add(id,read);
 		WriteRegistry.Add((id,check,write));
 	}
 
-	public static void Register(string id,Predicate<object> check,Action<DataOutput,object,List<object>> write)=>WriteRegistry.Add((id,check,write));
+	public static void Register(string id,Predicate<object> check,Action<DataOutput,object,Dictionary<object,int>> write)=>WriteRegistry.Add((id,check,write));
 
-	public static void Register<T>(string id,Func<DataInput,List<object>,T> read,Action<DataOutput,T,List<object>> write)
+	public static void Register<T>(string id,Func<DataInput,Func<object,object>,T> read,Action<DataOutput,T,Dictionary<object,int>> write)
 		=>Register(
 			id,
 			(data,already)=>read(data,already)!,
@@ -284,11 +277,7 @@ public static class DynamicData{
 	// Converters are called before a value is being written to the DataOutput, to allow casting from anything to some supported type
 	public static void AddConverter(Func<object?,object?> func)=>Converters.Add(func);
 
-	internal static void Free(List<object> already){
-		foreach(var d in already.OfType<Delegate>()) RpcFunction.UnregisterFunction(d);
-	}
-
+	internal static void Free(List<object> already)=>already.OfType<Delegate>().ForEach(RpcFunction.UnregisterFunction);
 	internal static bool NeedsFreeing(object arg)=>arg is Delegate;
-
 	internal static void CleanupBeforeFreeing(List<object> already)=>already.RemoveAll(o=>!NeedsFreeing(o));
 }

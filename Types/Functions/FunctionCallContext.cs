@@ -65,8 +65,8 @@ public class FunctionCallContext:SendReceive{
 
 		var call=new PendingCall<object?>(truth);
 
-		var already=new List<object>();
-		call.Finally(()=>DynamicData.Free(already));
+		var toFree=new List<object>();
+		call.Finally(()=>DynamicData.Free(toFree));
 
 		var buff=new DataOutputBuff();
 		int callId;
@@ -77,8 +77,9 @@ public class FunctionCallContext:SendReceive{
 			buff.WriteString(type);
 			buff.WriteString(method);
 			var len=buff.GetBufferAndLength().len;
-			buff.WriteArray(args,buff.WriteDynamic,already);
-			already.RemoveAll(o=>!DynamicData.NeedsFreeing(o));
+			var writeAlready=new Dictionary<object,int>();
+			buff.WriteArray(args,buff.WriteDynamic,writeAlready);
+			toFree.AddRange(writeAlready.Keys.Where(DynamicData.NeedsFreeing));
 
 			ListenAllCalls.Broadcast(type,method,buff,len);
 		} catch(Exception e){
@@ -96,10 +97,9 @@ public class FunctionCallContext:SendReceive{
 			var msg=new DataOutputBuff();
 			msg.WriteByte((byte)PacketType.MessageToExecutor);
 			msg.WriteLength(callId);
-			var list=new List<object>();
-			msg.WriteArray(msgArgs,msg.WriteDynamic,list);
-			lock(already)
-				already.AddRange(list.Where(DynamicData.NeedsFreeing));
+			var writeAlready=new Dictionary<object,int>();
+			buff.WriteArray(msgArgs,buff.WriteDynamic,writeAlready);
+			toFree.AddRange(writeAlready.Keys.Where(DynamicData.NeedsFreeing));
 
 			connection.SendRaw(msg);
 		};

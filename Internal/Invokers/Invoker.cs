@@ -22,20 +22,28 @@ public abstract class Invoker{
 		Delegate @delegate=meta switch{
 			"M"=>GetMethods,
 			"S"=>GetMethodSignaturesBase,
+			"V"=>GetRpcVersion,
 			_=>throw new RpcMetaMethodNotFoundException(type,meta),
 		};
 		return DynamicBinder.InvokeMeta(@delegate,type,meta,args.Skip(1).ToArray());
 	}
-
-	protected abstract object? DynamicInvoke(string? type,string method,object?[] args);
-	protected abstract ValueTask<string[]> GetMethods();
 
 	protected ValueTask<(string[] arguments,string returns)[]> GetMethodSignaturesBase(string? method,bool ts=false){
 		if(method!=null) return GetMethodSignatures(MetaCallType.Value,method,ts);
 		return new ValueTask<(string[] arguments,string returns)[]>([
 			..DynamicTypeStringifier.MethodSignatures(GetMethods,ts,"M"),
 			..DynamicTypeStringifier.MethodSignatures(GetMethodSignaturesBase,ts,"S"),
+			..DynamicTypeStringifier.MethodSignatures(GetRpcVersion,ts,"V"),
 		]);
+	}
+
+
+	protected abstract object? DynamicInvoke(string? type,string method,object?[] args);
+	protected abstract ValueTask<string[]> GetMethods();
+
+	protected virtual ValueTask<string> GetRpcVersion(){
+		var version=Assembly.GetExecutingAssembly().GetName().Version;
+		return new ValueTask<string>((version?.ToString(version.Revision==0?3:4)??"Unknown")+" C#");
 	}
 
 	protected abstract ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts);

@@ -30,6 +30,7 @@ public class RpcObject:DynamicObject{
 
 	public Task<string[]> GetMethods()=>FunctionCallContext.CallFunction<string[]>(Type,null,"M");
 	public Task<(string[] parameters,string returns)[]> GetMethodSignatures(string method,bool typeScript=false)=>GetFunction(method).GetMethodSignatures(typeScript);
+	public Task<string> GetRpcVersion()=>FunctionCallContext.CallFunction<string>(Type,null,"V");
 	public Task<bool> Exists()=>FunctionCallContext.CallFunction<bool>(null,"E",Type);
 
 

@@ -196,12 +196,11 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		return SendRaw(buff);
 	}
 
-	private static async Task CallServer(ServerConnection connection,DataInput data,int callId){
+	private static async Task CallServer(ServerConnection connection,DataInputBuff data,int callId){
 		try{
 			var method=data.ReadString();
 
-			var already=new List<object>();
-			var args=data.ReadArray(data.ReadDynamic,already)??[];
+			var args=data.ReadArray(data.ReadDynamic,new Dictionary<int,object>())??[];
 
 			try{
 				var result=await FunctionCallContext.RunWithContextAsync(()=>connection._invoker.Invoke(null!,method,args),null!,null,method,args);

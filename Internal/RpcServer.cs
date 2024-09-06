@@ -2,6 +2,8 @@ using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data.Objects;
+using PlayifyRpc.Types.Exceptions;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
@@ -32,6 +34,21 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 
 	public static string[] GetAllConnections(){
 		lock(ServerConnection.Connections) return ServerConnection.Connections.Select(c=>c.PrettyName).OrderBy(s=>s).ToArray();
+	}
+
+	public static async Task<StringMap<string>> GetAllVersions(){
+		Task<(string PrettyName,string version)[]> task;
+		lock(ServerConnection.Connections)
+			task=Task.WhenAll(ServerConnection.Connections.Select(async c=>{
+				try{
+					return (c.PrettyName,await new RpcObject("$"+c.Id).GetRpcVersion());
+				} catch(RpcMetaMethodNotFoundException){
+					return (c.PrettyName," Old Version");
+				} catch(RpcException e){
+					return (c.PrettyName," Error:"+e);
+				}
+			}));
+		return new StringMap<string>((await task).OrderBy(t=>t.PrettyName).ToDictionary());
 	}
 
 	public static StringMap<string[]> GetRegistrations(bool includeHidden=false){

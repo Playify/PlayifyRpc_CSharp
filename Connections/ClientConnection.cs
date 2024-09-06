@@ -79,7 +79,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				var callId=data.ReadLength();
 
 
-				var already=new List<object>();
+				var toFree=new List<object>();
 				var tcs=new TaskCompletionSource<object?>();
 				try{
 					var type=data.ReadString();
@@ -93,8 +93,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 					var method=data.ReadString();
 
-					var args=data.ReadArray(data.ReadDynamic,already)??[];
-					DynamicData.CleanupBeforeFreeing(already);
+					var args=data.ReadArray(data.ReadDynamic,new Dictionary<int,object>())??[];
 
 
 					var context=new FunctionCallContext(type,
@@ -104,10 +103,10 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 							var msg=new DataOutputBuff();
 							msg.WriteByte((byte)PacketType.MessageToCaller);
 							msg.WriteLength(callId);
-							var list=new List<object>();
+							var list=new Dictionary<object,int>();
 							msg.WriteArray(sending,msg.WriteDynamic,list);
-							lock(already)
-								already.AddRange(list.Where(DynamicData.NeedsFreeing));
+							lock(toFree)
+								toFree.AddRange(list.Keys.Where(DynamicData.NeedsFreeing));
 
 							SendRaw(msg);
 						},
@@ -135,7 +134,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 					tcs.TrySetException(e);
 					await Reject(callId,e);
 				} finally{
-					DynamicData.Free(already);
+					DynamicData.Free(toFree);
 				}
 
 				break;
@@ -189,8 +188,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						Logger.Warning($"Invalid State: No CurrentlyExecuting[{callId}] ({packetType})");
 						break;
 					}
-				var already=new List<object>();
-				var args=data.ReadArray(data.ReadDynamic,already)??[];
+				var args=data.ReadArray(data.ReadDynamic,new Dictionary<int,object>())??[];
 				ctx.DoReceiveMessage(args);
 				break;
 			}
@@ -202,9 +200,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
-				var already=new List<object>();
-				var args=data.ReadArray(data.ReadDynamic,already)??[];
-
+				var args=data.ReadArray(data.ReadDynamic,new Dictionary<int,object>())??[];
 				pending.DoReceiveMessage(args);
 				break;
 			}
