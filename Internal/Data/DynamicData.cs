@@ -47,7 +47,7 @@ public static class DynamicData{
 			//Already, String, Object, Array
 			objectId=-objectId;
 			switch(objectId%4){
-				case 0:return already[objectId/4];
+				case 0:return already[index-objectId/4];
 				case 1:return AlreadyFunc(Encoding.UTF8.GetString(incoming.ReadFully(objectId/4)));
 				case 2:{
 					var o=AlreadyFunc(new ExpandoObject());
@@ -136,7 +136,7 @@ public static class DynamicData{
 		}
 
 		if(already.TryGetValue(d,out var index)){
-			output.WriteLength(-(index*4+0));
+			output.WriteLength(-((output.Length-index)*4+0));
 			return;
 		}
 		already[d]=output.Length;
