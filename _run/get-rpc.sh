@@ -42,6 +42,11 @@ rm /tmp/playify-rpc.tgz
 cat > "rpc.sh"<<'__SCRIPT__'
 #!/bin/bash
 
+if [ "$1" == "update" ]; then
+  curl -sSL https://raw.githubusercontent.com/Playify/PlayifyRpc_CSharp/master/_run/get-rpc.sh | bash
+  exit $?
+fi
+
 if ! command -v dotnet &> /dev/null; then
   echo "dotnet command not found. Please make sure .NET Core SDK is installed."
   exit 1
@@ -58,6 +63,10 @@ dotnet "$dll_path" "$@"
 __SCRIPT__
 cat > "rpc.bat"<<'__SCRIPT__'
 @echo off
+if "%1" == "update" (
+    powershell -Command "irm https://raw.githubusercontent.com/Playify/PlayifyRpc_CSharp/master/_run/get-rpc.ps1 | iex"
+    exit /b %ERRORLEVEL%
+)
 if not exist "%~dp0PlayifyRpc.dll" (
 	echo Error: PlayifyRpc.dll not found in the script directory.
 	exit /b 1
