@@ -19,7 +19,7 @@ public abstract class ObjectTemplateBase:DynamicObject{
 
 		foreach(var (key,value) in tuples){
 			output.WriteString(key);
-			output.WriteDynamic(value,already);
+			DynamicData.Write(output,value,already);
 		}
 	}
 

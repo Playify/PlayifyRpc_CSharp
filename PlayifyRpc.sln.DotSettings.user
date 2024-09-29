@@ -9,4 +9,5 @@
   &lt;Assembly Path="C:\Users\playify\.nuget\packages\playifyutility\1.0.0\lib\net6.0\PlayifyUtility.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Users\playify\.nuget\packages\playifyutility\1.2.3\lib\net6.0\PlayifyUtility.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
+	
 	</wpf:ResourceDictionary>

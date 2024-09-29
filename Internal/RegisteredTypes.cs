@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
-using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Functions;
+using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;

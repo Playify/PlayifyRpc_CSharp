@@ -1,9 +1,10 @@
 using System.Net;
 using System.Text;
 using PlayifyRpc.Internal;
-using PlayifyRpc.Types.Data;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
+using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Loggers;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils;
@@ -11,7 +12,7 @@ using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Connections;
 
-public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
+internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 	internal static readonly HashSet<ServerConnection> Connections=new();
 	private readonly Dictionary<int,(ServerConnection respondFrom,int respondId)> _activeExecutions=new();
 	private readonly Dictionary<int,(ServerConnection respondTo,int respondId)> _activeRequests=new();
@@ -200,7 +201,7 @@ public abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		try{
 			var method=data.ReadString();
 
-			var args=data.ReadArray(data.ReadDynamic,new Dictionary<int,object>())??[];
+			var args=data.ReadArray(already=>DynamicData.Read(data,already),new Dictionary<int,object>())??[];
 
 			try{
 				var result=await FunctionCallContext.RunWithContextAsync(()=>connection._invoker.Invoke(null!,method,args),null!,null,method,args);

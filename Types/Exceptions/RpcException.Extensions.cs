@@ -9,7 +9,7 @@ using PlayifyUtility.Utils.Extensions;
 using AsyncFriendlyStackTrace;
 #endif
 
-namespace PlayifyRpc.Types;
+namespace PlayifyRpc.Types.Exceptions;
 
 public partial class RpcException{
 	private static readonly List<string> HiddenMethods=[

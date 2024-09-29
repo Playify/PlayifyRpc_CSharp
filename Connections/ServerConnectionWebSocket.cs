@@ -5,7 +5,7 @@ using PlayifyUtility.Web;
 
 namespace PlayifyRpc.Connections;
 
-public class ServerConnectionWebSocket:ServerConnection{
+internal class ServerConnectionWebSocket:ServerConnection{
 	internal readonly Task<WebSocket> WebSocketTask;
 
 	public ServerConnectionWebSocket(Func<Task<WebSocket>> webSocket,NameValueCollection query)

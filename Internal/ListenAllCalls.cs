@@ -1,6 +1,5 @@
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal.Data;
-using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Streams.Data;
@@ -42,7 +41,7 @@ internal static class ListenAllCalls{
 
 			try{
 				var already=new Dictionary<int,object>();
-				msg["args"]=clone.ReadArray(clone.ReadDynamic,already)??[];
+				msg["args"]=clone.ReadArray(already1=>DynamicData.Read(clone,already1),already)??[];
 			} catch(Exception e){
 				msg["argsError"]=e;
 			}
@@ -63,7 +62,7 @@ internal static class ListenAllCalls{
 
 			try{
 				var writeAlready=new Dictionary<object,int>();
-				buff.WriteArray(args,buff.WriteDynamic,writeAlready);
+				buff.WriteArray(args,(d,already)=>DynamicData.Write(buff,d,already),writeAlready);
 				toFree.AddRange(writeAlready.Keys.Where(DynamicData.NeedsFreeing));
 			} catch(Exception){
 				Broadcast(type,method,(byte[]?)null);

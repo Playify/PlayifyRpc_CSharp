@@ -1,7 +1,7 @@
 using JetBrains.Annotations;
 using PlayifyRpc.Internal;
-using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types.Functions;
+using PlayifyRpc.Types.Invokers;
 #if NETFRAMEWORK
 using PlayifyUtility.Utils.Extensions;
 #endif

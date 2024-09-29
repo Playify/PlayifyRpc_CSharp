@@ -2,9 +2,8 @@
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
-using PlayifyRpc.Internal.Invokers;
-using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Streams.Data;
 
@@ -78,7 +77,7 @@ public class FunctionCallContext:SendReceive{
 			buff.WriteString(method);
 			var len=buff.GetBufferAndLength().len;
 			var writeAlready=new Dictionary<object,int>();
-			buff.WriteArray(args,buff.WriteDynamic,writeAlready);
+			buff.WriteArray(args,(d,already)=>DynamicData.Write(buff,d,already),writeAlready);
 			toFree.AddRange(writeAlready.Keys.Where(DynamicData.NeedsFreeing));
 
 			ListenAllCalls.Broadcast(type,method,buff,len);
@@ -98,7 +97,7 @@ public class FunctionCallContext:SendReceive{
 			msg.WriteByte((byte)PacketType.MessageToExecutor);
 			msg.WriteLength(callId);
 			var writeAlready=new Dictionary<object,int>();
-			buff.WriteArray(msgArgs,buff.WriteDynamic,writeAlready);
+			buff.WriteArray(msgArgs,(d,already)=>DynamicData.Write(buff,d,already),writeAlready);
 			toFree.AddRange(writeAlready.Keys.Where(DynamicData.NeedsFreeing));
 
 			connection.SendRaw(msg);

@@ -45,15 +45,6 @@
 		<Compile Update="Rpc.Types.cs">
 			<DependentUpon>Rpc.cs</DependentUpon>
 		</Compile>
-		<Compile Update="Types\RpcException.Data.cs">
-			<DependentUpon>RpcException.cs</DependentUpon>
-		</Compile>
-		<Compile Update="Types\RpcException.Attribute.cs">
-			<DependentUpon>RpcException.cs</DependentUpon>
-		</Compile>
-		<Compile Update="Types\RpcException.Extensions.cs">
-			<DependentUpon>RpcException.cs</DependentUpon>
-		</Compile>
 		<Compile Update="Internal\Data\DynamicCaster.Defaults.cs">
 			<DependentUpon>DynamicCaster.cs</DependentUpon>
 		</Compile>

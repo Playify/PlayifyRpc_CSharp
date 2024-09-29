@@ -1,11 +1,9 @@
 ﻿using System.Net;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
-using PlayifyRpc.Internal.Invokers;
-using PlayifyRpc.Types;
-using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
+using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Loggers;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
@@ -93,7 +91,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 					var method=data.ReadString();
 
-					var args=data.ReadArray(data.ReadDynamic,new Dictionary<int,object>())??[];
+					var args=data.ReadArray(already=>DynamicData.Read(data,already),new Dictionary<int,object>())??[];
 
 
 					var context=new FunctionCallContext(type,
@@ -104,7 +102,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 							msg.WriteByte((byte)PacketType.MessageToCaller);
 							msg.WriteLength(callId);
 							var list=new Dictionary<object,int>();
-							msg.WriteArray(sending,msg.WriteDynamic,list);
+							msg.WriteArray(sending,(d,already)=>DynamicData.Write(msg,d,already),list);
 							lock(toFree)
 								toFree.AddRange(list.Keys.Where(DynamicData.NeedsFreeing));
 
@@ -148,7 +146,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						break;
 					}
 				try{
-					pending.Resolve(data.ReadDynamic());
+					var already=new Dictionary<int,object>();
+					pending.Resolve(DynamicData.Read(data,already));
 				} catch(Exception e){
 					pending.Reject(new RpcDataException($"Error reading binary stream ({packetType})",e));
 				}
@@ -163,7 +162,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						break;
 					}
 				try{
-					pending.Reject(data.ReadException());
+					pending.Reject(RpcException.Read(data));
 				} catch(Exception e){
 					pending.Reject(new RpcDataException($"Error reading binary stream ({packetType})",e));
 				}
@@ -188,7 +187,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						Logger.Warning($"Invalid State: No CurrentlyExecuting[{callId}] ({packetType})");
 						break;
 					}
-				var args=data.ReadArray(data.ReadDynamic,new Dictionary<int,object>())??[];
+				var args=data.ReadArray(already=>DynamicData.Read(data,already),new Dictionary<int,object>())??[];
 				ctx.DoReceiveMessage(args);
 				break;
 			}
@@ -200,7 +199,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
-				var args=data.ReadArray(data.ReadDynamic,new Dictionary<int,object>())??[];
+				var args=data.ReadArray(already=>DynamicData.Read(data,already),new Dictionary<int,object>())??[];
 				pending.DoReceiveMessage(args);
 				break;
 			}

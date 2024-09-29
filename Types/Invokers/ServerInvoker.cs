@@ -1,10 +1,10 @@
 using PlayifyRpc.Connections;
+using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
-using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Utils.Extensions;
 
-namespace PlayifyRpc.Internal;
+namespace PlayifyRpc.Types.Invokers;
 
 internal class ServerInvoker:Invoker{
 	private readonly ServerConnection _connection;

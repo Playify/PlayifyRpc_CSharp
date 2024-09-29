@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Functions;

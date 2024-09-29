@@ -5,14 +5,16 @@ namespace PlayifyRpc.Types.Data;
 [AttributeUsage(AttributeTargets.Class|AttributeTargets.Struct)]
 [UsedImplicitly(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
 //[BaseTypeRequired(typeof(IDynamicType))]
-public class CustomDynamicTypeAttribute:Attribute{
+public class RpcDataTypeAttribute:Attribute{
 	internal readonly string Id;
 
-	public CustomDynamicTypeAttribute(string id)=>Id=id;
+	public RpcDataTypeAttribute(string id){
+		Id=id;
+	}
 }
 
 /*
 public interface IDynamicType{
-	//constructor(Incoming i);
-	void Write(Outgoing o);
+	//constructor(DataInput i);
+	void Write(DataOutput o);
 }*/

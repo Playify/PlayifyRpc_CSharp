@@ -1,5 +1,5 @@
 using PlayifyRpc.Internal;
-using PlayifyRpc.Internal.Invokers;
+using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
 

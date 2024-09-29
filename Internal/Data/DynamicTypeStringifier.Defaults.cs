@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Data.Objects;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils;
 
@@ -76,7 +77,7 @@ public static partial class DynamicTypeStringifier{
 			if(state.Type==typeof(ExpandoObject)) return state.TypeScript?"object":nameof(ExpandoObject);
 			if(state.Type.IsGenericType&&state.Type.GetGenericTypeDefinition()==typeof(StringEnum<>)) return state.TypeScript?"{[key:string]:"+state.GenericTypes().Single()+"}":state.TypeName+state.Generics();
 			if(typeof(ObjectTemplateBase).IsAssignableFrom(state.Type)) return/*state.TypeScript?"object":*/state.TypeName+state.Generics();
-			if(state.Type.GetCustomAttribute<CustomDynamicTypeAttribute>()!=null) return state.TypeName+state.Generics();
+			if(state.Type.GetCustomAttribute<RpcDataTypeAttribute>()!=null) return state.TypeName+state.Generics();
 			return null;
 		}
 	}

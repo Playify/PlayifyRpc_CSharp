@@ -1,7 +1,6 @@
 using System.Reflection;
-using PlayifyRpc.Types.Exceptions;
 
-namespace PlayifyRpc.Types;
+namespace PlayifyRpc.Types.Exceptions;
 
 public partial class RpcException{
 	private static readonly Dictionary<string,ConstructorInfo> Constructors=new();

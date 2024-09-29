@@ -1,9 +1,10 @@
-using PlayifyRpc.Types.Data;
+using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Streams.Data;
 
 namespace PlayifyRpc.Connections;
 
-public abstract class AnyConnection{
+internal abstract class AnyConnection{
 	protected internal abstract Task SendRaw(DataOutputBuff data);
 	protected abstract Task Receive(DataInputBuff data);
 
@@ -15,7 +16,8 @@ public abstract class AnyConnection{
 			var buff=new DataOutputBuff();
 			buff.WriteByte((byte)PacketType.FunctionSuccess);
 			buff.WriteLength(callId);
-			buff.WriteDynamic(result);
+			var already=new Dictionary<object,int>();
+			DynamicData.Write(buff,result,already);
 			await SendRaw(buff);
 		} finally{
 			RespondedToCallId(callId);
@@ -40,7 +42,7 @@ public abstract class AnyConnection{
 			var buff=new DataOutputBuff();
 			buff.WriteByte((byte)PacketType.FunctionError);
 			buff.WriteLength(callId);
-			buff.WriteException(error);
+			RpcException.WrapAndFreeze(error).Write(buff);
 			await SendRaw(buff);
 		} finally{
 			RespondedToCallId(callId);

@@ -82,7 +82,7 @@ public static class DynamicData{
 			'b'=>AlreadyFunc(incoming.ReadFully(incoming.ReadLength())),
 			'D'=>DateTimeOffset.FromUnixTimeMilliseconds(incoming.ReadLong()).LocalDateTime,
 			'R'=>AlreadyFunc(new Regex(incoming.ReadString()??"",(RegexOptions)incoming.ReadByte())),
-			'E'=>AlreadyFunc(incoming.ReadException()),
+			'E'=>AlreadyFunc(RpcException.Read(incoming)),
 			'O'=>AlreadyFunc(new RpcObject(incoming.ReadString()??throw new NullReferenceException())),
 			'F'=>AlreadyFunc(new RpcFunction(incoming.ReadString()??throw new NullReferenceException(),incoming.ReadString()??throw new NullReferenceException())),
 			_=>throw new ArgumentException(),
@@ -154,7 +154,7 @@ public static class DynamicData{
 				return;
 			case Exception exception:
 				output.WriteLength('E');
-				output.WriteException(exception);
+				RpcException.WrapAndFreeze(exception).Write(output);
 				return;
 			case RpcObject obj:
 				output.WriteLength('O');
@@ -225,7 +225,7 @@ public static class DynamicData{
 		Debug.WriteLine("DynamicData registering "+assembly);
 		try{
 			foreach(var type in assembly.GetTypes()){
-				var remoteClass=type.GetCustomAttribute<CustomDynamicTypeAttribute>();
+				var remoteClass=type.GetCustomAttribute<RpcDataTypeAttribute>();
 				if(remoteClass==null) continue;
 
 				/*

@@ -2,14 +2,13 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
-using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
 #if NETFRAMEWORK
 using AsyncFriendlyStackTrace;
 #endif
 
-namespace PlayifyRpc.Types;
+namespace PlayifyRpc.Types.Exceptions;
 
 [PublicAPI]
 public partial class RpcException:Exception{

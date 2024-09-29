@@ -1,7 +1,7 @@
 using PlayifyRpc.Internal;
-using PlayifyRpc.Internal.Invokers;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Functions;
+using PlayifyRpc.Types.Invokers;
 
 namespace PlayifyRpc;
 

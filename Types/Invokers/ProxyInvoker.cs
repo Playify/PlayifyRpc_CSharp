@@ -1,7 +1,7 @@
 using JetBrains.Annotations;
-using PlayifyRpc.Types;
+using PlayifyRpc.Types.Exceptions;
 
-namespace PlayifyRpc.Internal.Invokers;
+namespace PlayifyRpc.Types.Invokers;
 
 [PublicAPI]
 public class ProxyInvoker:Invoker{

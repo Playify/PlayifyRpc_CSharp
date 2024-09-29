@@ -4,7 +4,7 @@ using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
 #endif
 
-namespace PlayifyRpc.Types;
+namespace PlayifyRpc.Types.Exceptions;
 
 public partial class RpcException{
 	public void Write(DataOutput output){

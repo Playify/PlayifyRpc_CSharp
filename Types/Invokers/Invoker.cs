@@ -1,12 +1,11 @@
 using System.Reflection;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
-using PlayifyRpc.Types;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
-namespace PlayifyRpc.Internal.Invokers;
+namespace PlayifyRpc.Types.Invokers;
 
 [PublicAPI]
 public abstract class Invoker{
