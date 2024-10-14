@@ -1,5 +1,7 @@
-﻿using JetBrains.Annotations;
+﻿using System.Diagnostics;
+using JetBrains.Annotations;
 using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyUtility.Loggers;
 
 namespace PlayifyRpc;
@@ -11,9 +13,13 @@ public static partial class Rpc{
 		get=>_logger??=new Logger().WithName("Rpc");
 		set=>_logger=value;
 	}
-	
+
+	static Rpc(){
+		RpcSetupAttribute.LoadAll();
+	}
+
 #if NETFRAMEWORK
-	public static readonly string Id=Environment.MachineName+"@"+System.Diagnostics.Process.GetCurrentProcess().Id;
+	public static readonly string Id=Environment.MachineName+"@"+Process.GetCurrentProcess().Id;
 #else
 	public static readonly string Id=Environment.MachineName+"@"+Environment.ProcessId;
 #endif

@@ -73,7 +73,7 @@ public class TypeInvoker:Invoker{
 		                    .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
 		                    .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder
 		                    .Where(m=>m.Name.Equals(method,StringComparison.OrdinalIgnoreCase))
-		                    .SelectMany(m=>DynamicTypeStringifier.MethodSignatures(m,ts))
+		                    .SelectMany(m=>RpcDataTypeStringifier.MethodSignatures(m,ts))
 		                    .ToArray();
 		return signatures.Length==0
 			       ?new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)))

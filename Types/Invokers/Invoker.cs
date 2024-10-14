@@ -14,7 +14,7 @@ public abstract class Invoker{
 	protected internal object? Invoke(string? type,string? method,object?[] args){
 		if(method!=null) return DynamicInvoke(type,method,args);
 
-		var meta=args.Length<1?null:DynamicCaster.Cast<string>(args[0]);
+		var meta=args.Length<1?null:RpcDataPrimitive.Cast<string>(args[0]);
 
 		MetaCallType.Value=type;
 		//Meta calls, using null as method
@@ -30,9 +30,9 @@ public abstract class Invoker{
 	protected ValueTask<(string[] arguments,string returns)[]> GetMethodSignaturesBase(string? method,bool ts=false){
 		if(method!=null) return GetMethodSignatures(MetaCallType.Value,method,ts);
 		return new ValueTask<(string[] arguments,string returns)[]>([
-			..DynamicTypeStringifier.MethodSignatures(GetMethods,ts,"M"),
-			..DynamicTypeStringifier.MethodSignatures(GetMethodSignaturesBase,ts,"S"),
-			..DynamicTypeStringifier.MethodSignatures(GetRpcVersion,ts,"V"),
+			..RpcDataTypeStringifier.MethodSignatures(GetMethods,ts,"M"),
+			..RpcDataTypeStringifier.MethodSignatures(GetMethodSignaturesBase,ts,"S"),
+			..RpcDataTypeStringifier.MethodSignatures(GetRpcVersion,ts,"V"),
 		]);
 	}
 

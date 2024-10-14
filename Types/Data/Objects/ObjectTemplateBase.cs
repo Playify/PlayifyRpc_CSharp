@@ -6,7 +6,7 @@ using PlayifyUtility.Streams.Data;
 namespace PlayifyRpc.Types.Data.Objects;
 
 public abstract class ObjectTemplateBase:DynamicObject{
-	public abstract bool TrySetProperty(string key,object? value,bool throwOnError);
+	public abstract bool TrySetProperty(string key,object? value,bool throwOnError);//TODO use throwOnError, it should be used everywhere
 	public abstract bool TryGetProperty(string key,out object? value);
 	public abstract IEnumerable<(string key,object? value)> GetProperties();
 

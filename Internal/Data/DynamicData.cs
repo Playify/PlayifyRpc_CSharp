@@ -13,7 +13,6 @@ using PlayifyUtility.Jsons;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
 #if NETFRAMEWORK
-using PlayifyUtility.Utils.Extensions;
 #endif
 
 namespace PlayifyRpc.Internal.Data;
@@ -216,7 +215,7 @@ public static class DynamicData{
 			write(output,d,already);
 			return;
 		}
-		throw new RpcDataException("Type is not supported by DynamicData: "+DynamicTypeStringifier.FromType(d.GetType())+" for value "+d,null);
+		throw new RpcDataException("Type is not supported by DynamicData: "+RpcDataTypeStringifier.FromType(d.GetType())+" for value "+d,null);
 	}
 
 	private static void RegisterAssembly(Assembly assembly){

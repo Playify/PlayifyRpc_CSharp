@@ -81,7 +81,7 @@ public partial class DynamicBinder{
 				var lastPos=par.Length-1;
 				Array.Copy(args,objs,lastPos);
 				objs[lastPos]=Array.CreateInstance(paramArrayType,1);
-				((Array)objs[lastPos]).SetValue(DynamicCaster.Cast(args[lastPos],paramArrayType),0);
+				((Array)objs[lastPos]).SetValue(RpcDataPrimitive.Cast(args[lastPos],paramArrayType),0);
 				args=objs;
 			}
 		} else if(par.Length>args.Length){
@@ -104,7 +104,7 @@ public partial class DynamicBinder{
 			objs[paramArrayPos]=Array.CreateInstance(paramArrayType??throw new NullReferenceException(),args.Length-paramArrayPos);
 			var array=(Array)objs[paramArrayPos];
 			for(var i=0;i<args.Length-paramArrayPos;i++)
-				array.SetValue(DynamicCaster.Cast(args[paramArrayPos+i],paramArrayType),i);
+				array.SetValue(RpcDataPrimitive.Cast(args[paramArrayPos+i],paramArrayType),i);
 
 			args=objs;
 		}

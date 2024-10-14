@@ -15,19 +15,19 @@ public static partial class DynamicCaster{
 
 	/// Used to convert values beforehand
 	public static readonly List<CasterDelegate> PreCasters=[
-		DefaultPreCasters.Json,
+		//DefaultPreCasters.Json,
 	];
 	/// Used to cast values to another type. if no success, return <value>ContinueWithNext</value>
 	public static readonly List<CasterDelegate> Casters=[
-		DefaultCasters.Null,
-		DefaultCasters.Primitives,
-		DefaultCasters.Char,
-		DefaultCasters.Enums,
+		//DefaultCasters.Null,
+		//DefaultCasters.Primitives,
+		//DefaultCasters.Char,
+		//DefaultCasters.Enums,
 		DefaultCasters.InstanceOfCheck,
 		DefaultCasters.ImplicitConversion,
-		DefaultCasters.Json,
-		DefaultCasters.Arrays,
-		DefaultCasters.Objects,
+		//DefaultCasters.Json,
+		//DefaultCasters.Arrays,
+		//DefaultCasters.Objects,
 		DefaultCasters.TryParse,
 	];
 	#endregion
@@ -40,7 +40,7 @@ public static partial class DynamicCaster{
 		foreach(var caster in Casters)
 			if(caster(value,type,true).Push(out var result)!=ContinueWithNext)
 				return result;
-		throw new RpcDataException("Error casting \""+value+"\" to "+DynamicTypeStringifier.FromType(type),null);
+		throw new RpcDataException("Error casting \""+value+"\" to "+RpcDataTypeStringifier.FromType(type),null);
 	}
 
 	public static bool TryCast<T>(object? value,out T result)=>TryCast(value,out result,false);

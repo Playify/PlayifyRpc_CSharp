@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks.Dataflow;
-using PlayifyRpc.Internal.Data;
+using static PlayifyRpc.Internal.Data.RpcDataPrimitive;
 
 namespace PlayifyRpc.Types.Functions;
 
@@ -26,13 +26,13 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 
 	public abstract void SendMessage(params object?[] args);
 
-	public void AddMessageListener<T1>(Action<T1> a)=>AddMessageListener(args=>a(DynamicCaster.Cast<T1>(args[0])));
+	public void AddMessageListener<T1>(Action<T1> a)=>AddMessageListener(args=>a(Cast<T1>(args[0])));
 
-	public void AddMessageListener<T1,T2>(Action<T1,T2> a)=>AddMessageListener(args=>a(DynamicCaster.Cast<T1>(args[0]),DynamicCaster.Cast<T2>(args[1])));
+	public void AddMessageListener<T1,T2>(Action<T1,T2> a)=>AddMessageListener(args=>a(Cast<T1>(args[0]),Cast<T2>(args[1])));
 
-	public void AddMessageListener<T1,T2,T3>(Action<T1,T2,T3> a)=>AddMessageListener(args=>a(DynamicCaster.Cast<T1>(args[0]),DynamicCaster.Cast<T2>(args[1]),DynamicCaster.Cast<T3>(args[2])));
+	public void AddMessageListener<T1,T2,T3>(Action<T1,T2,T3> a)=>AddMessageListener(args=>a(Cast<T1>(args[0]),Cast<T2>(args[1]),Cast<T3>(args[2])));
 
-	public void AddMessageListener<T1,T2,T3,T4>(Action<T1,T2,T3,T4> a)=>AddMessageListener(args=>a(DynamicCaster.Cast<T1>(args[0]),DynamicCaster.Cast<T2>(args[1]),DynamicCaster.Cast<T3>(args[2]),DynamicCaster.Cast<T4>(args[3])));
+	public void AddMessageListener<T1,T2,T3,T4>(Action<T1,T2,T3,T4> a)=>AddMessageListener(args=>a(Cast<T1>(args[0]),Cast<T2>(args[1]),Cast<T3>(args[2]),Cast<T4>(args[3])));
 
 	public virtual void AddMessageListener(MessageFunc a){
 		lock(_receivers)

@@ -45,9 +45,6 @@
 		<Compile Update="Rpc.Types.cs">
 			<DependentUpon>Rpc.cs</DependentUpon>
 		</Compile>
-		<Compile Update="Internal\Data\DynamicCaster.Defaults.cs">
-			<DependentUpon>DynamicCaster.cs</DependentUpon>
-		</Compile>
 		<Compile Update="Internal\Data\DynamicBinder.Helpers.cs">
 			<DependentUpon>DynamicBinder.cs</DependentUpon>
 		</Compile>
@@ -55,14 +52,20 @@
 			<DependentUpon>DynamicBinder.cs</DependentUpon>
 		</Compile>
 		<None Include="README.md" Pack="true" PackagePath="\" />
-		<Compile Update="Internal\Data\DynamicTypeStringifier.Defaults.cs">
-			<DependentUpon>DynamicTypeStringifier.cs</DependentUpon>
-		</Compile>
 		<Compile Update="Internal\Data\DynamicBinder.Invoke.cs">
 			<DependentUpon>DynamicBinder.cs</DependentUpon>
 		</Compile>
 		<Compile Remove="Tests\**" />
 		<None Remove="Tests\**" />
+		<Compile Update="Internal\Data\RpcDataPrimitive.From.cs">
+			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\RpcDataPrimitive.Register.cs">
+			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\RpcDataPrimitive.To.cs">
+			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

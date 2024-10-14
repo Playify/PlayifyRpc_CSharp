@@ -1,39 +1,71 @@
+using PlayifyRpc;
 using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types.Data;
 using PlayifyUtility.Jsons;
+using PlayifyUtility.Utils.Extensions;
 
 namespace Tests;
 
 public class Casting{
+
 	[SetUp]
 	public void Setup(){
+		typeof(Rpc).RunClassConstructor();
 	}
 
 	[Test]
-	public void Nulls(){
-		Assert.That(DynamicCaster.Cast<object>(JsonNull.Null),Is.EqualTo(null));
-		Assert.That(DynamicCaster.Cast<object>(null),Is.EqualTo(null));
-		Assert.That(DynamicCaster.Cast<Json>(null),Is.EqualTo(JsonNull.Null));
-		Assert.That(DynamicCaster.Cast<Json>(DBNull.Value),Is.EqualTo(JsonNull.Null));
+	public void General()=>Assert.Multiple(()=>{
+		Assert.That(RpcDataPrimitive.Number(1ul),Is.EqualTo(RpcDataPrimitive.Number(1)));
+		Assert.That(RpcDataPrimitive.String("Q"),Is.EqualTo(RpcDataPrimitive.String('Q')));
+		//TODO Assert.That(RpcDataPrimitive.Number(1d),Is.EqualTo(RpcDataPrimitive.Number(1ul)));
+	});
+
+	[Test]
+	public void Nulls()=>Assert.Multiple(()=>{
+		Assert.That(RpcDataPrimitive.Cast<object>(JsonNull.Null),Is.EqualTo(null));
+		Assert.That(RpcDataPrimitive.Cast<object>(null),Is.EqualTo(null));
+		Assert.That(RpcDataPrimitive.Cast<Json>(null),Is.EqualTo(JsonNull.Null));
+		Assert.That(RpcDataPrimitive.Cast<Json>(DBNull.Value),Is.EqualTo(JsonNull.Null));
+	});
+
+	[Test]
+	public void Nullables()=>Assert.Multiple(()=>{
+		Assert.That(RpcDataPrimitive.Cast<bool>(JsonBool.True),Is.EqualTo(true));
+		Assert.That(RpcDataPrimitive.Cast<bool?>(DBNull.Value),Is.EqualTo(null));
+		Assert.That(RpcDataPrimitive.Cast<bool?>(JsonBool.False),Is.EqualTo(false));
+
+		Assert.That(()=>RpcDataPrimitive.Cast<JsonNull>(false),Throws.TypeOf<InvalidCastException>());
+		Assert.That(()=>RpcDataPrimitive.Cast<bool>(null),Throws.TypeOf<InvalidCastException>());
+	});
+
+	[Test]
+	public void Primitives()=>Assert.Multiple(()=>{
+		Assert.That(RpcDataPrimitive.Cast<double>((long)4),Is.EqualTo((double)4));
+		Assert.That(RpcDataPrimitive.Cast<int>(10e1),Is.EqualTo(100));
+
+		Assert.That(()=>RpcDataPrimitive.Cast<bool>(1),Throws.TypeOf<InvalidCastException>());
+		Assert.That(()=>RpcDataPrimitive.Cast<int>(true),Throws.TypeOf<InvalidCastException>());
+		Assert.That(()=>RpcDataPrimitive.Cast<int>(1.5f),Throws.TypeOf<InvalidCastException>());
+		Assert.That(()=>RpcDataPrimitive.Cast<int>(uint.MaxValue),Throws.TypeOf<InvalidCastException>());
+	});
+
+
+	public enum IntEnum{
+		Small=12,
+		Big=500,
+	}
+
+	public enum ByteEnum:byte{
+		Small=12,
 	}
 
 	[Test]
-	public void Nullables(){
-		Assert.That(DynamicCaster.Cast<bool>(JsonBool.True),Is.EqualTo(true));
-		Assert.That(DynamicCaster.Cast<bool?>(DBNull.Value),Is.EqualTo(null));
-		Assert.That(DynamicCaster.Cast<bool?>(JsonBool.False),Is.EqualTo(false));
+	public void Enums()=>Assert.Multiple(()=>{
+		Assert.That(RpcDataPrimitive.Cast<ByteEnum>(IntEnum.Small),Is.EqualTo(ByteEnum.Small));
+		Assert.That(RpcDataPrimitive.Cast<IntEnum>(ByteEnum.Small),Is.EqualTo(IntEnum.Small));
+		Assert.That(RpcDataPrimitive.From(new StringEnum<ByteEnum>(ByteEnum.Small)),Is.EqualTo(RpcDataPrimitive.String(nameof(ByteEnum.Small))));
+		Assert.That(RpcDataPrimitive.Cast<int>(IntEnum.Big),Is.EqualTo(500));
 
-		Assert.That(()=>DynamicCaster.Cast<JsonNull>(false),Throws.TypeOf<InvalidCastException>());
-		Assert.That(()=>DynamicCaster.Cast<bool>(null),Throws.TypeOf<InvalidCastException>());
-	}
-
-	[Test]
-	public void Primitives(){
-		Assert.That(DynamicCaster.Cast<double>((long)4),Is.EqualTo((double)4));
-		Assert.That(DynamicCaster.Cast<int>(10e1),Is.EqualTo(100));
-
-		Assert.That(()=>DynamicCaster.Cast<bool>(1),Throws.TypeOf<InvalidCastException>());
-		Assert.That(()=>DynamicCaster.Cast<int>(true),Throws.TypeOf<InvalidCastException>());
-		Assert.That(()=>DynamicCaster.Cast<int>(1.5f),Throws.TypeOf<InvalidCastException>());
-		Assert.That(()=>DynamicCaster.Cast<int>(uint.MaxValue),Throws.TypeOf<InvalidCastException>());
-	}
+		Assert.That(()=>RpcDataPrimitive.Cast<ByteEnum>(IntEnum.Big),Throws.TypeOf<InvalidCastException>());
+	});
 }

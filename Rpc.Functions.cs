@@ -1,4 +1,5 @@
 using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Types.Invokers;
@@ -21,7 +22,8 @@ public static partial class Rpc{
 	public static PendingCall<T> CallFunction<T>(string type,string method,params object?[] args)=>FunctionCallContext.CallFunction<T>(type,method,args);
 
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
-	public static Task<object?> EvalObject(string expression)=>Evaluate.EvalObject(expression);
+	public static Task<RpcDataPrimitive> EvalObject(string expression)=>Evaluate.EvalObject(expression);
+	public static async Task<T> EvalObject<T>(string expression)=>(await Evaluate.EvalObject(expression)).To<T>();
 
 	public static FunctionCallContext GetContext()=>FunctionCallContext.GetContext();
 	public static void RunWithContext(Action func,FunctionCallContext context)=>FunctionCallContext.RunWithContext(func,context);

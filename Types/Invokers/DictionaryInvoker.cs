@@ -29,7 +29,7 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());
 
 	protected override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts){
-		if(Dictionary.TryGetValue(method,out var d)) return new ValueTask<(string[] parameters,string returns)[]>([..DynamicTypeStringifier.MethodSignatures(d,ts)]);
+		if(Dictionary.TryGetValue(method,out var d)) return new ValueTask<(string[] parameters,string returns)[]>([..RpcDataTypeStringifier.MethodSignatures(d,ts)]);
 		return new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)));
 	}
 

@@ -26,18 +26,18 @@ internal static class Evaluate{
 		return NoValue;
 	}
 
-	internal static async Task<object?> EvalObject(string s){
+	internal static async Task<RpcDataPrimitive> EvalObject(string s){
 		var bracket=s.IndexOf('(');
 		if(bracket==-1){
 			if(s=="")
-				return await Rpc.GetAllTypes();
+				return RpcDataPrimitive.From(await Rpc.GetAllTypes());
 			if(s.EndsWith("."))
-				return await Rpc.CreateObject(s.Substring(0,s.Length-1)).GetMethods();
+				return RpcDataPrimitive.From(await Rpc.CreateObject(s.Substring(0,s.Length-1)).GetMethods());
 			if(s.EndsWith("?"))
-				return await Rpc.CreateObject(s.Substring(0,s.Length-1)).Exists();
+				return RpcDataPrimitive.From(await Rpc.CreateObject(s.Substring(0,s.Length-1)).Exists());
 
 			if(s.LastIndexOf('.').Push(out var dotPos)!=-1)
-				return await Rpc.CreateFunction(s.Substring(0,dotPos),s.Substring(dotPos+1)).GetMethodSignatures();
+				return RpcDataPrimitive.From(await Rpc.CreateFunction(s.Substring(0,dotPos),s.Substring(dotPos+1)).GetMethodSignatures());
 			throw new RpcEvalException("No opening bracket");
 		}
 		if(!s.EndsWith(")")) throw new RpcEvalException("No closing bracket");
@@ -62,8 +62,8 @@ internal static class Evaluate{
 				} else throw new RpcEvalException("Error parsing arguments");
 			args.Add(obj);
 		}
-		return await Rpc.CallFunction(type,method,args.ToArray());
+		return await Rpc.CallFunction<RpcDataPrimitive>(type,method,args.ToArray());
 	}
 
-	internal static async Task<string> EvalString(string s,bool pretty)=>DynamicStringifier.Stringify(await EvalObject(s),pretty);
+	internal static async Task<string> EvalString(string s,bool pretty)=>(await EvalObject(s)).ToString(pretty);
 }

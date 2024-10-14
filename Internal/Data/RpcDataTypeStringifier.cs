@@ -1,0 +1,104 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using PlayifyUtility.HelperClasses;
+using PlayifyUtility.Utils;
+using PlayifyUtility.Utils.Extensions;
+
+namespace PlayifyRpc.Internal.Data;
+
+public static class RpcDataTypeStringifier{
+	public static readonly Dictionary<Type,TypedDelegate> ToStringDictionary=new();
+	public static readonly List<GeneralDelegate> ToStringList=[];
+
+	public delegate string TypedDelegate(bool typescript,string[] generics);
+
+	public delegate string? GeneralDelegate(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics);
+
+	static RpcDataTypeStringifier(){
+		RpcSetupAttribute.LoadAll();
+	}
+
+
+	public static string FromType(Type type,bool typescript=false)=>Stringify(type,typescript,true,()=>null,null);
+
+	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(Delegate method,bool typescript,params string[] prevParameters)
+		=>MethodSignatures(method.Method,typescript,prevParameters);
+
+	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(MethodInfo method,bool typescript,params string[] prevParameters){
+		var returns=ParameterType(method.ReturnParameter!,false,typescript);
+		var list=new List<string>(prevParameters);
+
+		foreach(var parameter in method.GetParameters()){
+			if(parameter.IsOptional) yield return (list.ToArray(),returns);
+
+			var @params=parameter.ParameterType.IsArray&&parameter.GetCustomAttribute<ParamArrayAttribute>()!=null?typescript?"...":"params ":"";
+			var parameterType=ParameterType(parameter,true,typescript);
+			list.Add(@params+Parameter(typescript,parameterType,parameter.Name));
+		}
+		yield return (list.ToArray(),returns);
+	}
+
+
+	private static string ParameterType(ParameterInfo parameter,bool input,bool typescript){
+		var tupleNames=parameter.GetCustomAttribute<TupleElementNamesAttribute>()?.TransformNames;
+		var tupleIndex=0;
+
+		var type=parameter.ParameterType;
+		var nullability=new NullabilityInfoContext().Create(parameter);
+
+		if(!input)
+			while(true)
+				if(type==typeof(void)||type==typeof(VoidType)||type==typeof(Task)||type==typeof(ValueTask)) return "void";
+				else if(type.IsGenericType&&(type.GetGenericTypeDefinition()==typeof(Task<>)||type.GetGenericTypeDefinition()==typeof(ValueTask<>))){
+					type=type.GetGenericArguments()[0];
+					nullability=nullability?.GenericTypeArguments[0];
+				} else break;
+
+		return Stringify(type,typescript,input,()=>tupleNames?[tupleIndex++],nullability);
+	}
+
+	public static string Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability){
+		var isNullable=(input?nullability?.ReadState:nullability?.WriteState)==NullabilityState.Nullable;
+		if(Nullable.GetUnderlyingType(type) is{} underlying){
+			isNullable=true;
+			type=underlying;
+		}
+		var suffix=isNullable?typescript?"|null":"?":"";
+
+		var generics=!type.IsGenericType
+			             ?[]
+			             :type
+			              .GetGenericArguments()
+			              .Zip(
+				              nullability?.GenericTypeArguments??EnumerableUtils.RepeatForever<NullabilityInfo?>(null),
+				              (t,n)=>Stringify(t,typescript,input,tuplename,n))
+			              .ToArray();
+
+		if(ToStringDictionary.TryGetValue(type,out var fromDict)) return fromDict(typescript,generics)+suffix;
+		foreach(var fromList in ToStringList){
+			var s=fromList(type,typescript,input,tuplename,nullability,generics);
+			if(s!=null) return s+suffix;
+		}
+
+		if(typescript) return $"unknwon{suffix} /*{TypeName(type,generics).Replace("/*","/#").Replace("*/","#/")}*/";
+		return $"Unknown<{TypeName(type,generics)}>{suffix}";
+	}
+
+
+	#region Helpers
+	public static string TypeName(Type type,string[] generics){
+		var name=type.Name;
+		var genericIndex=name.IndexOf('`');
+		if(genericIndex==-1) return name;
+		return name.Substring(0,genericIndex)+"<"+generics.Join(",")+">";
+	}
+
+	public static string Parameter(bool typescript,string type,string? name){
+		if(name==null) return type;
+		if(type=="") return name;
+		if(type=="null"||type[0] is '"' or '\''||double.TryParse(type,out _)) return type;//Constant value
+		return typescript?$"{name}:{type}":$"{type} {name}";
+	}
+	#endregion
+
+}

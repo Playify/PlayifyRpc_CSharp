@@ -58,7 +58,7 @@ internal class ServerInvoker:Invoker{
 	protected override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts){
 		var signatures=_methods
 		               .Where(t=>t.name.Equals(method,StringComparison.OrdinalIgnoreCase))
-		               .SelectMany(t=>DynamicTypeStringifier.MethodSignatures(t.@delegate,ts))
+		               .SelectMany(t=>RpcDataTypeStringifier.MethodSignatures(t.@delegate,ts))
 		               .ToArray();
 		return signatures.Length==0
 			       ?new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)))

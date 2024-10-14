@@ -1,5 +1,6 @@
 using JetBrains.Annotations;
 using PlayifyRpc.Connections;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
@@ -79,7 +80,7 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	}
 
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
-	public static Task<object?> EvalObject(string expression)=>Evaluate.EvalObject(expression);
+	public static Task<RpcDataPrimitive> EvalObject(string expression)=>Evaluate.EvalObject(expression);
 	public static Task ListenCalls()=>ListenAllCalls.Listen(Rpc.GetContext());
 	#endregion
 

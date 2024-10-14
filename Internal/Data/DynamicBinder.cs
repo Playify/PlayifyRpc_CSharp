@@ -66,7 +66,7 @@ public partial class DynamicBinder:Binder{
 					for(canIndex=0;canIndex<candidates.Length;canIndex++){
 						if(candidateArgTypes[canIndex] is not{} candidateArgType) continue;
 						var value=args[argIndex];
-						if(!DynamicCaster.TryCast(value,candidateArgType,out _))
+						if(!RpcDataPrimitive.TryCast(value,candidateArgType,out _))
 							candidates[canIndex]=null;
 					}
 
@@ -78,7 +78,7 @@ public partial class DynamicBinder:Binder{
 
 			try{
 				//Try casting the corresponding arg to the type, and throw if not correct
-				DynamicCaster.Cast(args[argIndex],nThCommonType);
+				RpcDataPrimitive.Cast(args[argIndex],nThCommonType);
 				/*don't use 'args[argIndex]=' here, as it should also work for the TryCast variant, that can't use that*/
 			} catch(RpcDataException e){
 				e.Data["argIndex"]=argIndex;
@@ -122,7 +122,7 @@ public partial class DynamicBinder:Binder{
 		}
 	}
 
-	public override object ChangeType(object value,Type type,CultureInfo? cultureInfo)=>DynamicCaster.Cast(value,type)!;
+	public override object ChangeType(object value,Type type,CultureInfo? cultureInfo)=>RpcDataPrimitive.Cast(value,type)!;
 
 	public override FieldInfo BindToField(BindingFlags bindingAttr,FieldInfo[] match,
 		object value,CultureInfo? cultureInfo)
