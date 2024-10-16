@@ -77,8 +77,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				var callId=data.ReadLength();
 
 
-				var toFree=new List<object>();
-				var tcs=new TaskCompletionSource<object?>();
+				var toFree=new List<Action>();
+				var tcs=new TaskCompletionSource<RpcDataPrimitive>();
 				try{
 					var type=data.ReadString();
 
@@ -91,7 +91,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 					var method=data.ReadString();
 
-					var args=data.ReadArray(already=>DynamicData.Read(data,already),new Dictionary<int,object>())??[];
+					var args=RpcDataPrimitive.ReadArray(data);
 
 
 					var context=new FunctionCallContext(type,
@@ -101,10 +101,12 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 							var msg=new DataOutputBuff();
 							msg.WriteByte((byte)PacketType.MessageToCaller);
 							msg.WriteLength(callId);
-							var list=new Dictionary<object,int>();
-							msg.WriteArray(sending,(d,already)=>DynamicData.Write(msg,d,already),list);
+							var already=new Dictionary<RpcDataPrimitive,int>();
+							msg.WriteArray(sending,d=>d.Write(msg,already));
 							lock(toFree)
-								toFree.AddRange(list.Keys.Where(DynamicData.NeedsFreeing));
+								foreach(var key in already.Keys)
+									if(key.IsDisposable(out var action))
+										toFree.Add(action);
 
 							SendRaw(msg);
 						},
@@ -132,7 +134,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 					tcs.TrySetException(e);
 					await Reject(callId,e);
 				} finally{
-					DynamicData.Free(toFree);
+					toFree.ForEach(a=>a());
 				}
 
 				break;
@@ -146,8 +148,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						break;
 					}
 				try{
-					var already=new Dictionary<int,object>();
-					pending.Resolve(DynamicData.Read(data,already));
+					var already=new Dictionary<int,RpcDataPrimitive>();
+					pending.Resolve(RpcDataPrimitive.Read(data,already));
 				} catch(Exception e){
 					pending.Reject(new RpcDataException($"Error reading binary stream ({packetType})",e));
 				}
@@ -187,8 +189,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						Logger.Warning($"Invalid State: No CurrentlyExecuting[{callId}] ({packetType})");
 						break;
 					}
-				var args=data.ReadArray(already=>DynamicData.Read(data,already),new Dictionary<int,object>())??[];
-				ctx.DoReceiveMessage(args);
+				ctx.DoReceiveMessage(RpcDataPrimitive.ReadArray(data));
 				break;
 			}
 			case PacketType.MessageToCaller:{
@@ -199,8 +200,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
-				var args=data.ReadArray(already=>DynamicData.Read(data,already),new Dictionary<int,object>())??[];
-				pending.DoReceiveMessage(args);
+				pending.DoReceiveMessage(RpcDataPrimitive.ReadArray(data));
 				break;
 			}
 			default:throw new ProtocolViolationException("Received invalid rpc-packet");

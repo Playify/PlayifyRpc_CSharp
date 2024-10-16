@@ -4,7 +4,7 @@ using PlayifyRpc.Types.Exceptions;
 namespace PlayifyRpc.Internal.Data;
 
 public partial class DynamicBinder{
-	internal static object? Invoke(Delegate func,string? type,string method,object?[] args){
+	internal static object? Invoke(Delegate func,string? type,string method,RpcDataPrimitive[] args){
 		try{
 			CurrentMethod.Value=func.Method;
 			const BindingFlags all=BindingFlags.Public|
@@ -32,7 +32,7 @@ public partial class DynamicBinder{
 		}
 	}
 
-	internal static object? InvokeMeta(Delegate func,string? type,string meta,object?[] args){
+	internal static object? InvokeMeta(Delegate func,string? type,string meta,RpcDataPrimitive[] args){
 		try{
 			CurrentMethod.Value=func.Method;
 			const BindingFlags all=BindingFlags.Public|

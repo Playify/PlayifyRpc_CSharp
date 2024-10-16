@@ -33,7 +33,7 @@ public class StringMap<T>:ObjectTemplateBase,IEnumerable<KeyValuePair<string,T>>
 
 	#region ObjectTemplate
 	public override bool TrySetProperty(string key,object? value,bool throwOnError){
-		if(!DynamicCaster.TryCast(value,out T t,throwOnError)) return false;
+		if(!RpcDataPrimitive.TryCast(value,out T t,throwOnError)) return false;
 		Dictionary[key]=t;
 		return true;
 	}

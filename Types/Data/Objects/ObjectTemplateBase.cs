@@ -1,7 +1,6 @@
 using System.Dynamic;
 using System.Reflection;
 using PlayifyRpc.Internal.Data;
-using PlayifyUtility.Streams.Data;
 
 namespace PlayifyRpc.Types.Data.Objects;
 
@@ -11,21 +10,8 @@ public abstract class ObjectTemplateBase:DynamicObject{
 	public abstract IEnumerable<(string key,object? value)> GetProperties();
 
 
-	internal void WriteDynamic(DataOutputBuff output,Dictionary<object,int> already){
-		already[this]=output.Length;
-
-		var tuples=GetProperties().ToArray();
-		output.WriteLength(-(tuples.Length*4+2));
-
-		foreach(var (key,value) in tuples){
-			output.WriteString(key);
-			DynamicData.Write(output,value,already);
-		}
-	}
-
-
 	public override bool TryGetMember(GetMemberBinder binder,out object result){
-		if(TryGetProperty(binder.Name,out var value)&&DynamicCaster.TryCast(value,binder.ReturnType,out result!,true))
+		if(TryGetProperty(binder.Name,out var value)&&RpcDataPrimitive.TryCast(value,binder.ReturnType,out result!,true))
 			return true;
 		result=null!;
 		return false;
@@ -45,7 +31,7 @@ public abstract class ObjectTemplateBase:DynamicObject{
 			} property&&
 			property.GetCustomAttribute<RpcHiddenAttribute>()==null
 		)
-			if(DynamicCaster.TryCast(value,property.PropertyType,out var casted,throwOnError)){
+			if(RpcDataPrimitive.TryCast(value,property.PropertyType,out var casted,throwOnError)){
 				property.SetValue(this,casted);
 				return true;
 			} else return false;
@@ -53,7 +39,7 @@ public abstract class ObjectTemplateBase:DynamicObject{
 			type.GetField(key,BindingFlags.Instance|BindingFlags.Public|BindingFlags.IgnoreCase) is{} field&&
 			field.GetCustomAttribute<RpcHiddenAttribute>()==null
 		)
-			if(DynamicCaster.TryCast(value,field.FieldType,out var casted,throwOnError)){
+			if(RpcDataPrimitive.TryCast(value,field.FieldType,out var casted,throwOnError)){
 				field.SetValue(this,casted);
 				return true;
 			} else return false;

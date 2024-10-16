@@ -3,11 +3,14 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using PlayifyRpc.Types;
+using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
+using static PlayifyRpc.Internal.Data.RpcDataPrimitive;
+using Array=System.Array;
 
 namespace PlayifyRpc.Internal.Data;
 
@@ -16,81 +19,81 @@ internal static class RpcDataDefaults{
 
 
 	static RpcDataDefaults(){
-		RpcDataPrimitive.RegisterGeneric(ArraysAndTuples.From,ArraysAndTuples.To,ArraysAndTuples.Stringify);
-		RpcDataPrimitive.RegisterGeneric(Enums.From,Enums.To,Enums.Stringify);
-		RpcDataPrimitive.RegisterGeneric(ObjectTemplates.From,ObjectTemplates.To,ObjectTemplates.Stringify);//TOOD they should be replaced with direct data types using an Attribute
+		RegisterFallback(ArraysAndTuples.From,ArraysAndTuples.To,ArraysAndTuples.Stringify);
+		RegisterFallback(Enums.From,Enums.To,Enums.Stringify);
+		RegisterFallback(ObjectTemplates.From,ObjectTemplates.To,ObjectTemplates.Stringify);//TOOD they should be replaced with direct data types using an Attribute
 
 		RegisterPrimitives();
-		RpcDataPrimitive.Register<RpcDataPrimitive>((p,_)=>p,p=>p,(typescript,_)=>typescript?"any":"dynamic");
+		Register<RpcDataPrimitive>((p,_)=>p,p=>p,(typescript,_)=>typescript?"any":"dynamic");
 		RegisterJson();
 		RegisterRpcTypes();
 	}
 
 	private static void RegisterPrimitives(){
-		RpcDataPrimitive.Register<VoidType>(
-			(_,_)=>RpcDataPrimitive.Null,
-			p=>p.IsNull()?default(VoidType):RpcDataPrimitive.ContinueWithNext,
+		Register<VoidType>(
+			(_,_)=>new RpcDataPrimitive(),
+			p=>p.IsNull()?default(VoidType):ContinueWithNext,
 			(_,_)=>"null");
-		RpcDataPrimitive.Register<DBNull>(
-			(_,_)=>RpcDataPrimitive.Null,
-			p=>p.IsNull()?DBNull.Value:RpcDataPrimitive.ContinueWithNext,
+		Register<DBNull>(
+			(_,_)=>new RpcDataPrimitive(),
+			p=>p.IsNull()?DBNull.Value:ContinueWithNext,
 			(_,_)=>"null");
 
-		RpcDataPrimitive.Register<bool>(
-			(b,_)=>b?RpcDataPrimitive.True:RpcDataPrimitive.False,
-			p=>p.IsBool(out var b)?b:RpcDataPrimitive.ContinueWithNext,
+		Register<bool>(
+			(b,_)=>new RpcDataPrimitive(b),
+			p=>p.IsBool(out var b)?b:ContinueWithNext,
 			(typescript,_)=>typescript?"boolean":"bool");
-		RpcDataPrimitive.Register<string>(
-			(s,_)=>RpcDataPrimitive.String(s),
-			p=>p.IsString(out var b)?b:RpcDataPrimitive.ContinueWithNext,
+		Register<string>(
+			(s,_)=>new RpcDataPrimitive(s),
+			p=>p.IsString(out var s)?s:ContinueWithNext,
 			(_,_)=>"string");
-		RpcDataPrimitive.Register<char>(
-			(s,_)=>RpcDataPrimitive.String(s),
-			p=>p.IsChar(out var b)?b:RpcDataPrimitive.ContinueWithNext,
+		Register<char>(
+			(c,_)=>new RpcDataPrimitive(c),
+			p=>p.IsChar(out var c)?c:ContinueWithNext,
 			(typescript,_)=>typescript?"string":"char");
 
-		RpcDataPrimitive.Register<sbyte>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(sbyte.MinValue,sbyte.MaxValue,out var b)?(sbyte)b:RpcDataPrimitive.ContinueWithNext,
+		Register<sbyte>(
+			(n,_)=>new RpcDataPrimitive(n),
+			p=>p.IsNumber(sbyte.MinValue,sbyte.MaxValue,out var n)?(sbyte)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"sbyte");
-		RpcDataPrimitive.Register<byte>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(byte.MaxValue,out var b)?(byte)b:RpcDataPrimitive.ContinueWithNext,
+		Register<byte>(
+			(n,_)=>new RpcDataPrimitive(n),
+			p=>p.IsNumber(byte.MaxValue,out var n)?(byte)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"byte");
-		RpcDataPrimitive.Register<short>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(short.MinValue,short.MaxValue,out var b)?(short)b:RpcDataPrimitive.ContinueWithNext,
+		Register<short>(
+			(n,_)=>new RpcDataPrimitive(n),
+			p=>p.IsNumber(short.MinValue,short.MaxValue,out var n)?(short)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"short");
-		RpcDataPrimitive.Register<ushort>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(ushort.MaxValue,out var b)?(ushort)b:RpcDataPrimitive.ContinueWithNext,
+		Register<ushort>(
+			(n,_)=>new RpcDataPrimitive(n),
+			p=>p.IsNumber(ushort.MaxValue,out var n)?(ushort)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"ushort");
-		RpcDataPrimitive.Register<int>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(int.MinValue,int.MaxValue,out var b)?(int)b:RpcDataPrimitive.ContinueWithNext,
+		Register<int>(
+			(n,_)=>new RpcDataPrimitive(n),
+			p=>p.IsNumber(int.MinValue,int.MaxValue,out var n)?(int)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"int");
-		RpcDataPrimitive.Register<uint>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(uint.MaxValue,out var b)?(uint)b:RpcDataPrimitive.ContinueWithNext,
+		Register<uint>(
+			(n,_)=>new RpcDataPrimitive(n),
+			p=>p.IsNumber(uint.MaxValue,out var n)?(uint)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"uint");
-		RpcDataPrimitive.Register<long>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(long.MinValue,long.MaxValue,out var b)?b:RpcDataPrimitive.ContinueWithNext,
+		Register<long>(
+			(n,_)=>new RpcDataPrimitive(n),
+			p=>p.IsNumber(long.MinValue,long.MaxValue,out var n)?n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"long");
-		RpcDataPrimitive.Register<ulong>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(ulong.MaxValue,out var b)?b:RpcDataPrimitive.ContinueWithNext,
+		Register<ulong>(
+			(n,_)=>new RpcDataPrimitive(n),
+			p=>p.IsNumber(ulong.MaxValue,out var n)?n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"ulong");
-		RpcDataPrimitive.Register<float>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(out var b)?(float)b:RpcDataPrimitive.ContinueWithNext,
+		Register<float>(
+			(f,_)=>new RpcDataPrimitive(f),
+			p=>p.IsNumber(out var d)?(float)d:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"float");
-		RpcDataPrimitive.Register<double>(
-			(n,_)=>RpcDataPrimitive.Number(n),
-			p=>p.IsNumber(out var b)?b:RpcDataPrimitive.ContinueWithNext,
+		Register<double>(
+			(d,_)=>new RpcDataPrimitive(d),
+			p=>p.IsNumber(out var d)?d:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"double");
 
-		RpcDataPrimitive.Register<object>(
+		Register<object>(
 			null,
 			p=>{
 				if(p.IsNull()) return null;
@@ -113,49 +116,46 @@ internal static class RpcDataDefaults{
 					foreach(var (key,primitive) in obj) expando.Add(key,primitive.To<object?>());
 					return expando;
 				}
-				if(p.IsCustom(out object custom))
-					return custom;
-
-				throw new RpcDataException("Primitive can't be converted, invalid type detected:"+p,null);
+				if(p.IsCustom(out object custom)) return custom;
+				throw new RpcDataException("Primitive can't be converted, invalid type detected:"+p);
 			},
 			(typescript,_)=>typescript?"any":"dynamic");
 	}
 
 	private static void RegisterJson(){
-		RpcDataPrimitive.Register<JsonNull>(
-			(_,_)=>RpcDataPrimitive.Null,
-			p=>p.IsNull()?JsonNull.Null:RpcDataPrimitive.ContinueWithNext,
+		Register<JsonNull>(
+			(_,_)=>new RpcDataPrimitive(),
+			p=>p.IsNull()?JsonNull.Null:ContinueWithNext,
 			(_,_)=>"null");
-		RpcDataPrimitive.Register<JsonBool>(
-			(b,_)=>b.Value?RpcDataPrimitive.True:RpcDataPrimitive.False,
-			p=>p.IsBool(out var b)?JsonBool.Get(b):RpcDataPrimitive.ContinueWithNext,
+		Register<JsonBool>(
+			(b,_)=>new RpcDataPrimitive(b.Value),
+			p=>p.IsBool(out var b)?JsonBool.Get(b):ContinueWithNext,
 			(typescript,_)=>typescript?"boolean":"bool");
-		RpcDataPrimitive.Register<JsonNumber>(
-			(n,_)=>RpcDataPrimitive.Number(n.Value),
-			p=>p.IsNumber(out var d)?new JsonNumber(d):RpcDataPrimitive.ContinueWithNext,
+		Register<JsonNumber>(
+			(n,_)=>new RpcDataPrimitive(n.Value),
+			p=>p.IsNumber(out var d)?new JsonNumber(d):ContinueWithNext,
 			(typescript,_)=>typescript?"number":"double");
-		RpcDataPrimitive.Register<JsonString>(
-			(s,_)=>RpcDataPrimitive.String(s),
-			p=>p.IsString(out var s)?new JsonString(s):RpcDataPrimitive.ContinueWithNext,
+		Register<JsonString>(
+			(s,_)=>new RpcDataPrimitive(s.Value),
+			p=>p.IsString(out var s)?new JsonString(s):ContinueWithNext,
 			(_,_)=>"string");
-		RpcDataPrimitive.Register<JsonArray>(
-			(a,already)=>already[a]=RpcDataPrimitive.Array(()=>(a.Select(j=>RpcDataPrimitive.From(j,already)),a.Count)),
+		Register<JsonArray>(
+			(a,already)=>already[a]=new RpcDataPrimitive(()=>(a.Select(j=>From(j,already)),a.Count)),
 			p=>{
 				if(p.IsAlready(out JsonArray already)) return already;
-				if(!p.IsArray(out var primitives)) return RpcDataPrimitive.ContinueWithNext;
-				return ReadJsonArray(p,primitives)??RpcDataPrimitive.ContinueWithNext;
+				if(!p.IsArray(out var primitives)) return ContinueWithNext;
+				return ReadJsonArray(p,primitives)??ContinueWithNext;
 			},
 			(typescript,_)=>typescript?"any[]":"dynamic[]");
-		RpcDataPrimitive.RegisterObject<JsonObject>(e=>e.Select(kv=>(kv.Key,(object?)kv.Value)),(e,props)=>props.All(t=>{
+		RegisterObject<JsonObject>(e=>e.Select(kv=>(kv.Key,(object?)kv.Value)),(e,props)=>props.All(t=>{
 				if(!t.value.TryTo(out Json obj)) return false;
 				e[t.key]=obj;
 				return true;
 			}),
-			(_,_)=>"object",
-			true);
-		RpcDataPrimitive.Register<Json>(
+			(_,_)=>"object");
+		Register<Json>(
 			null,
-			p=>ReadJson(p)??RpcDataPrimitive.ContinueWithNext,
+			p=>ReadJson(p)??ContinueWithNext,
 			(typescript,_)=>typescript?"any":"dynamic");
 		return;
 
@@ -188,48 +188,49 @@ internal static class RpcDataDefaults{
 	}
 
 	private static void RegisterRpcTypes(){
-		RpcDataPrimitive.RegisterCustom<DateTime>('D',
-			(input,_)=>DateTimeOffset.FromUnixTimeMilliseconds(input.ReadLong()).LocalDateTime,
+		RegisterCustom<DateTime>('D',
+			(input,create)=>create(DateTimeOffset.FromUnixTimeMilliseconds(input.ReadLong()).LocalDateTime,false),
 			(output,value,_)=>output.WriteLong(new DateTimeOffset(value).ToUnixTimeMilliseconds()),
 			(typescript,_)=>typescript?"Date":"DateTime");
-		RpcDataPrimitive.RegisterCustom<byte[]>('b',
-			(input,already)=>already(input.ReadFully(input.ReadLength())),
+		RegisterCustom<byte[]>('b',
+			(input,create)=>create(input.ReadFully(input.ReadLength()),true),
 			(output,value,_)=>{
 				output.WriteLength(value.Length);
 				output.Write(value);
 			},
 			(typescript,_)=>typescript?"Uint8Array":"byte[]");
-		RpcDataPrimitive.RegisterCustom<Exception>('E',
-			(input,already)=>already(RpcException.Read(input)),
+		RegisterCustom<Exception>('E',
+			(input,create)=>create(RpcException.Read(input),true),
 			(output,value,_)=>RpcException.WrapAndFreeze(value).Write(output),
 			(typescript,_)=>typescript?"RpcError":nameof(RpcException));
-		RpcDataPrimitive.RegisterCustom<Regex>('R',
-			(input,already)=>already(new Regex(input.ReadString()??"",(RegexOptions)(input.ReadByte()&3))),
+		RegisterCustom<Regex>('R',
+			(input,create)=>create(new Regex(input.ReadString()??"",(RegexOptions)(input.ReadByte()&3)),true),
 			(output,value,_)=>{
 				output.WriteString(value.ToString());
 				output.WriteByte((byte)(value.Options&(RegexOptions)3));
 			},
 			(typescript,_)=>typescript?"RegExp":nameof(Regex));
-		RpcDataPrimitive.RegisterCustom<RpcObject>('O',
-			(input,already)=>already(new RpcObject(input.ReadString()??throw new NullReferenceException())),
+		RegisterCustom<RpcObject>('O',
+			(input,create)=>create(new RpcObject(input.ReadString()??throw new NullReferenceException()),true),
 			(output,value,_)=>output.WriteString(value.Type),
 			(_,_)=>nameof(RpcObject));
-		RpcDataPrimitive.RegisterCustom<RpcFunction>('F',
-			(input,already)=>already(new RpcFunction(input.ReadString()??throw new NullReferenceException(),input.ReadString()??throw new NullReferenceException())),
+		RegisterCustom<RpcFunction>('F',
+			(input,create)=>create(new RpcFunction(input.ReadString()??throw new NullReferenceException(),input.ReadString()??throw new NullReferenceException()),true),
 			(output,value,_)=>{
 				output.WriteString(value.Type);
 				output.WriteString(value.Method);
 			},
-			(_,_)=>nameof(RpcFunction));
-		RpcDataPrimitive.RegisterObject<ExpandoObject>(
+			(_,_)=>nameof(RpcFunction),null,out var writer);
+		RegisterFallback(Delegates.From(writer),Delegates.To,Delegates.Stringify);
+
+		RegisterObject<ExpandoObject>(
 			e=>e.ToTuples(),
 			(e,props)=>props.All(t=>{
 				if(!t.value.TryTo(out object obj)) return false;
 				((IDictionary<string,object?>)e)[t.key]=obj;
 				return true;
 			}),
-			(_,_)=>"object",
-			true);
+			(_,_)=>"object");
 
 		//TODO new custom StringMap<>
 		//TODO RpcDataTypeAttribute
@@ -237,15 +238,27 @@ internal static class RpcDataDefaults{
 
 
 	public static object? ToNullable(RpcDataPrimitive primitive,Type type){
-		if(Nullable.GetUnderlyingType(type) is not{} nullableType) return RpcDataPrimitive.ContinueWithNext;
+		if(Nullable.GetUnderlyingType(type) is not{} nullableType) return ContinueWithNext;
 		if(primitive.IsNull()) return null;
-		return primitive.TryTo(nullableType,out var result)?result:RpcDataPrimitive.ContinueWithNext;
+		return primitive.TryTo(nullableType,out var result)?result:ContinueWithNext;
 	}
 
 	private static class ArraysAndTuples{
+
+		private static readonly Type[] ValueTupleTypes=[
+			typeof(ValueTuple),
+			typeof(ValueTuple<>),
+			typeof(ValueTuple<,>),
+			typeof(ValueTuple<,,>),
+			typeof(ValueTuple<,,,>),
+			typeof(ValueTuple<,,,,>),
+			typeof(ValueTuple<,,,,,>),
+			typeof(ValueTuple<,,,,,,>),
+			typeof(ValueTuple<,,,,,,,>),
+		];
 		public static RpcDataPrimitive? From(object value,Dictionary<object,RpcDataPrimitive> already)=>value switch{
-			ITuple t=>already[t]=RpcDataPrimitive.Array(()=>(Enumerable.Range(0,t.Length).Select(i=>RpcDataPrimitive.From(t[i],already)),t.Length)),
-			Array arr=>already[arr]=RpcDataPrimitive.Array(()=>(arr.Cast<object>().Select(o=>RpcDataPrimitive.From(o,already)),arr.Length)),
+			ITuple t=>already[t]=new RpcDataPrimitive(()=>(Enumerable.Range(0,t.Length).Select(i=>RpcDataPrimitive.From(t[i],already)),t.Length)),
+			Array arr=>already[arr]=new RpcDataPrimitive(()=>(arr.Cast<object>().Select(o=>RpcDataPrimitive.From(o,already)),arr.Length)),
 			_=>null,
 		};
 
@@ -253,7 +266,7 @@ internal static class RpcDataDefaults{
 			if(type.IsArray){
 				if(primitive.IsNull()) return null;
 				if(primitive.IsAlready(type,out var already)) return already;
-				if(!primitive.IsArray(out var arr,out var len)) return RpcDataPrimitive.ContinueWithNext;
+				if(!primitive.IsArray(out var arr,out var len)) return ContinueWithNext;
 
 				var elementType=type.GetElementType()!;
 				var array=primitive.AddAlready(Array.CreateInstance(elementType,len));
@@ -263,25 +276,25 @@ internal static class RpcDataDefaults{
 					else return primitive.RemoveAlready(array);
 				return array;
 			}
-			if(type.IsGenericType&&RpcDataPrimitive.ValueTupleTypes.Contains(type.GetGenericTypeDefinition())){
-				if(!primitive.IsArray(out var arr,out var len)) return RpcDataPrimitive.ContinueWithNext;
+			if(type.IsGenericType&&ValueTupleTypes.Contains(type.GetGenericTypeDefinition())){
+				if(!primitive.IsArray(out var arr,out var len)) return ContinueWithNext;
 
 				var argsTypes=type.GetGenericArguments();
-				if(argsTypes.Length!=len) return RpcDataPrimitive.ContinueWithNext;
+				if(argsTypes.Length!=len) return ContinueWithNext;
 
 				var args=new object?[argsTypes.Length];
 				var i=0;
 				foreach(var sub in arr)
 					if(sub.TryTo(argsTypes[i],out var child)) args[i++]=child;
-					else return RpcDataPrimitive.ContinueWithNext;
+					else return ContinueWithNext;
 				return type.GetConstructor(argsTypes)!.Invoke(args);
 			}
-			return RpcDataPrimitive.ContinueWithNext;
+			return ContinueWithNext;
 		}
 
 		public static string? Stringify(Type type,bool typescript,bool input,Func<string?> tupleName,NullabilityInfo? nullability,string[] generics){
 			if(type.IsArray) return RpcDataTypeStringifier.Stringify(type.GetElementType()!,typescript,input,tupleName,nullability?.ElementType)+"[]";
-			if(type.IsGenericType&&RpcDataPrimitive.ValueTupleTypes.Contains(type.GetGenericTypeDefinition())){
+			if(type.IsGenericType&&ValueTupleTypes.Contains(type.GetGenericTypeDefinition())){
 				var inner=generics.Select(t=>RpcDataTypeStringifier.Parameter(typescript,t,tupleName())).Join(",");
 				return typescript?$"[{inner}]":$"({inner})";
 			}
@@ -294,28 +307,17 @@ internal static class RpcDataDefaults{
 			var type=value.GetType();
 			if(!type.IsEnum) return null;
 			var convertible=(IConvertible)value;
-			return convertible.GetTypeCode()==TypeCode.UInt64?RpcDataPrimitive.Number(convertible.ToUInt64(null)):RpcDataPrimitive.Number(convertible.ToInt64(null));
+			return convertible.GetTypeCode()==TypeCode.UInt64
+				       ?new RpcDataPrimitive(convertible.ToUInt64(null))
+				       :new RpcDataPrimitive(convertible.ToInt64(null));
 		}
 
-		public static object To(RpcDataPrimitive primitive,Type type){
-			if(!type.IsEnum) return RpcDataPrimitive.ContinueWithNext;
+		public static object? To(RpcDataPrimitive primitive,Type type){
+			if(!type.IsEnum) return ContinueWithNext;
 
-			if(primitive.IsString(out var s)){
-#if NETFRAMEWORK
-				try{
-					return Enum.Parse(type,s,true);
-				} catch(ArgumentException){
-					return RpcDataPrimitive.ContinueWithNext;
-				} catch(OverflowException){
-					return RpcDataPrimitive.ContinueWithNext;
-				}
-#else
-			return Enum.TryParse(type,s,true,out var result)?result!:RpcDataPrimitive.ContinueWithNext;
-#endif
-			}
-			if(primitive.TryTo(type.GetEnumUnderlyingType(),out var number))
-				return Enum.ToObject(type,number!);
-			return RpcDataPrimitive.ContinueWithNext;
+			if(primitive.IsString(out var s)) return StringEnum.TryParseEnum(type,s,out var result)?result:ContinueWithNext;
+			if(primitive.TryTo(type.GetEnumUnderlyingType(),out var number)) return Enum.ToObject(type,number!);
+			return ContinueWithNext;
 		}
 
 		public static string? Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics){
@@ -327,19 +329,46 @@ internal static class RpcDataDefaults{
 	private static class ObjectTemplates{
 		public static RpcDataPrimitive? From(object value,Dictionary<object,RpcDataPrimitive> already){
 			if(value is not ObjectTemplateBase template) return null;
-			return already[template]=RpcDataPrimitive.Object(()=>template.GetProperties().Select(t=>(t.key,RpcDataPrimitive.From(t.value,already))));
+			return already[template]=new RpcDataPrimitive(()=>template.GetProperties().Select(t=>(t.key,RpcDataPrimitive.From(t.value,already))));
 		}
 
 		public static object? To(RpcDataPrimitive primitive,Type type){
-			if(!typeof(ObjectTemplateBase).IsAssignableFrom(type)) return RpcDataPrimitive.ContinueWithNext;
+			if(!typeof(ObjectTemplateBase).IsAssignableFrom(type)) return ContinueWithNext;
 			if(primitive.IsNull()) return null;
 			if(primitive.IsAlready(type,out var already)) return already;
-			if(!primitive.IsObject(out var entries)) return RpcDataPrimitive.ContinueWithNext;
+			if(!primitive.IsObject(out var entries)) return ContinueWithNext;
 
 			var o=(ObjectTemplateBase)Activator.CreateInstance(type)!;
 			foreach(var (k,v) in entries)
 				if(!o.TrySetProperty(k,v,false))
-					return RpcDataPrimitive.ContinueWithNext;
+					return ContinueWithNext;
+			return o;
+		}
+
+		public static string? Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics){
+			if(type.IsEnum) return RpcDataTypeStringifier.TypeName(type,generics);
+			return null;
+		}
+	}
+
+	private static class Delegates{
+
+		public static FromFuncMaybe From(WriteFunc writer)=>(value,already)=>{
+			if(value is not Delegate func) return null;
+			var rpcFunction=RpcFunction.RegisterFunction(func);
+			return already[func]=new RpcDataPrimitive(rpcFunction,writer,()=>RpcFunction.UnregisterFunction(func));
+		};
+
+		public static object? To(RpcDataPrimitive primitive,Type type){
+			if(!typeof(ObjectTemplateBase).IsAssignableFrom(type)) return ContinueWithNext;
+			if(primitive.IsNull()) return null;
+			if(primitive.IsAlready(type,out var already)) return already;
+			if(!primitive.IsObject(out var entries)) return ContinueWithNext;
+
+			var o=(ObjectTemplateBase)Activator.CreateInstance(type)!;
+			foreach(var (k,v) in entries)
+				if(!o.TrySetProperty(k,v,false))
+					return ContinueWithNext;
 			return o;
 		}
 

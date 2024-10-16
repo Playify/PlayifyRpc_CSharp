@@ -40,8 +40,7 @@ internal static class ListenAllCalls{
 			};
 
 			try{
-				var already=new Dictionary<int,object>();
-				msg["args"]=clone.ReadArray(already1=>DynamicData.Read(clone,already1),already)??[];
+				msg["args"]=RpcDataPrimitive.ReadArray(clone);
 			} catch(Exception e){
 				msg["argsError"]=e;
 			}
@@ -53,24 +52,26 @@ internal static class ListenAllCalls{
 		}
 	}
 
-	internal static Action? Broadcast(string? type,string? method,object?[] args){
+	internal static Action? Broadcast(string? type,string? method,RpcDataPrimitive[] args){
 		lock(Listening){
 			if(Listening.Count==0) return null;
 
 			var buff=new DataOutputBuff();
-			var toFree=new List<object>();
+			var toFree=new List<Action>();
 
 			try{
-				var writeAlready=new Dictionary<object,int>();
-				buff.WriteArray(args,(d,already)=>DynamicData.Write(buff,d,already),writeAlready);
-				toFree.AddRange(writeAlready.Keys.Where(DynamicData.NeedsFreeing));
+				var already=new Dictionary<RpcDataPrimitive,int>();
+				buff.WriteArray(args,d=>d.Write(buff,already));
+				foreach(var key in already.Keys)
+					if(key.IsDisposable(out var action))
+						toFree.Add(action);
 			} catch(Exception){
 				Broadcast(type,method,(byte[]?)null);
 				return null;
 			}
 
 			Broadcast(type,method,buff.ToByteArray());
-			return ()=>DynamicData.Free(toFree);
+			return ()=>toFree.ForEach(a=>a());
 		}
 	}
 

@@ -14,7 +14,7 @@ internal class PendingCallRawData:SendReceive{
 	public override bool Finished=>TaskCompletionSource.Task.IsCompleted;
 	public override Task<object?> Task=>TaskCompletionSource.Task;
 
-	public override void SendMessage(params object?[] args){
+	public override void SendMessage(params RpcDataPrimitive[] args){
 		if(Finished) return;
 		SendFunc?.Invoke(args);
 	}
@@ -26,7 +26,7 @@ internal class PendingCallRawData:SendReceive{
 }
 
 [PublicAPI]
-public abstract class PendingCall:SendReceive{
+public abstract class PendingCall:SendReceive{//TODO check return type
 	public void Cancel()=>_rawData.SendCancel();
 
 	public PendingCall WithCancellation(CancellationToken token){
@@ -43,7 +43,7 @@ public abstract class PendingCall:SendReceive{
 	private protected PendingCall(PendingCallRawData rawData)=>_rawData=rawData;
 	private protected PendingCall(PendingCall other)=>_rawData=other._rawData;
 
-	internal void Resolve(object? o)=>_rawData.TaskCompletionSource.TrySetResult(o);
+	internal void Resolve(RpcDataPrimitive o)=>_rawData.TaskCompletionSource.TrySetResult(o);
 	internal void Reject(Exception e)=>_rawData.TaskCompletionSource.TrySetException(e is RpcException rpc?rpc.Unfreeze():e);
 	#endregion
 
@@ -51,11 +51,11 @@ public abstract class PendingCall:SendReceive{
 	public override bool Finished=>_rawData.Finished;
 	public override Task<object?> Task=>_rawData.Task;
 
-	public override void SendMessage(params object?[] args)=>_rawData.SendMessage(args);
+	public override void SendMessage(params RpcDataPrimitive[] args)=>_rawData.SendMessage(args);
 
 	public override void AddMessageListener(MessageFunc a)=>_rawData.AddMessageListener(a);
 
-	internal override void DoReceiveMessage(object?[] args)=>_rawData.DoReceiveMessage(args);
+	internal override void DoReceiveMessage(RpcDataPrimitive[] args)=>_rawData.DoReceiveMessage(args);
 	#endregion
 
 	#region Task

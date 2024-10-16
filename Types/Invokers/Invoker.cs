@@ -11,7 +11,7 @@ namespace PlayifyRpc.Types.Invokers;
 public abstract class Invoker{
 	private static readonly ThreadLocal<string?> MetaCallType=new();
 
-	protected internal object? Invoke(string? type,string? method,object?[] args){
+	protected internal object? Invoke(string? type,string? method,RpcDataPrimitive[] args){
 		if(method!=null) return DynamicInvoke(type,method,args);
 
 		var meta=args.Length<1?null:RpcDataPrimitive.Cast<string>(args[0]);
@@ -37,7 +37,7 @@ public abstract class Invoker{
 	}
 
 
-	protected abstract object? DynamicInvoke(string? type,string method,object?[] args);
+	protected abstract object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args);
 	protected abstract ValueTask<string[]> GetMethods();
 
 	protected virtual ValueTask<string> GetRpcVersion(){
@@ -48,8 +48,8 @@ public abstract class Invoker{
 	protected abstract ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts);
 
 
-	protected internal PendingCall Call(string type,string? method,object?[] args)=>CallLocal(()=>Invoke(type,method,args),type,method,args);
-	protected internal PendingCall<T> Call<T>(string type,string method,object?[] args)=>Call(type,method,args).Cast<T>();
+	protected internal PendingCall Call(string type,string? method,RpcDataPrimitive[] args)=>CallLocal(()=>Invoke(type,method,args),type,method,args);
+	protected internal PendingCall<T> Call<T>(string type,string method,RpcDataPrimitive[] args)=>Call(type,method,args).Cast<T>();
 
 	internal static PendingCall CallLocal(Action a)
 		=>CallLocal(()=>{
@@ -64,7 +64,7 @@ public abstract class Invoker{
 	internal static PendingCall CallLocal(Func<object?> a)=>CallLocal(a,null,null,null);
 	internal static PendingCall<T> CallLocal<T>(Func<object?> a)=>CallLocal(a).Cast<T>();
 
-	private static PendingCall CallLocal(Func<object?> a,string? type,string? method,object?[]? args){
+	private static PendingCall CallLocal(Func<object?> a,string? type,string? method,RpcDataPrimitive[]? args){
 		var truth=new PendingCallRawData();
 		var context=new FunctionCallContext(type,
 			method,
@@ -83,7 +83,7 @@ public abstract class Invoker{
 		return call;
 	}
 
-	private static async Task TaskToCall(Task<object?> task,PendingCall call){
+	private static async Task TaskToCall(Task<RpcDataPrimitive> task,PendingCall call){
 		try{
 			call.Resolve(await task);
 		} catch(Exception e){

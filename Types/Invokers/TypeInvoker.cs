@@ -36,7 +36,7 @@ public class TypeInvoker:Invoker{
 		type.RunClassConstructor();
 	}
 
-	protected sealed override object? DynamicInvoke(string? type,string method,object?[] args){
+	protected sealed override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args){
 		try{
 			return _type.InvokeMember(method,
 				BindingFlags,

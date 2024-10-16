@@ -10,7 +10,7 @@ public abstract class ObjectTemplateLenient:ObjectTemplateBase{
 
 	public override bool TrySetProperty(string key,object? value,bool throwOnError){
 		if(TrySetReflectionProperty(key,value,throwOnError).TryGet(out var b)) return b;
-		if(DynamicCaster.TryCast(value,out object? newValue,false)) value=newValue;
+		if(RpcDataPrimitive.TryCast(value,out object? newValue,false)) value=newValue;
 		if(throwOnError) _extraProps.Add(key,value);
 		else _extraProps[key]=value;
 		return true;
@@ -27,7 +27,7 @@ public abstract class ObjectTemplateLenient<T>:ObjectTemplateBase{
 
 	public override bool TrySetProperty(string key,object? value,bool throwOnError){
 		if(TrySetReflectionProperty(key,value,throwOnError).TryGet(out var b)) return b;
-		if(!DynamicCaster.TryCast(value,out T newValue,throwOnError)) return false;
+		if(!RpcDataPrimitive.TryCast(value,out T newValue,throwOnError)) return false;
 		if(throwOnError) _extraProps.Add(key,newValue);
 		else _extraProps[key]=newValue;
 		return true;

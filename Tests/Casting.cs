@@ -15,8 +15,8 @@ public class Casting{
 
 	[Test]
 	public void General()=>Assert.Multiple(()=>{
-		Assert.That(RpcDataPrimitive.Number(1ul),Is.EqualTo(RpcDataPrimitive.Number(1)));
-		Assert.That(RpcDataPrimitive.String("Q"),Is.EqualTo(RpcDataPrimitive.String('Q')));
+		Assert.That(new RpcDataPrimitive(1ul),Is.EqualTo(new RpcDataPrimitive(1)));
+		Assert.That(new RpcDataPrimitive("Q"),Is.EqualTo(new RpcDataPrimitive('Q')));
 		//TODO Assert.That(RpcDataPrimitive.Number(1d),Is.EqualTo(RpcDataPrimitive.Number(1ul)));
 	});
 
@@ -63,7 +63,7 @@ public class Casting{
 	public void Enums()=>Assert.Multiple(()=>{
 		Assert.That(RpcDataPrimitive.Cast<ByteEnum>(IntEnum.Small),Is.EqualTo(ByteEnum.Small));
 		Assert.That(RpcDataPrimitive.Cast<IntEnum>(ByteEnum.Small),Is.EqualTo(IntEnum.Small));
-		Assert.That(RpcDataPrimitive.From(new StringEnum<ByteEnum>(ByteEnum.Small)),Is.EqualTo(RpcDataPrimitive.String(nameof(ByteEnum.Small))));
+		Assert.That(RpcDataPrimitive.From(new StringEnum<ByteEnum>(ByteEnum.Small)),Is.EqualTo(new RpcDataPrimitive(nameof(ByteEnum.Small))));
 		Assert.That(RpcDataPrimitive.Cast<int>(IntEnum.Big),Is.EqualTo(500));
 
 		Assert.That(()=>RpcDataPrimitive.Cast<ByteEnum>(IntEnum.Big),Throws.TypeOf<InvalidCastException>());

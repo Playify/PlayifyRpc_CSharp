@@ -16,8 +16,7 @@ internal abstract class AnyConnection{
 			var buff=new DataOutputBuff();
 			buff.WriteByte((byte)PacketType.FunctionSuccess);
 			buff.WriteLength(callId);
-			var already=new Dictionary<object,int>();
-			DynamicData.Write(buff,result,already);
+			RpcDataPrimitive.From(result).Write(buff,new Dictionary<RpcDataPrimitive,int>());
 			await SendRaw(buff);
 		} finally{
 			RespondedToCallId(callId);

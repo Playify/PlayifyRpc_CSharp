@@ -201,7 +201,7 @@ internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		try{
 			var method=data.ReadString();
 
-			var args=data.ReadArray(already=>DynamicData.Read(data,already),new Dictionary<int,object>())??[];
+			var args=RpcDataPrimitive.ReadArray(data);
 
 			try{
 				var result=await FunctionCallContext.RunWithContextAsync(()=>connection._invoker.Invoke(null!,method,args),null!,null,method,args);

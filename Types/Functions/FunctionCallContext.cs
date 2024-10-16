@@ -9,7 +9,7 @@ using PlayifyUtility.Streams.Data;
 
 namespace PlayifyRpc.Types.Functions;
 
-public delegate void MessageFunc(params object?[] args);
+public delegate void MessageFunc(params RpcDataPrimitive[] args);
 
 [PublicAPI]
 public class FunctionCallContext:SendReceive{
@@ -19,12 +19,12 @@ public class FunctionCallContext:SendReceive{
 	private readonly CancellationTokenSource _cts=new();
 	private readonly MessageFunc _send;
 	private readonly Func<Task<string>> _caller;
-	private readonly TaskCompletionSource<object?> _tcs;
+	private readonly TaskCompletionSource<RpcDataPrimitive> _tcs;
 	public readonly string? Method;
 
 	public readonly string? Type;
 
-	internal FunctionCallContext(string? type,string? method,MessageFunc send,TaskCompletionSource<object?> tcs,Func<Task<string>> caller){
+	internal FunctionCallContext(string? type,string? method,MessageFunc send,TaskCompletionSource<RpcDataPrimitive> tcs,Func<Task<string>> caller){
 		Type=type;
 		Method=method;
 		_send=send;
@@ -33,7 +33,7 @@ public class FunctionCallContext:SendReceive{
 	}
 
 	public override bool Finished=>_tcs.Task.IsCompleted;
-	public override Task<object?> Task=>_tcs.Task;
+	public override Task<RpcDataPrimitive> Task=>_tcs.Task;
 
 	public CancellationToken CancellationToken=>_cts.Token;
 	public void CancelSelf()=>_cts.Cancel();
@@ -41,12 +41,14 @@ public class FunctionCallContext:SendReceive{
 	public Task<string> GetCaller()=>_caller();
 
 
-	public override void SendMessage(params object?[] args)=>_send(args);
+	public override void SendMessage(params RpcDataPrimitive[] args)=>_send(args);
 
 
 	internal static PendingCall<T> CallFunction<T>(string? type,string? method,params object?[] args)=>CallFunction(type,method,args).Cast<T>();
 
-	internal static PendingCall CallFunction(string? type,string? method,params object?[] args){
+	internal static PendingCall CallFunction(string? type,string? method,params object?[] args)=>CallFunction(type,method,RpcDataPrimitive.FromArray(args));
+
+	internal static PendingCall CallFunction(string? type,string? method,params RpcDataPrimitive[] args){
 		if(type!=null){
 			Invoker? local;
 			lock(RegisteredTypes.Registered)
@@ -64,8 +66,8 @@ public class FunctionCallContext:SendReceive{
 
 		var call=new PendingCall<object?>(truth);
 
-		var toFree=new List<object>();
-		call.Finally(()=>DynamicData.Free(toFree));
+		var toFree=new List<Action>();
+		call.Finally(()=>toFree.ForEach(a=>a()));
 
 		var buff=new DataOutputBuff();
 		int callId;
@@ -76,9 +78,11 @@ public class FunctionCallContext:SendReceive{
 			buff.WriteString(type);
 			buff.WriteString(method);
 			var len=buff.GetBufferAndLength().len;
-			var writeAlready=new Dictionary<object,int>();
-			buff.WriteArray(args,(d,already)=>DynamicData.Write(buff,d,already),writeAlready);
-			toFree.AddRange(writeAlready.Keys.Where(DynamicData.NeedsFreeing));
+			var already=new Dictionary<RpcDataPrimitive,int>();
+			buff.WriteArray(args,d=>d.Write(buff,already));
+			foreach(var key in already.Keys)
+				if(key.IsDisposable(out var action))
+					toFree.Add(action);
 
 			ListenAllCalls.Broadcast(type,method,buff,len);
 		} catch(Exception e){
@@ -96,9 +100,11 @@ public class FunctionCallContext:SendReceive{
 			var msg=new DataOutputBuff();
 			msg.WriteByte((byte)PacketType.MessageToExecutor);
 			msg.WriteLength(callId);
-			var writeAlready=new Dictionary<object,int>();
-			buff.WriteArray(msgArgs,(d,already)=>DynamicData.Write(buff,d,already),writeAlready);
-			toFree.AddRange(writeAlready.Keys.Where(DynamicData.NeedsFreeing));
+			var already=new Dictionary<RpcDataPrimitive,int>();
+			buff.WriteArray(msgArgs,d=>d.Write(buff,already));
+			foreach(var key in already.Keys)
+				if(key.IsDisposable(out var action))
+					toFree.Add(action);
 
 			connection.SendRaw(msg);
 		};
@@ -132,7 +138,7 @@ public class FunctionCallContext:SendReceive{
 		}
 	}
 
-	internal static async Task<object?> RunWithContextAsync(Func<object?> func,FunctionCallContext context,string? type,string? method,object?[]? args){
+	internal static async Task<object?> RunWithContextAsync(Func<object?> func,FunctionCallContext context,string? type,string? method,RpcDataPrimitive[]? args){
 #pragma warning disable CS1998// Async method lacks 'await' operators and will run synchronously
 		object? result=System.Threading.Tasks.Task.Run(async ()=>RunWithContext(func,context));
 #pragma warning restore CS1998// Async method lacks 'await' operators and will run synchronously

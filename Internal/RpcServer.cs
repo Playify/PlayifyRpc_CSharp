@@ -69,7 +69,7 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	}
 
 	#region Clones from Rpc class
-	public static Task<object?> CallFunction(string type,string method,params object?[] args){
+	public static Task<object?> CallFunction(string type,string method,params RpcDataPrimitive[] args){
 		var ctx=Rpc.GetContext();
 		var call=Rpc.CallFunction(type,method,args)
 		            .WithCancellation(ctx.CancellationToken);

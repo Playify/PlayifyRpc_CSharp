@@ -45,7 +45,7 @@ internal class ServerInvoker:Invoker{
 	private void Unregister(params string[] types)=>_connection.Unregister(types,true);
 
 
-	protected override object? DynamicInvoke(string? type,string method,object?[] args){
+	protected override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args){
 		foreach(var (name,i,@delegate) in _methods)
 			if(method.Equals(name,StringComparison.OrdinalIgnoreCase)
 			   &&(!i.TryGet(out var argCount)||argCount==args.Length))

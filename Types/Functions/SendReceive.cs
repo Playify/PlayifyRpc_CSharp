@@ -1,17 +1,18 @@
 ﻿using System.Threading.Tasks.Dataflow;
+using PlayifyRpc.Internal.Data;
 using static PlayifyRpc.Internal.Data.RpcDataPrimitive;
 
 namespace PlayifyRpc.Types.Functions;
 
-public abstract class SendReceive:IAsyncEnumerable<object?[]>{
-	private readonly HashSet<MessageFunc> _receivers=new();
-	private List<object?[]>? _initialPending=new();
+public abstract class SendReceive:IAsyncEnumerable<RpcDataPrimitive[]>{
+	private readonly HashSet<MessageFunc> _receivers=[];
+	private List<RpcDataPrimitive[]>? _initialPending=[];
 
 	public abstract bool Finished{get;}
 	public abstract Task<object?> Task{get;}
 
-	public async IAsyncEnumerator<object?[]> GetAsyncEnumerator(CancellationToken cancelToken=new()){
-		var receive=new BufferBlock<object?[]>();
+	public async IAsyncEnumerator<RpcDataPrimitive[]> GetAsyncEnumerator(CancellationToken cancelToken=new()){
+		var receive=new BufferBlock<RpcDataPrimitive[]>();
 
 		AddMessageListener(msg=>receive.Post(msg));
 		// ReSharper disable once MethodSupportsCancellation
@@ -24,7 +25,8 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 		await receive.Completion.ConfigureAwait(false);// Propagate possible exception
 	}
 
-	public abstract void SendMessage(params object?[] args);
+	public void SendMessage(params object?[] args)=>SendMessage(FromArray(args));
+	public abstract void SendMessage(params RpcDataPrimitive[] args);
 
 	public void AddMessageListener<T1>(Action<T1> a)=>AddMessageListener(args=>a(Cast<T1>(args[0])));
 
@@ -49,7 +51,7 @@ public abstract class SendReceive:IAsyncEnumerable<object?[]>{
 	}
 
 
-	internal virtual void DoReceiveMessage(object?[] args){
+	internal virtual void DoReceiveMessage(RpcDataPrimitive[] args){
 		if(Finished) return;
 
 		MessageFunc[] list;

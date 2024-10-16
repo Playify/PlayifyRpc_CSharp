@@ -66,6 +66,9 @@
 		<Compile Update="Internal\Data\RpcDataPrimitive.To.cs">
 			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
 		</Compile>
+		<Compile Update="Internal\Data\RpcDataPrimitive.Serialisation.cs">
+			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

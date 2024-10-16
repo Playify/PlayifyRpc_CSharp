@@ -7,12 +7,12 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Internal.Data;
 
 public static class RpcDataTypeStringifier{
-	public static readonly Dictionary<Type,TypedDelegate> ToStringDictionary=new();
-	public static readonly List<GeneralDelegate> ToStringList=[];
+	public static readonly Dictionary<Type,KnownFunc> ToStringDictionary=new();
+	public static readonly List<UnknownFunc> ToStringList=[];
 
-	public delegate string TypedDelegate(bool typescript,string[] generics);
+	public delegate string KnownFunc(bool typescript,string[] generics);
 
-	public delegate string? GeneralDelegate(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics);
+	public delegate string? UnknownFunc(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics);
 
 	static RpcDataTypeStringifier(){
 		RpcSetupAttribute.LoadAll();
@@ -80,8 +80,9 @@ public static class RpcDataTypeStringifier{
 			if(s!=null) return s+suffix;
 		}
 
-		if(typescript) return $"unknwon{suffix} /*{TypeName(type,generics).Replace("/*","/#").Replace("*/","#/")}*/";
-		return $"Unknown<{TypeName(type,generics)}>{suffix}";
+		return typescript
+			       ?$"unknwon{suffix} /*{TypeName(type,generics).Replace("/*","/#").Replace("*/","#/")}*/"
+			       :$"Unknown<{TypeName(type,generics)}>{suffix}";
 	}
 
 
@@ -93,7 +94,7 @@ public static class RpcDataTypeStringifier{
 		return name.Substring(0,genericIndex)+"<"+generics.Join(",")+">";
 	}
 
-	public static string Parameter(bool typescript,string type,string? name){
+	internal static string Parameter(bool typescript,string type,string? name){
 		if(name==null) return type;
 		if(type=="") return name;
 		if(type=="null"||type[0] is '"' or '\''||double.TryParse(type,out _)) return type;//Constant value

@@ -17,7 +17,7 @@ public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>
 	public IEnumerator<KeyValuePair<string,Delegate>> GetEnumerator()=>Dictionary.GetEnumerator();
 	IEnumerator IEnumerable.GetEnumerator()=>Dictionary.GetEnumerator();
 
-	protected override object? DynamicInvoke(string? type,string method,object?[] args){
+	protected override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args){
 		if(!Dictionary.TryGetValue(method,out var @delegate)){
 			@delegate=Dictionary.FirstOrNull(p=>p.Key.Equals(method,StringComparison.OrdinalIgnoreCase))?.Value;
 

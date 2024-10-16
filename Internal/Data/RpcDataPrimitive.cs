@@ -1,23 +1,18 @@
 using System.Globalization;
-using System.Text;
-using PlayifyRpc.Types.Exceptions;
+using JetBrains.Annotations;
 using PlayifyUtility.Jsons;
-using PlayifyUtility.Streams.Data;
+using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
 
+[PublicAPI]
 public readonly partial struct RpcDataPrimitive{
+	public static readonly object ContinueWithNext=new();
 
 	#region Data
 	private readonly object? _data;
 	private readonly List<object?>? _already;
-
-	private RpcDataPrimitive(object? data,bool addAlready=false){
-		_data=data;
-		_already=addAlready?[]:null;
-	}
-
 	public override bool Equals(object? obj)=>obj is RpcDataPrimitive other&&this==other;
 	public override int GetHashCode()=>_data?.GetHashCode()??0;
 	public static bool operator !=(RpcDataPrimitive left,RpcDataPrimitive right)=>!(left==right);
@@ -29,7 +24,9 @@ public readonly partial struct RpcDataPrimitive{
 
 		return false;
 	}
+	#endregion
 
+	#region Parse & ToString
 	public override string ToString()=>ToString(true);
 
 	public string ToString(bool pretty){
@@ -47,26 +44,38 @@ public readonly partial struct RpcDataPrimitive{
 			if(!pretty) return "{"+tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(pretty)}").Join(",")+"}";
 			else if((s=tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(pretty)}").Join(",\n"))=="") return "{}";
 			else return "{\n\t"+s.Replace("\n","\t\n")+"\n}";
-		if(IsCustom(out object custom)) return custom.ToString()??"";
+		if(IsCustom(out object custom)) return custom.ToString();
 
 		return $"<<Invalid: {_data} of type {RpcDataTypeStringifier.FromType(_data?.GetType()??typeof(object))}>>";
 	}
 
-	//TODO parse
-
-	public static string Stringify(object? value,bool pretty)=>From(value).ToString(pretty);//TODO remove, use on primitive itself
+	public static RpcDataPrimitive? Parse(string s){
+		switch(s){
+			case "":return null;
+			case "null":return new RpcDataPrimitive();
+			case "true":return new RpcDataPrimitive(true);
+			case "false":return new RpcDataPrimitive(false);
+		}
+		if(int.TryParse(s,out var i)) return new RpcDataPrimitive(i);
+		if(double.TryParse(s,out var d)) return new RpcDataPrimitive(d);
+		if(s[0]=='"'&&JsonString.TryUnescape(s,out var asString)) return new RpcDataPrimitive(asString);
+		if(Json.ParseOrNull(s) is{} json) return From(json);
+		return null;
+	}
 	#endregion
 
-
 	#region Null
-	public static readonly RpcDataPrimitive Null=new(null);
+	public RpcDataPrimitive(){
+		_data=null;
+	}
 
 	public bool IsNull()=>_data==null;
 	#endregion
 
 	#region Boolean
-	public static readonly RpcDataPrimitive True=new(true);
-	public static readonly RpcDataPrimitive False=new(false);
+	public RpcDataPrimitive(bool @bool){
+		_data=@bool;
+	}
 
 	public bool IsBool(out bool b){
 		if(_data is bool bb){
@@ -86,12 +95,18 @@ public readonly partial struct RpcDataPrimitive{
 	public static RpcDataPrimitive Number(ushort n)=>new(n);
 	public static RpcDataPrimitive Number(int n)=>new(n);
 	public static RpcDataPrimitive Number(uint n)=>new(n);*/
-	public static RpcDataPrimitive Number(long n)=>new(n);
+	public RpcDataPrimitive(long number){
+		_data=number;
+	}
 
-	public static RpcDataPrimitive Number(ulong n)=>new(n<=long.MaxValue?(long)n:n);
+	public RpcDataPrimitive(ulong number){
+		_data=number<=long.MaxValue?(long)number:number;
+	}
 
 	//public static RpcDataPrimitive Number(float n)=>new(n);//use double instead
-	public static RpcDataPrimitive Number(double n)=>new(n);
+	public RpcDataPrimitive(double number){
+		_data=number;
+	}
 
 	//public static RpcDataPrimitive Number(decimal n)=>new(n);//not supported
 
@@ -151,8 +166,13 @@ public readonly partial struct RpcDataPrimitive{
 	#endregion
 
 	#region String
-	public static RpcDataPrimitive String(string s)=>new(s);
-	public static RpcDataPrimitive String(char c)=>new(c);
+	public RpcDataPrimitive(string @string){
+		_data=@string;
+	}
+
+	public RpcDataPrimitive(char @char){
+		_data=@char;
+	}
 
 
 	public bool IsString(out string s){
@@ -200,7 +220,7 @@ public readonly partial struct RpcDataPrimitive{
 		if(_already!=null)
 			foreach(var o in _already)
 				if(type.IsInstanceOfType(o)){
-					value=o;
+					value=o!;
 					return true;
 				}
 		value=default!;
@@ -224,7 +244,10 @@ public readonly partial struct RpcDataPrimitive{
 	#endregion
 
 	#region Array
-	public static RpcDataPrimitive Array(Func<(IEnumerable<RpcDataPrimitive> elements,int count)> e)=>new(e,true);
+	public RpcDataPrimitive(Func<(IEnumerable<RpcDataPrimitive> elements,int count)> array){
+		_data=array;
+		_already=[];
+	}
 
 	public bool IsArray(out IEnumerable<RpcDataPrimitive> arr)=>IsArray(out arr,out _);
 
@@ -240,7 +263,10 @@ public readonly partial struct RpcDataPrimitive{
 	#endregion
 
 	#region Object
-	public static RpcDataPrimitive Object(Func<IEnumerable<(string key,RpcDataPrimitive value)>> e)=>new(e,true);
+	public RpcDataPrimitive(Func<IEnumerable<(string key,RpcDataPrimitive value)>> @object){
+		_data=@object;
+		_already=[];
+	}
 
 
 	public bool IsObject(out IEnumerable<(string key,RpcDataPrimitive value)> entries){
@@ -254,13 +280,14 @@ public readonly partial struct RpcDataPrimitive{
 	#endregion
 
 	#region Custom
-	public static RpcDataPrimitive Custom<T>(T value,Action<DataOutputBuff,T,Dictionary<RpcDataPrimitive,int>> write)
-		=>new(((object?)value,(Action<DataOutputBuff,object,Dictionary<RpcDataPrimitive,int>>)((data,o,already)=>write(data,(T)o,already))));
+	public RpcDataPrimitive(object custom,WriteFunc write,Action? dispose){
+		_data=(custom,write,dispose);
+	}
 
 	public bool IsCustom<T>(out T value)=>IsCustom(out value,out _);
 
-	public bool IsCustom<T>(out T value,out Action<DataOutputBuff,object,Dictionary<RpcDataPrimitive,int>> write){
-		if(_data is ValueTuple<object,Action<DataOutputBuff,object,Dictionary<RpcDataPrimitive,int>>>{Item1: T found} tuple){
+	public bool IsCustom<T>(out T value,out WriteFunc write){
+		if(_data is ValueTuple<object,WriteFunc,Action?>{Item1: T found} tuple){
 			value=found;
 			write=tuple.Item2;
 			return true;
@@ -269,54 +296,11 @@ public readonly partial struct RpcDataPrimitive{
 		write=default!;
 		return false;
 	}
+
+	public bool IsDisposable(out Action a)
+		=>_data is ValueTuple<object,WriteFunc,Action?> tuple
+			  ?tuple.Item3.NotNull(out a!)
+			  :FunctionUtils.TryGetNever(out a!);
 	#endregion
 
-
-	public void Write(DataOutputBuff output,Dictionary<RpcDataPrimitive,int> already){
-		if(IsNull()){
-			output.WriteLength('n');
-		} else if(IsBool(out var b)){
-			output.WriteLength(b?'t':'f');
-		} else if(IsNumber(int.MinValue,int.MaxValue,out var i)){
-			output.WriteLength('i');
-			output.WriteInt((int)i);
-		} else if(IsNumber(long.MinValue,long.MaxValue,out var l)){
-			output.WriteLength('l');
-			output.WriteLong(l);
-		} else if(IsNumber(out var d)){
-			output.WriteLength('d');
-			output.WriteDouble(d);
-		} else if(already.TryGetValue(this,out var index)){
-			output.WriteLength(-((output.Length-index)*4+0));
-		} else{
-			already[this]=output.Length;
-
-			if(IsString(out var s)){
-				var bytes=Encoding.UTF8.GetBytes(s);
-				output.WriteLength(-(bytes.Length*4+1));
-				output.Write(bytes);
-			} else if(IsArray(out var childs,out var length)){
-				output.WriteLength(-(length*4+3));
-				foreach(var child in childs) child.Write(output,already);
-			} else if(IsObject(out var entries)){
-#if NETFRAMEWORK
-				if(entries is ICollection<(string key,RpcDataPrimitive value)> collection) length=collection.Count;
-				else{
-#else
-				if(!entries.TryGetNonEnumeratedCount(out length)){
-#endif
-					var list=entries.ToList();
-					length=list.Count;
-					entries=list;
-				}
-				output.WriteLength(-(length*4+2));
-				foreach(var (key,value) in entries){
-					output.WriteString(key);
-					value.Write(output,already);
-				}
-			} else if(IsCustom(out object custom,out var write)){
-				write(output,custom,already);
-			} else throw new RpcDataException("Primitive can't be written: "+this,null);
-		}
-	}
 }

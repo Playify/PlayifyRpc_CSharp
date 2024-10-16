@@ -88,7 +88,7 @@ public partial class RpcException{
 		return this;
 	}
 
-	public RpcException Append(string? type,string? method,object?[]? args)
+	public RpcException Append(string? type,string? method,RpcDataPrimitive[]? args)
 		=>Append(args==null
 			         ?"<<"+nameof(Rpc.CallLocal)+">>"
 			         :(type??"<<null>>")+"."+(method??"<<null>>")+"("+

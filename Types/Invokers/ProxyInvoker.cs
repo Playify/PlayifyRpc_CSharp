@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
 
 namespace PlayifyRpc.Types.Invokers;
@@ -11,9 +12,9 @@ public class ProxyInvoker:Invoker{
 	public ProxyInvoker(Func<RpcObject> @object)=>_object=()=>Task.Run(@object);
 	public ProxyInvoker(RpcObject @object)=>_object=()=>Task.FromResult(@object);
 
-	protected override object DynamicInvoke(string? type,string method,object?[] args)=>InvokeAsync(type,method,args);
+	protected override object DynamicInvoke(string? type,string method,RpcDataPrimitive[] args)=>InvokeAsync(type,method,args);
 
-	private async Task<object?> InvokeAsync(string? type,string method,object?[] args){
+	private async Task<object?> InvokeAsync(string? type,string method,RpcDataPrimitive[] args){
 		var ctx=Rpc.GetContext();
 
 		try{
