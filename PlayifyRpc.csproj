@@ -69,6 +69,15 @@
 		<Compile Update="Internal\Data\RpcDataPrimitive.Serialisation.cs">
 			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
 		</Compile>
+		<Compile Update="Types\Exceptions\RpcException.Attribute.cs">
+			<DependentUpon>RpcException.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Types\Exceptions\RpcException.Data.cs">
+			<DependentUpon>RpcException.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Types\Exceptions\RpcException.Extensions.cs">
+			<DependentUpon>RpcException.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

@@ -204,7 +204,8 @@ internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			var args=RpcDataPrimitive.ReadArray(data);
 
 			try{
-				var result=await FunctionCallContext.RunWithContextAsync(()=>connection._invoker.Invoke(null!,method,args),null!,null,method,args);
+				var obj=await FunctionCallContext.RunWithContextAsync(()=>connection._invoker.Invoke(null!,method,args),null!,null,method,args);
+				var result=RpcDataPrimitive.From(obj);
 				await connection.Resolve(callId,result);
 			} catch(Exception e){
 				await connection.Reject(callId,e);

@@ -9,7 +9,7 @@ public abstract class SendReceive:IAsyncEnumerable<RpcDataPrimitive[]>{
 	private List<RpcDataPrimitive[]>? _initialPending=[];
 
 	public abstract bool Finished{get;}
-	public abstract Task<object?> Task{get;}
+	public abstract Task<RpcDataPrimitive> Task{get;}
 
 	public async IAsyncEnumerator<RpcDataPrimitive[]> GetAsyncEnumerator(CancellationToken cancelToken=new()){
 		var receive=new BufferBlock<RpcDataPrimitive[]>();

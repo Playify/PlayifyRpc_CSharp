@@ -14,7 +14,8 @@ namespace PlayifyRpc.Types.Exceptions;
 public partial class RpcException{
 	private static readonly List<string> HiddenMethods=[
 		$"{typeof(FunctionCallContext).FullName}.{nameof(FunctionCallContext.RunWithContextAsync)}(",
-		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.DoCast)}[",
+		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.ToTask)}(",
+		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.ToTask)}[",
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalObject)}(",
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalString)}(",
 		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleRequest)}(",

@@ -14,7 +14,7 @@ public partial class DynamicBinder{
 			                       BindingFlags.Static|
 			                       BindingFlags.Instance|
 			                       BindingFlags.InvokeMethod;
-			return func.Method.DeclaringType!.InvokeMember(func.Method.Name,all,Instance,func.Target,args,null!);
+			return func.Method.DeclaringType!.InvokeMember(func.Method.Name,all,Instance,func.Target,args.Cast<object>().ToArray(),null!);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
@@ -42,7 +42,7 @@ public partial class DynamicBinder{
 			                       BindingFlags.Static|
 			                       BindingFlags.Instance|
 			                       BindingFlags.InvokeMethod;
-			return func.Method.DeclaringType!.InvokeMember(func.Method.Name,all,Instance,func.Target,args,null!);
+			return func.Method.DeclaringType!.InvokeMember(func.Method.Name,all,Instance,func.Target,args.Cast<object>().ToArray(),null!);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){

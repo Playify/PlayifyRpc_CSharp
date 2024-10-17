@@ -42,7 +42,7 @@ public class TypeInvoker:Invoker{
 				BindingFlags,
 				DynamicBinder.Instance,
 				_instance,
-				args);
+				args.Cast<object>().ToArray());
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){

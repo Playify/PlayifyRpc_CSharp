@@ -11,12 +11,12 @@ internal abstract class AnyConnection{
 	protected abstract void RespondedToCallId(int callId);
 
 
-	protected async Task Resolve(int callId,object? result){
+	protected async Task Resolve(int callId,RpcDataPrimitive result){
 		try{
 			var buff=new DataOutputBuff();
 			buff.WriteByte((byte)PacketType.FunctionSuccess);
 			buff.WriteLength(callId);
-			RpcDataPrimitive.From(result).Write(buff,new Dictionary<RpcDataPrimitive,int>());
+			result.Write(buff,new Dictionary<RpcDataPrimitive,int>());
 			await SendRaw(buff);
 		} finally{
 			RespondedToCallId(callId);

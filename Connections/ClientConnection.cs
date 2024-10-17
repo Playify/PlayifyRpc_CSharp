@@ -115,7 +115,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 					lock(_currentlyExecuting) _currentlyExecuting.Add(callId,context);
 
 					try{
-						var result=await FunctionCallContext.RunWithContextAsync(()=>local.Invoke(type,method,args),context,type,method,args);
+						var obj=await FunctionCallContext.RunWithContextAsync(()=>local.Invoke(type,method,args),context,type,method,args);
+						var result=RpcDataPrimitive.From(obj);
 						tcs.TrySetResult(result);
 						await Resolve(callId,result);
 					} catch(Exception e){//Inner catch handles normal errors, outer catch handles data exceptions

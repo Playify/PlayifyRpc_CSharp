@@ -7,12 +7,12 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Types.Functions;
 
 internal class PendingCallRawData:SendReceive{
-	internal readonly TaskCompletionSource<object?> TaskCompletionSource=new();
+	internal readonly TaskCompletionSource<RpcDataPrimitive> TaskCompletionSource=new();
 	internal Action? CancelFunc;
 	internal MessageFunc? SendFunc;
 
 	public override bool Finished=>TaskCompletionSource.Task.IsCompleted;
-	public override Task<object?> Task=>TaskCompletionSource.Task;
+	public override Task<RpcDataPrimitive> Task=>TaskCompletionSource.Task;
 
 	public override void SendMessage(params RpcDataPrimitive[] args){
 		if(Finished) return;
@@ -41,7 +41,6 @@ public abstract class PendingCall:SendReceive{//TODO check return type
 	private readonly PendingCallRawData _rawData;
 
 	private protected PendingCall(PendingCallRawData rawData)=>_rawData=rawData;
-	private protected PendingCall(PendingCall other)=>_rawData=other._rawData;
 
 	internal void Resolve(RpcDataPrimitive o)=>_rawData.TaskCompletionSource.TrySetResult(o);
 	internal void Reject(Exception e)=>_rawData.TaskCompletionSource.TrySetException(e is RpcException rpc?rpc.Unfreeze():e);
@@ -49,7 +48,7 @@ public abstract class PendingCall:SendReceive{//TODO check return type
 
 	#region SendReceive
 	public override bool Finished=>_rawData.Finished;
-	public override Task<object?> Task=>_rawData.Task;
+	public override Task<RpcDataPrimitive> Task=>_rawData.Task;
 
 	public override void SendMessage(params RpcDataPrimitive[] args)=>_rawData.SendMessage(args);
 
@@ -59,26 +58,22 @@ public abstract class PendingCall:SendReceive{//TODO check return type
 	#endregion
 
 	#region Task
-	protected virtual Task<object?> AsTask()=>_rawData.TaskCompletionSource.Task;
-	public static implicit operator Task<object?>(PendingCall call)=>call.AsTask();
-	public static implicit operator Task(PendingCall call)=>(Task<object?>)call;
-	public TaskAwaiter<object?> GetAwaiter()=>AsTask().GetAwaiter();
+	public static implicit operator Task<object?>(PendingCall call)=>call is PendingCallCasted c?c.ToTask():call.ToTask<object?>();
+	public static implicit operator Task(PendingCall call)=>call.Task;
+	public TaskAwaiter<object?> GetAwaiter()=>ToTask<object?>().GetAwaiter();
 
-	public Task<T> ToTask<T>()=>DoCast<object?,T>(AsTask());
+	public async Task<object?> ToTask(Type t)=>(await Task).To(t);
+	public async Task<T> ToTask<T>()=>(await Task).To<T>();
 
-	public Task Then(Action<object?> a)=>((Task<object?>)this).Then(a);
-	public Task Then<T>(Action<T> a)=>((Task<T>)this).Then(a);
-	public Task<T> Then<T>(Func<object?,T> a)=>((Task<object?>)this).Then(a);
-	public Task<TReturn> Then<T,TReturn>(Func<T,TReturn> a)=>((Task<T>)this).Then(a);
-	public Task Catch(Action<Exception> a)=>((Task<object?>)this).Catch(a);
-	public Task Finally(Action a)=>((Task<object?>)this).ContinueWith(_=>a());
+	public Task Then<T>(Action<T> a)=>ToTask<T>().Then(a);
+	public Task<TReturn> Then<T,TReturn>(Func<T,TReturn> a)=>ToTask<T>().Then(a);
+	public Task Catch(Action<Exception> a)=>Task.Catch(a);
+	public Task Finally(Action a)=>Task.ContinueWith(_=>a());
 	#endregion
 
 	#region Cast
-	public PendingCall<T> Cast<T>()=>this as PendingCall<T>??new PendingCall<T>(this);
-	public PendingCall Cast(Type t)=>new PendingCallCasted(this,t);
-	protected internal static async Task<TTo> DoCast<TFrom,TTo>(Task<TFrom> task)=>RpcDataPrimitive.Cast<TTo>(await task);
-	protected internal static async Task<object?> DoCast<TFrom>(Task<TFrom> task,Type to)=>RpcDataPrimitive.Cast(await task,to);
+	public PendingCall<T> Cast<T>()=>this as PendingCall<T>??new PendingCall<T>(_rawData);
+	public PendingCall Cast(Type t)=>new PendingCallCasted(_rawData,t);
 	#endregion
 }
 
@@ -87,16 +82,11 @@ public class PendingCall<T>:PendingCall{
 	internal PendingCall(PendingCallRawData other):base(other){
 	}
 
-	internal PendingCall(PendingCall other):base(other){
-	}
-
-	protected override Task<object?> AsTask()=>DoCast<T,object?>(ToTask());
-
 	public static implicit operator Task<T>(PendingCall<T> call)=>call.ToTask();
 
-	public Task<T> ToTask()=>DoCast<object?,T>(base.AsTask());
-	public Task Then(Action<T> a)=>((Task<T>)this).Then(a);
-	public Task<TReturn> Then<TReturn>(Func<T,TReturn> a)=>((Task<T>)this).Then(a);
+	public Task<T> ToTask()=>ToTask<T>();
+	public Task Then(Action<T> a)=>ToTask().Then(a);
+	public Task<TReturn> Then<TReturn>(Func<T,TReturn> a)=>ToTask().Then(a);
 
 	public new TaskAwaiter<T> GetAwaiter()=>ToTask().GetAwaiter();
 	public new PendingCall<T> WithCancellation(CancellationToken token)=>(PendingCall<T>)base.WithCancellation(token);
@@ -106,7 +96,10 @@ public class PendingCall<T>:PendingCall{
 public class PendingCallCasted:PendingCall{
 	private readonly Type _type;
 
-	internal PendingCallCasted(PendingCall other,Type type):base(other)=>_type=type;
+	internal PendingCallCasted(PendingCallRawData other,Type type):base(other){
+		_type=type;
+	}
 
-	protected override Task<object?> AsTask()=>DoCast(base.AsTask(),_type);
+	public Task<object?> ToTask()=>ToTask(_type);
+	public static implicit operator Task<object?>(PendingCallCasted call)=>call.ToTask();
 }

@@ -83,9 +83,9 @@ public abstract class Invoker{
 		return call;
 	}
 
-	private static async Task TaskToCall(Task<RpcDataPrimitive> task,PendingCall call){
+	private static async Task TaskToCall(Task<object?> task,PendingCall call){
 		try{
-			call.Resolve(await task);
+			call.Resolve(RpcDataPrimitive.From(await task));
 		} catch(Exception e){
 			call.Reject(e);
 		}
