@@ -15,7 +15,14 @@ public readonly partial struct RpcDataPrimitive{
 
 	public delegate void WriteFunc<in T>(DataOutput data,T value,Dictionary<RpcDataPrimitive,int> already);
 
-	private static readonly Dictionary<char,ReadFunc> ReadByChar=new();
+	private static readonly Dictionary<char,ReadFunc> ReadByChar=new(){
+		{'n',(_,_,_)=>new RpcDataPrimitive()},
+		{'t',(_,_,_)=>new RpcDataPrimitive(true)},
+		{'f',(_,_,_)=>new RpcDataPrimitive(false)},
+		{'i',(input,_,_)=>new RpcDataPrimitive(input.ReadInt())},
+		{'d',(input,_,_)=>new RpcDataPrimitive(input.ReadDouble())},
+		{'l',(input,_,_)=>new RpcDataPrimitive(input.ReadLong())},
+	};
 	private static readonly Dictionary<string,ReadFunc> ReadByString=new();
 
 	public void Write(DataOutputBuff output,Dictionary<RpcDataPrimitive,int> already){

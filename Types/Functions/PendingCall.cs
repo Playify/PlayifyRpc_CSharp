@@ -26,7 +26,7 @@ internal class PendingCallRawData:SendReceive{
 }
 
 [PublicAPI]
-public abstract class PendingCall:SendReceive{//TODO check return type
+public abstract class PendingCall:SendReceive{
 	public void Cancel()=>_rawData.SendCancel();
 
 	public PendingCall WithCancellation(CancellationToken token){

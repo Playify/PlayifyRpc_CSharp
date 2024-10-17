@@ -45,10 +45,12 @@ public class FunctionCallContext:SendReceive{
 
 
 	internal static PendingCall<T> CallFunction<T>(string? type,string? method,params object?[] args)=>CallFunction(type,method,args).Cast<T>();
-
 	internal static PendingCall CallFunction(string? type,string? method,params object?[] args)=>CallFunction(type,method,RpcDataPrimitive.FromArray(args));
 
-	internal static PendingCall CallFunction(string? type,string? method,params RpcDataPrimitive[] args){
+	//TODO maybe expose this everywhere as well
+	internal static PendingCall<T> CallFunction<T>(string? type,string? method,RpcDataPrimitive[] args)=>CallFunction(type,method,args).Cast<T>();
+
+	internal static PendingCall CallFunction(string? type,string? method,RpcDataPrimitive[] args){
 		if(type!=null){
 			Invoker? local;
 			lock(RegisteredTypes.Registered)

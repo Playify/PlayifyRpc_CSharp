@@ -38,12 +38,12 @@ public readonly partial struct RpcDataPrimitive{
 		if(IsString(out var s)) return JsonString.Escape(s);
 		if(IsArray(out var childs,out var len))
 			if(len==0) return "[]";
-			else if(pretty) return $"[\n\t{childs.Join("\n").Replace("\n","\t\n")}\n]";
+			else if(pretty) return $"[\n\t{childs.Join(",\n").Replace("\n","\n\t")}\n]";
 			else return $"[{childs.Join(",")}]";
 		if(IsObject(out var tuples))
 			if(!pretty) return "{"+tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(pretty)}").Join(",")+"}";
 			else if((s=tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(pretty)}").Join(",\n"))=="") return "{}";
-			else return "{\n\t"+s.Replace("\n","\t\n")+"\n}";
+			else return "{\n\t"+s.Replace("\n","\n\t")+"\n}";
 		if(IsCustom(out object custom)) return custom.ToString();
 
 		return $"<<Invalid: {_data} of type {RpcDataTypeStringifier.FromType(_data?.GetType()??typeof(object))}>>";

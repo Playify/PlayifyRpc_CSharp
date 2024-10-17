@@ -4,6 +4,7 @@ using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
@@ -69,14 +70,14 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	}
 
 	#region Clones from Rpc class
-	public static Task<object?> CallFunction(string type,string method,params RpcDataPrimitive[] args){
+	public static Task<RpcDataPrimitive> CallFunction(string type,string method,params RpcDataPrimitive[] args){
 		var ctx=Rpc.GetContext();
-		var call=Rpc.CallFunction(type,method,args)
-		            .WithCancellation(ctx.CancellationToken);
+		var call=FunctionCallContext.CallFunction(type,method,args)
+		                            .WithCancellation(ctx.CancellationToken);
 		call.AddMessageListener(ctx.SendMessage);
 		ctx.AddMessageListener(call.SendMessage);
 
-		return call;
+		return call.Task;
 	}
 
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);

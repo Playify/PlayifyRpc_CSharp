@@ -1,5 +1,6 @@
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
@@ -19,9 +20,9 @@ internal static class Evaluate{
 		if(bracket==-1){
 			if(s.Length==0)
 				return RpcDataPrimitive.From(await Rpc.GetAllTypes());
-			if(s[s.Length-1]!='.')
+			if(s[s.Length-1]=='.')
 				return RpcDataPrimitive.From(await Rpc.CreateObject(s.Substring(0,s.Length-1)).GetMethods());
-			if(s[s.Length-1]!='?')
+			if(s[s.Length-1]=='?')
 				return RpcDataPrimitive.From(await Rpc.CreateObject(s.Substring(0,s.Length-1)).Exists());
 
 			if(s.LastIndexOf('.').Push(out var dotPos)!=-1)
@@ -50,7 +51,7 @@ internal static class Evaluate{
 				} else throw new RpcEvalException("Error parsing arguments");
 			args.Add(obj.Value);
 		}
-		var result=await Rpc.CallFunction<RpcDataPrimitive>(type,method,args.ToArray());
+		var result=await FunctionCallContext.CallFunction<RpcDataPrimitive>(type,method,args.ToArray());
 		foreach(var primitive in args)
 			if(primitive.IsDisposable(out var action))
 				action();
