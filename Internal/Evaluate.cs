@@ -51,7 +51,7 @@ internal static class Evaluate{
 				} else throw new RpcEvalException("Error parsing arguments");
 			args.Add(obj.Value);
 		}
-		var result=await FunctionCallContext.CallFunction<RpcDataPrimitive>(type,method,args.ToArray());
+		var result=await FunctionCallContext.CallFunctionRaw(type,method,args.ToArray());
 		foreach(var primitive in args)
 			if(primitive.IsDisposable(out var action))
 				action();

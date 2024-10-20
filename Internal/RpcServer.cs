@@ -72,12 +72,12 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	#region Clones from Rpc class
 	public static Task<RpcDataPrimitive> CallFunction(string type,string method,params RpcDataPrimitive[] args){
 		var ctx=Rpc.GetContext();
-		var call=FunctionCallContext.CallFunction(type,method,args)
+		var call=FunctionCallContext.CallFunctionRaw(type,method,args)
 		                            .WithCancellation(ctx.CancellationToken);
-		call.AddMessageListener(ctx.SendMessage);
-		ctx.AddMessageListener(call.SendMessage);
+		call.AddMessageListenerRaw(msg=>ctx.SendMessageRaw(msg));
+		ctx.AddMessageListenerRaw(msg=>call.SendMessageRaw(msg));
 
-		return call.Task;
+		return call.TaskRaw;
 	}
 
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);

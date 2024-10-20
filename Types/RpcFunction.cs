@@ -1,10 +1,8 @@
 using JetBrains.Annotations;
 using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Types.Invokers;
-#if NETFRAMEWORK
-using PlayifyUtility.Utils.Extensions;
-#endif
 
 namespace PlayifyRpc.Types;
 
@@ -22,6 +20,9 @@ public readonly struct RpcFunction{
 
 	[PublicAPI]
 	public PendingCall<T> Call<T>(params object?[] args)=>Rpc.CallFunction<T>(Type,Method,args);
+
+	[PublicAPI]
+	public PendingCall<RpcDataPrimitive> CallRaw(RpcDataPrimitive[] args)=>Rpc.CallFunctionRaw(Type,Method,args);
 
 	public async Task<(string[] parameters,string returns)[]> GetMethodSignatures(bool typeScript=false)=>
 		await FunctionCallContext.CallFunction<(string[] parameters,string returns)[]>(Type,null,"S",Method,typeScript);
@@ -50,14 +51,6 @@ public readonly struct RpcFunction{
 			if(StringToFunc.Remove(func.Method,out var del))
 				FuncToString.Remove(del);
 	}
-
-	/*
-	private static void UnregisterAll(){
-		lock(StringToFunc){
-			StringToFunc.Clear();
-			FuncToString.Clear();
-		}
-	}*/
 
 	private static readonly Dictionary<string,Delegate> StringToFunc=new(StringComparer.OrdinalIgnoreCase);
 	private static readonly Dictionary<Delegate,string> FuncToString=new();

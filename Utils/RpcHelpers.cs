@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
@@ -5,6 +6,7 @@ using PlayifyUtility.HelperClasses;
 
 namespace PlayifyRpc.Utils;
 
+[PublicAPI]
 public static class RpcHelpers{
 
 	#region AutoRecall

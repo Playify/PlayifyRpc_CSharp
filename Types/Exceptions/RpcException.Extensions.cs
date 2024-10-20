@@ -5,9 +5,6 @@ using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
-#if NETFRAMEWORK
-using AsyncFriendlyStackTrace;
-#endif
 
 namespace PlayifyRpc.Types.Exceptions;
 
@@ -15,7 +12,6 @@ public partial class RpcException{
 	private static readonly List<string> HiddenMethods=[
 		$"{typeof(FunctionCallContext).FullName}.{nameof(FunctionCallContext.RunWithContextAsync)}(",
 		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.ToTask)}(",
-		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.ToTask)}[",
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalObject)}(",
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalString)}(",
 		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleRequest)}(",
@@ -26,7 +22,7 @@ public partial class RpcException{
 
 		var lines=FixString(
 #if NETFRAMEWORK
-			new StackTrace(e,true).ToAsyncString()
+			AsyncFriendlyStackTrace.StackTraceExtensions.ToAsyncString(new StackTrace(e,true))
 #else
 			new StackTrace(e,true).ToString()
 #endif
@@ -35,7 +31,7 @@ public partial class RpcException{
 			if(line=="") continue;
 			var substring=line.Substring(line.IndexOf(' ')+1);
 			substring=substring.RemoveFromStart("async ");
-			if(!HiddenMethods.Any(substring.StartsWith)) str.Append('\n').Append(line);
+			if(!HiddenMethods.Any(substring.Replace('[','(').StartsWith)) str.Append('\n').Append(line);
 		}
 		return str.ToString();
 	}

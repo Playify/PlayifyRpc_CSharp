@@ -47,8 +47,7 @@ public abstract class Invoker{
 
 	protected abstract ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts);
 
-
-	protected internal PendingCall Call(string type,string? method,RpcDataPrimitive[] args)=>CallLocal(()=>Invoke(type,method,args),type,method,args);
+	protected internal PendingCall<RpcDataPrimitive> Call(string type,string? method,RpcDataPrimitive[] args)=>CallLocal(()=>Invoke(type,method,args),type,method,args);
 	protected internal PendingCall<T> Call<T>(string type,string method,RpcDataPrimitive[] args)=>Call(type,method,args).Cast<T>();
 
 	internal static PendingCall CallLocal(Action a)
@@ -61,33 +60,35 @@ public abstract class Invoker{
 			return null;
 		});
 
-	internal static PendingCall CallLocal(Func<object?> a)=>CallLocal(a,null,null,null);
+	internal static PendingCall<RpcDataPrimitive> CallLocal(Func<object?> a)=>CallLocal(a,null,null,null);
 	internal static PendingCall<T> CallLocal<T>(Func<object?> a)=>CallLocal(a).Cast<T>();
 
-	private static PendingCall CallLocal(Func<object?> a,string? type,string? method,RpcDataPrimitive[]? args){
-		var truth=new PendingCallRawData();
+	private static PendingCall<RpcDataPrimitive> CallLocal(Func<object?> a,string? type,string? method,RpcDataPrimitive[]? args){
+		var rawData=new PendingCallRawData();
 		var context=new FunctionCallContext(type,
 			method,
-			sending=>Task.Run(()=>truth.DoReceiveMessage(sending)).Catch(e=>Rpc.Logger.Warning("Error while handling message: "+e)),
-			truth.TaskCompletionSource,
+			sending=>Task.Run(()=>rawData.MessageQueue.DoReceiveMessage(sending)).Catch(e=>Rpc.Logger.Warning("Error while handling message: "+e)),
+			rawData.TaskCompletionSource,
 			()=>Task.FromResult(Rpc.PrettyName));
 
-		truth.SendFunc=received=>Task.Run(()=>context.DoReceiveMessage(received));
-		truth.CancelFunc=()=>context.CancelSelf();
+		rawData.SendFunc=received=>{
+			if(!rawData.Finished) Task.Run(()=>context.MessageQueue.DoReceiveMessage(received));
+		};
+		rawData.CancelFunc=()=>context.CancelSelf();
 
 
-		var call=new PendingCall<object?>(truth);
+		var call=new PendingCall<RpcDataPrimitive>(rawData);
 
 		var task=FunctionCallContext.RunWithContextAsync(a,context,type,method,args);
-		TaskToCall(task,call).Background();
+		TaskToCall(task,rawData).Background();
 		return call;
 	}
 
-	private static async Task TaskToCall(Task<object?> task,PendingCall call){
+	private static async Task TaskToCall(Task<object?> task,PendingCallRawData rawData){
 		try{
-			call.Resolve(RpcDataPrimitive.From(await task));
+			rawData.Resolve(RpcDataPrimitive.From(await task));
 		} catch(Exception e){
-			call.Reject(e);
+			rawData.Reject(e);
 		}
 	}
 }

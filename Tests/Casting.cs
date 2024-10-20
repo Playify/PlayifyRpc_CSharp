@@ -68,4 +68,6 @@ public class Casting{
 
 		Assert.That(()=>RpcDataPrimitive.Cast<ByteEnum>(IntEnum.Big),Throws.TypeOf<InvalidCastException>());
 	});
+
+	//TODO custom objects
 }

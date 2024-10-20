@@ -15,11 +15,12 @@ public static partial class Rpc{
 	public static void UnregisterFunction(RpcFunction func)=>RpcFunction.UnregisterFunction(func);
 
 	public static PendingCall CallLocal(Action func)=>Invoker.CallLocal(func);
-	public static PendingCall CallLocal(Func<object?> func)=>Invoker.CallLocal(func);
+	public static PendingCall<RpcDataPrimitive> CallLocal(Func<object?> func)=>Invoker.CallLocal(func);
 	public static PendingCall<T> CallLocal<T>(Func<object?> func)=>Invoker.CallLocal<T>(func);
 
 	public static PendingCall CallFunction(string type,string method,params object?[] args)=>FunctionCallContext.CallFunction(type,method,args);
 	public static PendingCall<T> CallFunction<T>(string type,string method,params object?[] args)=>FunctionCallContext.CallFunction<T>(type,method,args);
+	public static PendingCall<RpcDataPrimitive> CallFunctionRaw(string type,string method,RpcDataPrimitive[] args)=>FunctionCallContext.CallFunctionRaw(type,method,args);
 
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
 	public static Task<RpcDataPrimitive> EvalObject(string expression)=>Evaluate.EvalObject(expression);

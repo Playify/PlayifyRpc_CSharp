@@ -12,7 +12,7 @@ internal static class ListenAllCalls{
 	internal static async Task Listen(FunctionCallContext ctx){
 		lock(Listening) Listening.Add(ctx);
 		try{
-			await ctx.Task;
+			await ctx.TaskRaw;
 		} finally{
 			lock(Listening) Listening.Remove(ctx);
 		}

@@ -20,7 +20,10 @@ public readonly partial struct RpcDataPrimitive{
 	}
 
 	public static void Register<T>(FromFunc<T>? from,Func<RpcDataPrimitive,object?> to,RpcDataTypeStringifier.KnownFunc toString)
-		=>Register(typeof(T),from==null?null:(o,p)=>from((T)o,p),(p,_)=>to(p),toString);
+		=>Register(typeof(T),from==null?null:(o,p)=>from((T)o,p),(p,_,_)=>to(p),toString);
+
+	public static void Register<T>(FromFunc<T>? from,Func<RpcDataPrimitive,bool,object?> to,RpcDataTypeStringifier.KnownFunc toString)
+		=>Register(typeof(T),from==null?null:(o,p)=>from((T)o,p),(p,_,throwOnError)=>to(p,throwOnError),toString);
 
 	public static void Register(Type type,FromFunc? from,ToFunc to,RpcDataTypeStringifier.KnownFunc toString){
 		if(from!=null) FromDictionary.Add(type,from);
@@ -31,16 +34,16 @@ public readonly partial struct RpcDataPrimitive{
 	#region Object
 	public static void RegisterObject<T>(
 		Func<T,IEnumerable<(string key,object? value)>> getProps,
-		Func<T,IEnumerable<(string key,RpcDataPrimitive value)>,bool> setProps,
+		Func<T,IEnumerable<(string key,RpcDataPrimitive value)>,bool,bool> setProps,
 		RpcDataTypeStringifier.KnownFunc toString
 	) where T : notnull,new()=>Register<T>(
 		(p,a)=>a[p]=new RpcDataPrimitive(()=>getProps(p).Select(t=>(t.key,From(t.value)))),
-		p=>{
+		(p,throwOnError)=>{
 			if(p.IsNull()&&CanBeNull(typeof(T))) return null;
 			if(p.IsAlready(out T already)) return already;
 			if(!p.IsObject(out var props)) return ContinueWithNext;
 			var obj=p.AddAlready(new T());
-			return setProps(obj,props)?obj:p.RemoveAlready(obj);
+			return setProps(obj,props,throwOnError)?obj:p.RemoveAlready(obj);
 		},
 		toString
 	);

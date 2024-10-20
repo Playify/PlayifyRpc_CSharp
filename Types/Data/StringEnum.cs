@@ -25,11 +25,12 @@ public static class StringEnum{
 	static StringEnum(){
 		RpcDataPrimitive.Register(
 			typeof(StringEnum<>),
-			(o,_)=>new RpcDataPrimitive(o.ToString()),
-			(primitive,type)=>{
-				if(!primitive.IsString(out var s)) return RpcDataPrimitive.ContinueWithNext;
-				if(!TryParseEnum(type.GetGenericArguments()[0],s,out var result)) return RpcDataPrimitive.ContinueWithNext;
-				return Activator.CreateInstance(type,result);
+			(o,_)=>new RpcDataPrimitive(o.ToString()!),
+			(primitive,type,_)=>{
+				if(primitive.IsString(out var s)&&
+				   TryParseEnum(type.GetGenericArguments()[0],s,out var result))
+					return Activator.CreateInstance(type,result);
+				return RpcDataPrimitive.ContinueWithNext;
 			},
 			(_,generics)=>RpcDataTypeStringifier.TypeName(typeof(StringEnum),generics)
 		);

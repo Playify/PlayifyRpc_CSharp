@@ -18,7 +18,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 	internal static Task WaitUntilConnectedLooping=>(_tcs??=new TaskCompletionSource()).Task;
 
-	private readonly Dictionary<int,PendingCall> _activeRequests=new();
+	private readonly Dictionary<int,PendingCallRawData> _activeRequests=new();
 	private readonly Dictionary<int,FunctionCallContext> _currentlyExecuting=new();
 
 	protected static Logger Logger=>Rpc.Logger.WithName("Connection");
@@ -61,7 +61,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	}
 
 
-	internal void SendCall(int callId,PendingCall call,DataOutputBuff buff){
+	internal void SendCall(int callId,PendingCallRawData call,DataOutputBuff buff){
 		lock(_activeRequests) _activeRequests.Add(callId,call);
 		SendRaw(buff).Catch(call.Reject);
 	}
@@ -70,7 +70,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 		lock(_currentlyExecuting) _currentlyExecuting.Remove(callId);
 	}
 
-	protected override async Task Receive(DataInputBuff data){
+	protected async Task Receive(DataInputBuff data){
 		var packetType=(PacketType)data.ReadByte();
 		switch(packetType){
 			case PacketType.FunctionCall:{
@@ -142,7 +142,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 			}
 			case PacketType.FunctionSuccess:{
 				var callId=data.ReadLength();
-				PendingCall? pending;
+				PendingCallRawData? pending;
 				lock(_activeRequests)
 					if(!_activeRequests.Remove(callId,out pending)){
 						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
@@ -158,7 +158,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 			}
 			case PacketType.FunctionError:{
 				var callId=data.ReadLength();
-				PendingCall? pending;
+				PendingCallRawData? pending;
 				lock(_activeRequests)
 					if(!_activeRequests.Remove(callId,out pending)){
 						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
@@ -190,18 +190,18 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 						Logger.Warning($"Invalid State: No CurrentlyExecuting[{callId}] ({packetType})");
 						break;
 					}
-				ctx.DoReceiveMessage(RpcDataPrimitive.ReadArray(data));
+				ctx.MessageQueue.DoReceiveMessage(RpcDataPrimitive.ReadArray(data));
 				break;
 			}
 			case PacketType.MessageToCaller:{
 				var callId=data.ReadLength();
-				PendingCall? pending;
+				PendingCallRawData? pending;
 				lock(_activeRequests)
 					if(!_activeRequests.TryGetValue(callId,out pending)){
 						Logger.Warning($"Invalid State: No ActiveRequest[{callId}] ({packetType})");
 						break;
 					}
-				pending.DoReceiveMessage(RpcDataPrimitive.ReadArray(data));
+				pending.MessageQueue.DoReceiveMessage(RpcDataPrimitive.ReadArray(data));
 				break;
 			}
 			default:throw new ProtocolViolationException("Received invalid rpc-packet");

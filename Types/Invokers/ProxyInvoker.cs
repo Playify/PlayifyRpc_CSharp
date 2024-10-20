@@ -19,10 +19,10 @@ public class ProxyInvoker:Invoker{
 
 		try{
 			var o=await _object();
-			var call=o.CallFunction(method,args)
+			var call=o.CallFunctionRaw(method,args)
 			          .WithCancellation(ctx.CancellationToken);
-			call.AddMessageListener(ctx.SendMessage);
-			ctx.AddMessageListener(call.SendMessage);
+			call.AddMessageListenerRaw(msg=>ctx.SendMessageRaw(msg));
+			ctx.AddMessageListenerRaw(msg=>call.SendMessageRaw(msg));
 
 			return await call;
 		} catch(Exception e){

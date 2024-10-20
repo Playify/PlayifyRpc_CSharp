@@ -89,7 +89,7 @@ internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		lock(_activeExecutions) _activeExecutions.Remove(callId);
 	}
 
-	protected override async Task Receive(DataInputBuff data){
+	protected virtual async Task Receive(DataInputBuff data){
 		var packetType=(PacketType)data.ReadByte();
 		switch(packetType){
 			case PacketType.FunctionCall:{

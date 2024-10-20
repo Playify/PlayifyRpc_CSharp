@@ -32,7 +32,7 @@ internal static class RpcDataDefaults{
 	private static void RegisterPrimitives(){
 		Register<VoidType>(
 			(_,_)=>new RpcDataPrimitive(),
-			p=>p.IsNull()?default(VoidType):ContinueWithNext,
+			p=>default(VoidType),
 			(_,_)=>"null");
 		Register<DBNull>(
 			(_,_)=>new RpcDataPrimitive(),
@@ -147,8 +147,10 @@ internal static class RpcDataDefaults{
 				return ReadJsonArray(p,primitives)??ContinueWithNext;
 			},
 			(typescript,_)=>typescript?"any[]":"dynamic[]");
-		RegisterObject<JsonObject>(e=>e.Select(kv=>(kv.Key,(object?)kv.Value)),(e,props)=>props.All(t=>{
-				if(!t.value.TryTo(out Json obj)) return false;
+		RegisterObject<JsonObject>(
+			e=>e.Select(kv=>(kv.Key,(object?)kv.Value)),
+			(e,props,throwOnError)=>props.All(t=>{
+				if(!t.value.TryTo(out Json obj,throwOnError)) return false;
 				e[t.key]=obj;
 				return true;
 			}),
@@ -167,7 +169,7 @@ internal static class RpcDataDefaults{
 			if(primitive.IsAlready(out Json already)) return already;
 			if(primitive.IsArray(out var arr)) return ReadJsonArray(primitive,arr);
 			if(primitive.IsObject(out var obj)) return ReadJsonObject(primitive,obj);
-			return null;
+			return null;//TODO throwOnError
 		}
 
 		static JsonArray? ReadJsonArray(RpcDataPrimitive p,IEnumerable<RpcDataPrimitive> primitives){
@@ -225,8 +227,8 @@ internal static class RpcDataDefaults{
 
 		RegisterObject<ExpandoObject>(
 			e=>e.ToTuples(),
-			(e,props)=>props.All(t=>{
-				if(!t.value.TryTo(out object obj)) return false;
+			(e,props,throwOnError)=>props.All(t=>{
+				if(!t.value.TryTo(out object obj,throwOnError)) return false;
 				((IDictionary<string,object?>)e)[t.key]=obj;
 				return true;
 			}),
@@ -237,10 +239,10 @@ internal static class RpcDataDefaults{
 	}
 
 
-	public static object? ToNullable(RpcDataPrimitive primitive,Type type){
+	public static object? ToNullable(RpcDataPrimitive primitive,Type type,bool throwOnError){
 		if(Nullable.GetUnderlyingType(type) is not{} nullableType) return ContinueWithNext;
 		if(primitive.IsNull()) return null;
-		return primitive.TryTo(nullableType,out var result)?result:ContinueWithNext;
+		return primitive.TryTo(nullableType,out var result,throwOnError)?result:ContinueWithNext;
 	}
 
 	private static class ArraysAndTuples{
@@ -256,13 +258,14 @@ internal static class RpcDataDefaults{
 			typeof(ValueTuple<,,,,,,>),
 			typeof(ValueTuple<,,,,,,,>),
 		];
+
 		public static RpcDataPrimitive? From(object value,Dictionary<object,RpcDataPrimitive> already)=>value switch{
 			ITuple t=>already[t]=new RpcDataPrimitive(()=>(Enumerable.Range(0,t.Length).Select(i=>RpcDataPrimitive.From(t[i],already)),t.Length)),
 			Array arr=>already[arr]=new RpcDataPrimitive(()=>(arr.Cast<object>().Select(o=>RpcDataPrimitive.From(o,already)),arr.Length)),
 			_=>null,
 		};
 
-		public static object? To(RpcDataPrimitive primitive,Type type){
+		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
 			if(type.IsArray){
 				if(primitive.IsNull()) return null;
 				if(primitive.IsAlready(type,out var already)) return already;
@@ -272,7 +275,7 @@ internal static class RpcDataDefaults{
 				var array=primitive.AddAlready(Array.CreateInstance(elementType,len));
 				var i=0;
 				foreach(var sub in arr)
-					if(sub.TryTo(elementType,out var child)) array.SetValue(child,i++);
+					if(sub.TryTo(elementType,out var child,throwOnError)) array.SetValue(child,i++);
 					else return primitive.RemoveAlready(array);
 				return array;
 			}
@@ -285,7 +288,7 @@ internal static class RpcDataDefaults{
 				var args=new object?[argsTypes.Length];
 				var i=0;
 				foreach(var sub in arr)
-					if(sub.TryTo(argsTypes[i],out var child)) args[i++]=child;
+					if(sub.TryTo(argsTypes[i],out var child,throwOnError)) args[i++]=child;
 					else return ContinueWithNext;
 				return type.GetConstructor(argsTypes)!.Invoke(args);
 			}
@@ -312,11 +315,11 @@ internal static class RpcDataDefaults{
 				       :new RpcDataPrimitive(convertible.ToInt64(null));
 		}
 
-		public static object? To(RpcDataPrimitive primitive,Type type){
+		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
 			if(!type.IsEnum) return ContinueWithNext;
 
 			if(primitive.IsString(out var s)) return StringEnum.TryParseEnum(type,s,out var result)?result:ContinueWithNext;
-			if(primitive.TryTo(type.GetEnumUnderlyingType(),out var number)) return Enum.ToObject(type,number!);
+			if(primitive.TryTo(type.GetEnumUnderlyingType(),out var number,throwOnError)) return Enum.ToObject(type,number!);
 			return ContinueWithNext;
 		}
 
@@ -332,7 +335,7 @@ internal static class RpcDataDefaults{
 			return already[template]=new RpcDataPrimitive(()=>template.GetProperties().Select(t=>(t.key,RpcDataPrimitive.From(t.value,already))));
 		}
 
-		public static object? To(RpcDataPrimitive primitive,Type type){
+		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
 			if(!typeof(ObjectTemplateBase).IsAssignableFrom(type)) return ContinueWithNext;
 			if(primitive.IsNull()) return null;
 			if(primitive.IsAlready(type,out var already)) return already;
@@ -340,7 +343,7 @@ internal static class RpcDataDefaults{
 
 			var o=(ObjectTemplateBase)Activator.CreateInstance(type)!;
 			foreach(var (k,v) in entries)
-				if(!o.TrySetProperty(k,v,false))
+				if(!o.TrySetProperty(k,v,throwOnError))
 					return ContinueWithNext;
 			return o;
 		}
@@ -359,7 +362,7 @@ internal static class RpcDataDefaults{
 			return already[func]=new RpcDataPrimitive(rpcFunction,writer,()=>RpcFunction.UnregisterFunction(func));
 		};
 
-		public static object? To(RpcDataPrimitive primitive,Type type){
+		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
 			if(!typeof(ObjectTemplateBase).IsAssignableFrom(type)) return ContinueWithNext;
 			if(primitive.IsNull()) return null;
 			if(primitive.IsAlready(type,out var already)) return already;
@@ -367,7 +370,7 @@ internal static class RpcDataDefaults{
 
 			var o=(ObjectTemplateBase)Activator.CreateInstance(type)!;
 			foreach(var (k,v) in entries)
-				if(!o.TrySetProperty(k,v,false))
+				if(!o.TrySetProperty(k,v,throwOnError))
 					return ContinueWithNext;
 			return o;
 		}

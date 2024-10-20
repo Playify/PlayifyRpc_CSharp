@@ -78,6 +78,18 @@
 		<Compile Update="Types\Exceptions\RpcException.Extensions.cs">
 			<DependentUpon>RpcException.cs</DependentUpon>
 		</Compile>
+		<Compile Update="Types\Functions\PendingCall.Generic.cs">
+			<DependentUpon>PendingCall.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Types\Functions\PendingCallRawData.cs">
+			<DependentUpon>PendingCall.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Types\Functions\PendingCall.Casted.cs">
+			<DependentUpon>PendingCall.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Types\Functions\FunctionCallContext.Static.cs">
+			<DependentUpon>FunctionCallContext.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

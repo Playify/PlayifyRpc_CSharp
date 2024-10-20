@@ -8,7 +8,7 @@ using PlayifyUtility.Web;
 
 namespace PlayifyRpc;
 
-public partial class RpcWebServer:WebBase{
+public class RpcWebServer:WebBase{
 	public override bool HandleIllegalRequests=>false;
 
 	private readonly string _rpcJs;

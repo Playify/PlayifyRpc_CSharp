@@ -25,6 +25,7 @@ public static class RpcDataTypeStringifier{
 		=>MethodSignatures(method.Method,typescript,prevParameters);
 
 	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(MethodInfo method,bool typescript,params string[] prevParameters){
+		// ReSharper disable once RedundantSuppressNullableWarningExpression
 		var returns=ParameterType(method.ReturnParameter!,false,typescript);
 		var list=new List<string>(prevParameters);
 
@@ -74,7 +75,10 @@ public static class RpcDataTypeStringifier{
 				              (t,n)=>Stringify(t,typescript,input,tuplename,n))
 			              .ToArray();
 
-		if(ToStringDictionary.TryGetValue(type,out var fromDict)) return fromDict(typescript,generics)+suffix;
+		if(ToStringDictionary.TryGetValue(type,out var fromDict))
+			return fromDict(typescript,generics)+suffix;
+		if(type.IsGenericType&&ToStringDictionary.TryGetValue(type.GetGenericTypeDefinition(),out fromDict))
+			return fromDict(typescript,generics);
 		foreach(var fromList in ToStringList){
 			var s=fromList(type,typescript,input,tuplename,nullability,generics);
 			if(s!=null) return s+suffix;
@@ -90,8 +94,9 @@ public static class RpcDataTypeStringifier{
 	public static string TypeName(Type type,string[] generics){
 		var name=type.Name;
 		var genericIndex=name.IndexOf('`');
-		if(genericIndex==-1) return name;
-		return name.Substring(0,genericIndex)+"<"+generics.Join(",")+">";
+		if(genericIndex!=-1) name=name.Substring(0,genericIndex);
+		if(generics.Length!=0) name+=$"<{generics.Join(",")}>";
+		return name;
 	}
 
 	internal static string Parameter(bool typescript,string type,string? name){

@@ -4,17 +4,24 @@ using PlayifyRpc.Types.Exceptions;
 namespace PlayifyRpc.Internal.Data;
 
 public partial class DynamicBinder{
+	internal static object? InvokeThrow(Delegate func,RpcDataPrimitive[] args){
+		CurrentMethod.Value=func.Method;
+		const BindingFlags all=BindingFlags.Public|
+		                       BindingFlags.NonPublic|
+		                       BindingFlags.OptionalParamBinding|
+		                       BindingFlags.FlattenHierarchy|
+		                       BindingFlags.Static|
+		                       BindingFlags.Instance|
+		                       BindingFlags.InvokeMethod;
+		return func.Method.DeclaringType!.InvokeMember(
+			func.Method.Name,all,Instance,func.Target,
+			args.Cast<object>().ToArray(),null!);
+	}
+	
+	
 	internal static object? Invoke(Delegate func,string? type,string method,RpcDataPrimitive[] args){
 		try{
-			CurrentMethod.Value=func.Method;
-			const BindingFlags all=BindingFlags.Public|
-			                       BindingFlags.NonPublic|
-			                       BindingFlags.OptionalParamBinding|
-			                       BindingFlags.FlattenHierarchy|
-			                       BindingFlags.Static|
-			                       BindingFlags.Instance|
-			                       BindingFlags.InvokeMethod;
-			return func.Method.DeclaringType!.InvokeMember(func.Method.Name,all,Instance,func.Target,args.Cast<object>().ToArray(),null!);
+			return InvokeThrow(func,args);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){
@@ -34,15 +41,7 @@ public partial class DynamicBinder{
 
 	internal static object? InvokeMeta(Delegate func,string? type,string meta,RpcDataPrimitive[] args){
 		try{
-			CurrentMethod.Value=func.Method;
-			const BindingFlags all=BindingFlags.Public|
-			                       BindingFlags.NonPublic|
-			                       BindingFlags.OptionalParamBinding|
-			                       BindingFlags.FlattenHierarchy|
-			                       BindingFlags.Static|
-			                       BindingFlags.Instance|
-			                       BindingFlags.InvokeMethod;
-			return func.Method.DeclaringType!.InvokeMember(func.Method.Name,all,Instance,func.Target,args.Cast<object>().ToArray(),null!);
+			InvokeThrow(func,args);
 		} catch(TargetInvocationException e){
 			throw RpcException.WrapAndFreeze(e.InnerException??e);
 		} catch(MissingMethodException){

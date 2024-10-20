@@ -4,9 +4,6 @@ using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
-#if NETFRAMEWORK
-using AsyncFriendlyStackTrace;
-#endif
 
 namespace PlayifyRpc.Types.Exceptions;
 
@@ -54,7 +51,7 @@ public partial class RpcException:Exception{
 		if(cause!=null)
 			_causes+="\ncaused by: "+FixString(
 #if NETFRAMEWORK
-				         cause is RpcException rpc?rpc.ToString():cause.ToAsyncString()
+				         cause is RpcException rpc?rpc.ToString():AsyncFriendlyStackTrace.ExceptionExtensions.ToAsyncString(cause)
 #else
 				         cause.ToString()
 #endif

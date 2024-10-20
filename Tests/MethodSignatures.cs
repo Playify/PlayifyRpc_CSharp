@@ -54,8 +54,8 @@ public static class MethodSignatures{
 			AssertSignature(MethodSignatures(T2D,false),"(Unknown<Struct<Unknown<Class<bool>>?>>? b)=>void");
 			AssertSignature(MethodSignatures(T3D,false),"(Unknown<Class<Unknown<Struct<bool>>?>>? b)=>void");
 			AssertSignature(MethodSignatures(T4D,false),"(Unknown<Class<Unknown<Class<bool>>?>>? b)=>void");
-			AssertSignature(MethodSignatures(RealTypes,false),"(StringEnum<AnyEnum> se,bool b,object any,Regex regex)=>int");
-			AssertSignature(MethodSignatures(Params,false),"(int start,params int[] rest)=>void");
+			AssertSignature(MethodSignatures(RealTypes,false),"(StringEnum<AnyEnum> se,bool b,dynamic any,Regex regex)=>int");
+			AssertSignature(MethodSignatures(typeof(MethodSignatures).GetMethod(nameof(Params))!,false),"(int start,params int[] rest)=>void");
 			AssertSignature(MethodSignatures(Optional,false),"(int start)=>void\n(int start,int optional)=>void");
 			AssertSignature(MethodSignatures(Fails,false),"(Unknown<Task> t)=>void");
 		});
@@ -90,8 +90,9 @@ public static class MethodSignatures{
 			return 0;
 		}
 
-		static void Params(int start,params int[] rest){}
 		static void Optional(int start,int optional=0){}
 		static void Fails(Task t){}
 	}
+
+	public static void Params(int start,params int[] rest){}
 }
