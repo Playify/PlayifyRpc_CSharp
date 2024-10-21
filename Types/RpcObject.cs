@@ -2,6 +2,7 @@ using System.Dynamic;
 using System.Linq.Expressions;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types;
 

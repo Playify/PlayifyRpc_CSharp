@@ -55,7 +55,7 @@ public static class MethodSignatures{
 			AssertSignature(MethodSignatures(T3D,false),"(Unknown<Class<Unknown<Struct<bool>>?>>? b)=>void");
 			AssertSignature(MethodSignatures(T4D,false),"(Unknown<Class<Unknown<Class<bool>>?>>? b)=>void");
 			AssertSignature(MethodSignatures(RealTypes,false),"(StringEnum<AnyEnum> se,bool b,dynamic any,Regex regex)=>int");
-			AssertSignature(MethodSignatures(typeof(MethodSignatures).GetMethod(nameof(Params))!,false),"(int start,params int[] rest)=>void");
+			AssertSignature(MethodSignatures(Params,false),"(int start,params int[] rest)=>void");
 			AssertSignature(MethodSignatures(Optional,false),"(int start)=>void\n(int start,int optional)=>void");
 			AssertSignature(MethodSignatures(Fails,false),"(Unknown<Task> t)=>void");
 		});
@@ -94,5 +94,5 @@ public static class MethodSignatures{
 		static void Fails(Task t){}
 	}
 
-	public static void Params(int start,params int[] rest){}
+	public static void Params(int start,params int[] rest){}//params inside another function don't work somehow, but that's caused by c#, not by PlayifyRpc
 }

@@ -5,6 +5,7 @@ using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Data;
 
+//TODO make this work as a whole, to replace ObjectTemplate
 [AttributeUsage(AttributeTargets.Class|AttributeTargets.Struct)]
 [UsedImplicitly(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
 public class RpcDataObjectAttribute:Attribute{

@@ -17,7 +17,7 @@ internal class ServerInvoker:Invoker{
 			("H",1,(Action<string>)Handshake),//Connections
 			("H",2,(Action<string[],string[]>)Handshake),//Connections
 			("H",3,(Action<string,string[],string[]>)Handshake),//Connections
-			("+",null,Register),//Rpc.RegisterType TODO does this really work with params? if yes, then why doesnt RpcDataTypeStringifier work
+			("+",null,Register),//Rpc.RegisterType
 			("-",null,Unregister),//Rpc.UnregisterType
 
 			("E",null,RpcServer.CheckType),//RpcObject.Exists

@@ -6,8 +6,8 @@ public readonly partial struct RpcDataPrimitive{
 	#region Cast
 	public static T Cast<T>(object? source)=>From(source).To<T>();
 	public static object? Cast(object? source,Type type)=>From(source).To(type);
-	public static bool TryCast<T>(object? source,out T t,bool throwOnError)=>From(source).TryTo(out t,throwOnError);
-	public static bool TryCast(object? source,Type type,out object? obj,bool throwOnError)=>From(source).TryTo(type,out obj,throwOnError);
+	public static bool TryCast<T>(object? source,out T t,bool throwOnError=false)=>From(source).TryTo(out t,throwOnError);
+	public static bool TryCast(object? source,Type type,out object? obj,bool throwOnError=false)=>From(source).TryTo(type,out obj,throwOnError);
 	#endregion
 
 	public delegate object? ToFunc(RpcDataPrimitive primitive,Type type,bool throwOnError);

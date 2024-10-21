@@ -32,7 +32,7 @@ internal static class RpcDataDefaults{
 	private static void RegisterPrimitives(){
 		Register<VoidType>(
 			(_,_)=>new RpcDataPrimitive(),
-			p=>default(VoidType),
+			_=>default(VoidType),
 			(_,_)=>"null");
 		Register<DBNull>(
 			(_,_)=>new RpcDataPrimitive(),
@@ -141,49 +141,50 @@ internal static class RpcDataDefaults{
 			(_,_)=>"string");
 		Register<JsonArray>(
 			(a,already)=>already[a]=new RpcDataPrimitive(()=>(a.Select(j=>From(j,already)),a.Count)),
-			p=>{
+			(p,throwOnError)=>{
 				if(p.IsAlready(out JsonArray already)) return already;
 				if(!p.IsArray(out var primitives)) return ContinueWithNext;
-				return ReadJsonArray(p,primitives)??ContinueWithNext;
+				return ReadJsonArray(p,primitives,throwOnError)??ContinueWithNext;
 			},
 			(typescript,_)=>typescript?"any[]":"dynamic[]");
 		RegisterObject<JsonObject>(
 			e=>e.Select(kv=>(kv.Key,(object?)kv.Value)),
 			(e,props,throwOnError)=>props.All(t=>{
-				if(!t.value.TryTo(out Json obj,throwOnError)) return false;
-				e[t.key]=obj;
+				if(ReadJson(t.value,throwOnError) is not{} child) return false;
+				e[t.key]=child;
 				return true;
 			}),
 			(_,_)=>"object");
 		Register<Json>(
 			null,
-			p=>ReadJson(p)??ContinueWithNext,
+			(p,throwOnError)=>ReadJson(p,throwOnError)??ContinueWithNext,
 			(typescript,_)=>typescript?"any":"dynamic");
 		return;
 
-		static Json? ReadJson(RpcDataPrimitive primitive){
+		static Json? ReadJson(RpcDataPrimitive primitive,bool throwOnError){
 			if(primitive.IsNull()) return JsonNull.Null;
 			if(primitive.IsBool(out var b)) return JsonBool.Get(b);
 			if(primitive.IsNumber(out var d)) return new JsonNumber(d);
 			if(primitive.IsString(out var s)) return new JsonString(s);
 			if(primitive.IsAlready(out Json already)) return already;
-			if(primitive.IsArray(out var arr)) return ReadJsonArray(primitive,arr);
-			if(primitive.IsObject(out var obj)) return ReadJsonObject(primitive,obj);
-			return null;//TODO throwOnError
+			if(primitive.IsArray(out var arr)) return ReadJsonArray(primitive,arr,throwOnError);
+			if(primitive.IsObject(out var obj)) return ReadJsonObject(primitive,obj,throwOnError);
+			if(throwOnError) throw new InvalidCastException("Error converting primitive "+primitive+" to a Json value");
+			return null;
 		}
 
-		static JsonArray? ReadJsonArray(RpcDataPrimitive p,IEnumerable<RpcDataPrimitive> primitives){
+		static JsonArray? ReadJsonArray(RpcDataPrimitive p,IEnumerable<RpcDataPrimitive> primitives,bool throwOnError){
 			var array=p.AddAlready(new JsonArray());
 			foreach(var child in primitives)
-				if(ReadJson(child) is{} json) array.Add(json);
+				if(ReadJson(child,throwOnError) is{} json) array.Add(json);
 				else return p.RemoveAlready<JsonArray>(array);
 			return array;
 		}
 
-		static JsonObject? ReadJsonObject(RpcDataPrimitive p,IEnumerable<(string key,RpcDataPrimitive value)> primitives){
+		static JsonObject? ReadJsonObject(RpcDataPrimitive p,IEnumerable<(string key,RpcDataPrimitive value)> primitives,bool throwOnError){
 			var obj=p.AddAlready(new JsonObject());
 			foreach(var (key,child) in primitives)
-				if(ReadJson(child) is{} json) obj.Add(key,json);
+				if(ReadJson(child,throwOnError) is{} json) obj.Add(key,json);
 				else return p.RemoveAlready<JsonObject>(obj);
 			return obj;
 		}
@@ -233,9 +234,6 @@ internal static class RpcDataDefaults{
 				return true;
 			}),
 			(_,_)=>"object");
-
-		//TODO new custom StringMap<>
-		//TODO RpcDataTypeAttribute
 	}
 
 

@@ -7,7 +7,7 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Internal.Data;
 
 [PublicAPI]
-public readonly partial struct RpcDataPrimitive{
+public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	public static readonly object ContinueWithNext=new();
 
 	#region Data
@@ -24,6 +24,8 @@ public readonly partial struct RpcDataPrimitive{
 
 		return false;
 	}
+
+	public bool Equals(RpcDataPrimitive other)=>this==other;
 	#endregion
 
 	#region Parse & ToString
