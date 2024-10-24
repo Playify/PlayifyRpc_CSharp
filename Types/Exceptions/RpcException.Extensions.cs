@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
-using AsyncFriendlyStackTrace;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
