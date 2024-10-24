@@ -6,6 +6,9 @@ using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
+#if NETFRAMEWORK
+using AsyncFriendlyStackTrace;
+#endif
 
 namespace PlayifyRpc.Types.Exceptions;
 
