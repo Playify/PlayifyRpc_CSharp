@@ -1,4 +1,5 @@
 using System.Text;
+using PlayifyUtility.Utils;
 
 namespace PlayifyRpc.Internal.Data;
 
@@ -8,14 +9,14 @@ public readonly partial struct RpcDataPrimitive{
 		RpcSetupAttribute.LoadAll();
 	}
 
-	private static bool CanBeNull(Type type){
+	internal static bool CanBeNull(Type type){
 		if(!type.IsValueType) return true;
 		return Nullable.GetUnderlyingType(type)!=null;
 	}
 
-	public static void RegisterFallback(FromFuncMaybe from,ToFunc to,RpcDataTypeStringifier.UnknownFunc toString){
+	public static void RegisterFallback(FromFuncMaybe from,ToFunc? to,RpcDataTypeStringifier.UnknownFunc toString){
 		FromList.Add(from);
-		ToList.Add(to);
+		if(to!=null) ToList.Add(to);
 		RpcDataTypeStringifier.ToStringList.Add(toString);
 	}
 
@@ -43,7 +44,11 @@ public readonly partial struct RpcDataPrimitive{
 			if(p.IsAlready(out T already)) return already;
 			if(!p.IsObject(out var props)) return ContinueWithNext;
 			var obj=p.AddAlready(new T());
-			return setProps(obj,props,throwOnError)?obj:p.RemoveAlready(obj);
+			try{
+				return setProps(obj,props,throwOnError)?obj:p.RemoveAlready(obj);
+			} catch(Exception) when(FunctionUtils.RunThenReturn(()=>p.RemoveAlready(obj),false)){
+				return ContinueWithNext;
+			}
 		},
 		toString
 	);

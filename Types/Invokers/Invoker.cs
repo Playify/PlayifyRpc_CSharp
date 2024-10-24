@@ -14,7 +14,7 @@ public abstract class Invoker{
 	protected internal object? Invoke(string? type,string? method,RpcDataPrimitive[] args){
 		if(method!=null) return DynamicInvoke(type,method,args);
 
-		var meta=args.Length<1?null:RpcDataPrimitive.Cast<string>(args[0]);
+		var meta=args.Length<1?null:args[0].To<string>();
 
 		MetaCallType.Value=type;
 		//Meta calls, using null as method

@@ -1,5 +1,4 @@
 using JetBrains.Annotations;
-using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.HelperClasses;
@@ -34,13 +33,13 @@ public static class RpcHelpers{
 	#region ListenValue
 	public static ReferenceTo<T> ListenValue<T>(string type,string method,params object?[] args){
 		var r=new ReferenceTo<T>();
-		AutoRecall(msg=>r.Value=RpcDataPrimitive.Cast<T>(msg[0]),type,method,args);
+		AutoRecall(msg=>r.Value=msg[0].To<T>(),type,method,args);
 		return r;
 	}
 
 	public static ReferenceTo<T> ListenValue<T>(T @default,string type,string method,params object?[] args){
 		var r=new ReferenceTo<T>(@default);
-		AutoRecall(msg=>r.Value=RpcDataPrimitive.Cast<T>(msg[0]),_=>r.Value=@default,type,method,args);
+		AutoRecall(msg=>r.Value=msg[0].To<T>(),_=>r.Value=@default,type,method,args);
 		return r;
 	}
 	#endregion
@@ -49,7 +48,7 @@ public static class RpcHelpers{
 	public static ReferenceTo<T> ListenOnChange<T>(Action<T> onChange,string type,string method,params object?[] args){
 		var r=new ReferenceTo<T>();
 		AutoRecall(msg=>{
-			var newValue=RpcDataPrimitive.Cast<T>(msg[0]);
+			var newValue=msg[0].To<T>();
 			if(!EqualityComparer<T>.Default.Equals(r.Value,newValue))
 				onChange(r.Value=newValue);
 		},type,method,args);
@@ -60,7 +59,7 @@ public static class RpcHelpers{
 		var r=new ReferenceTo<T>();
 		AutoRecall(
 			msg=>{
-				var newValue=RpcDataPrimitive.Cast<T>(msg[0]);
+				var newValue=msg[0].To<T>();
 				if(!EqualityComparer<T>.Default.Equals(r.Value,newValue))
 					onChange(r.Value=newValue);
 			},

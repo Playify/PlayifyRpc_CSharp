@@ -1,55 +1,38 @@
-using System.Collections;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
 using PlayifyUtility.HelperClasses;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Data.Objects;
 
 /**
 This has to be used instead of using Dictionary&lt;string,?&gt; directly,
 as Dictionary would better assembles a JavaScript Map, instead of a JavaScript Object
-Otherwise, an ExpandoObject can be used as well
+
+This is similar to an ExpandoObject, but with a predefined value type
 */
+
 [PublicAPI]
-public class StringMap<T>:ObjectTemplateBase,IEnumerable<KeyValuePair<string,T>>{
-	#region Enumerable
-	public readonly IDictionary<string,T> Dictionary;
-
-	public StringMap()=>Dictionary=new InsertionOrderDictionary<string,T>();
-	public StringMap(IDictionary<string,T> dict)=>Dictionary=dict;
-
-	public void Add(string key,T value)=>Dictionary.Add(key,value);
-
-	// ReSharper disable once NotDisposedResourceIsReturned
-	public IEnumerator<KeyValuePair<string,T>> GetEnumerator()=>Dictionary.GetEnumerator();
-
-	IEnumerator IEnumerable.GetEnumerator()=>GetEnumerator();
-
-	public T this[string key]{
-		get=>Dictionary.TryGetValue(key,out var value)?value:throw new KeyNotFoundException(key);
-		set=>TrySetProperty(key,value,true);
-	}
-	#endregion
-
-	#region ObjectTemplate
-	public override bool TrySetProperty(string key,object? value,bool throwOnError){
-		if(!RpcDataPrimitive.TryCast(value,out T t,throwOnError)) return false;
-		Dictionary[key]=t;
-		return true;
+public sealed class StringMap<T>:InsertionOrderDictionary<string,T>,IRpcDataObject{
+	public StringMap(){
 	}
 
-	public override bool TryGetProperty(string key,out object? value){
-		var b=Dictionary.TryGetValue(key,out var tValue);
-		value=b?tValue:default;
-		return b;
+	public StringMap(IReadOnlyDictionary<string,T> dictionary){
+		foreach(var kv in dictionary)
+			Add(kv);
 	}
 
-	public override IEnumerable<(string key,object? value)> GetProperties()=>Dictionary.Select(pair=>(pair.Key,(object?)pair.Value));
-	#endregion
+	public bool TrySetProps(IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError)=>props.All(tuple=>
+		tuple.primitive.TryTo(out T child,throwOnError)&&this.TryAdd(tuple.s,child));
 
+	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(Dictionary<object,RpcDataPrimitive> already)
+		=>this.Select(kv=>(kv.Key,RpcDataPrimitive.From(kv.Value,already)));
+}
 
-	public static implicit operator Dictionary<string,T>(StringMap<T> sm)=>sm.Dictionary as Dictionary<string,T>??new Dictionary<string,T>(sm.Dictionary);
-	public static implicit operator InsertionOrderDictionary<string,T>(StringMap<T> sm)=>sm.Dictionary as InsertionOrderDictionary<string,T>??new InsertionOrderDictionary<string,T>(sm.Dictionary);
-	public static implicit operator StringMap<T>(Dictionary<string,T> dict)=>new(dict);
-	public static implicit operator StringMap<T>(InsertionOrderDictionary<string,T> dict)=>new(dict);
+[PublicAPI]
+public sealed class StringMap:InsertionOrderDictionary<string,RpcDataPrimitive>,IRpcDataObject{
+	public bool TrySetProps(IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError)=>props.All(tuple=>
+		this.TryAdd(tuple.s,tuple.primitive));
+
+	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(Dictionary<object,RpcDataPrimitive> already)=>this.ToTuples();
 }

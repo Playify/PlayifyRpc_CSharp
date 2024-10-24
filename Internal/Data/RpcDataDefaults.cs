@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data;
-using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Jsons;
@@ -21,7 +20,6 @@ internal static class RpcDataDefaults{
 	static RpcDataDefaults(){
 		RegisterFallback(ArraysAndTuples.From,ArraysAndTuples.To,ArraysAndTuples.Stringify);
 		RegisterFallback(Enums.From,Enums.To,Enums.Stringify);
-		RegisterFallback(ObjectTemplates.From,ObjectTemplates.To,ObjectTemplates.Stringify);//TOOD they should be replaced with direct data types using an Attribute
 
 		RegisterPrimitives();
 		Register<RpcDataPrimitive>((p,_)=>p,p=>p,(typescript,_)=>typescript?"any":"dynamic");
@@ -224,7 +222,7 @@ internal static class RpcDataDefaults{
 				output.WriteString(value.Method);
 			},
 			(_,_)=>nameof(RpcFunction),null,out var writer);
-		RegisterFallback(Delegates.From(writer),Delegates.To,Delegates.Stringify);
+		RegisterFallback(Delegates.From(writer),null,Delegates.Stringify);
 
 		RegisterObject<ExpandoObject>(
 			e=>e.ToTuples(),
@@ -327,31 +325,6 @@ internal static class RpcDataDefaults{
 		}
 	}
 
-	private static class ObjectTemplates{
-		public static RpcDataPrimitive? From(object value,Dictionary<object,RpcDataPrimitive> already){
-			if(value is not ObjectTemplateBase template) return null;
-			return already[template]=new RpcDataPrimitive(()=>template.GetProperties().Select(t=>(t.key,RpcDataPrimitive.From(t.value,already))));
-		}
-
-		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
-			if(!typeof(ObjectTemplateBase).IsAssignableFrom(type)) return ContinueWithNext;
-			if(primitive.IsNull()) return null;
-			if(primitive.IsAlready(type,out var already)) return already;
-			if(!primitive.IsObject(out var entries)) return ContinueWithNext;
-
-			var o=(ObjectTemplateBase)Activator.CreateInstance(type)!;
-			foreach(var (k,v) in entries)
-				if(!o.TrySetProperty(k,v,throwOnError))
-					return ContinueWithNext;
-			return o;
-		}
-
-		public static string? Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics){
-			if(type.IsEnum) return RpcDataTypeStringifier.TypeName(type,generics);
-			return null;
-		}
-	}
-
 	private static class Delegates{
 
 		public static FromFuncMaybe From(WriteFunc writer)=>(value,already)=>{
@@ -359,22 +332,8 @@ internal static class RpcDataDefaults{
 			var rpcFunction=RpcFunction.RegisterFunction(func);
 			return already[func]=new RpcDataPrimitive(rpcFunction,writer,()=>RpcFunction.UnregisterFunction(func));
 		};
-
-		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
-			if(!typeof(ObjectTemplateBase).IsAssignableFrom(type)) return ContinueWithNext;
-			if(primitive.IsNull()) return null;
-			if(primitive.IsAlready(type,out var already)) return already;
-			if(!primitive.IsObject(out var entries)) return ContinueWithNext;
-
-			var o=(ObjectTemplateBase)Activator.CreateInstance(type)!;
-			foreach(var (k,v) in entries)
-				if(!o.TrySetProperty(k,v,throwOnError))
-					return ContinueWithNext;
-			return o;
-		}
-
 		public static string? Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics){
-			if(type.IsEnum) return RpcDataTypeStringifier.TypeName(type,generics);
+			if(typeof(Delegate).IsAssignableFrom(type)) return RpcDataTypeStringifier.TypeName(type,generics);
 			return null;
 		}
 	}

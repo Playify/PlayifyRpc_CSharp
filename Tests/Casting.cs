@@ -1,6 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
 using PlayifyRpc;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Data;
+using PlayifyRpc.Types.Data.Objects;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
 
@@ -69,5 +71,30 @@ public class Casting{
 		Assert.That(()=>RpcDataPrimitive.Cast<ByteEnum>(IntEnum.Big),Throws.TypeOf<InvalidCastException>());
 	});
 
-	//TODO custom objects
+	[Test]
+	public void Objects()=>Assert.Multiple(()=>{
+		var json=new JsonObject{
+			{"a","small"},
+			{"A","big"},
+		};
+		var stringMap=new StringMap<string>{
+			{"a","small"},
+			{"A","big"},
+		};
+
+		Assert.That(RpcDataPrimitive.Cast<Json>(stringMap).ToString(),Is.EqualTo(json.ToString()));
+		var customType=RpcDataPrimitive.Cast<ExampleObjectType>(json);
+		Assert.That(customType.a,Is.EqualTo(stringMap["a"]));
+		Assert.That(customType.A,Is.EqualTo(stringMap["A"]));
+		Assert.That(RpcDataPrimitive.Cast<Json>(customType).ToString(),Is.EqualTo(json.ToString()));
+	});
+
+
+	[SuppressMessage("ReSharper","InconsistentNaming")]
+	private class ExampleObjectType:RpcDataObject{
+#pragma warning disable CS0649// Field is never assigned to, and will always have its default value
+		public string? a;
+		public string? A;
+#pragma warning restore CS0649// Field is never assigned to, and will always have its default value
+	}
 }

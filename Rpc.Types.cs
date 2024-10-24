@@ -43,7 +43,8 @@ public static partial class Rpc{
 
 	public static async Task<string[]> GetAllConnections()=>await CallFunction<string[]>("Rpc","GetAllConnections");
 
-	public static async Task<Dictionary<string,string[]>> GetRegistrations(bool includeHidden=false)=>await CallFunction<StringMap<string[]>>("Rpc","GetRegistrations",includeHidden);
+	public static async Task<StringMap<string[]>> GetRegistrations(bool includeHidden=false)
+		=>await CallFunction<StringMap<string[]>>("Rpc","GetRegistrations",includeHidden);
 
 	public static PendingCall ListenCalls()=>CallFunction("Rpc","ListenCalls");
 }
