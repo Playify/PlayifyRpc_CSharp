@@ -1,7 +1,7 @@
 namespace PlayifyRpc.Types.Exceptions;
 
-public abstract class RpcCallException:RpcException{
-	protected RpcCallException(string? type,string? from,string? message,string? stackTrace,Exception? cause=null):base(type,from,message,stackTrace,cause){}
+public abstract class RpcCallException(string? type,string? from,string? message,string? stackTrace,Exception? cause=null)
+	:RpcException(type,from,message,stackTrace,cause){
 
 	private protected static string Quoted(string? s)=>s==null?"null":"\""+s+"\"";
 }

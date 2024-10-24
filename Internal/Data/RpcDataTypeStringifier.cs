@@ -79,10 +79,9 @@ public static class RpcDataTypeStringifier{
 			return fromDict(typescript,generics)+suffix;
 		if(type.IsGenericType&&ToStringDictionary.TryGetValue(type.GetGenericTypeDefinition(),out fromDict))
 			return fromDict(typescript,generics);
-		foreach(var fromList in ToStringList){
-			var s=fromList(type,typescript,input,tuplename,nullability,generics);
-			if(s!=null) return s+suffix;
-		}
+		foreach(var fromList in ToStringList)
+			if(fromList(type,typescript,input,tuplename,nullability,generics) is{} s)
+				return s+suffix;
 
 		return typescript
 			       ?$"unknwon{suffix} /*{TypeName(type,generics).Replace("/*","/#").Replace("*/","#/")}*/"

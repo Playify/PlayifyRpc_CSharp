@@ -18,7 +18,7 @@ public static class RpcHelpers{
 			RpcException? ex;
 			try{
 				var call=Rpc.CallFunction(type,method,args);
-				call.AddMessageListener(onMessage);
+				_=call.AddMessageListener(onMessage);
 				await call;
 				ex=null;
 			} catch(RpcException e){
@@ -33,13 +33,13 @@ public static class RpcHelpers{
 	#region ListenValue
 	public static ReferenceTo<T> ListenValue<T>(string type,string method,params object?[] args){
 		var r=new ReferenceTo<T>();
-		AutoRecall(msg=>r.Value=msg[0].To<T>(),type,method,args);
+		AutoRecall(msg=>r.Value=msg[0].To<T>()!,type,method,args);
 		return r;
 	}
 
 	public static ReferenceTo<T> ListenValue<T>(T @default,string type,string method,params object?[] args){
 		var r=new ReferenceTo<T>(@default);
-		AutoRecall(msg=>r.Value=msg[0].To<T>(),_=>r.Value=@default,type,method,args);
+		AutoRecall(msg=>r.Value=msg[0].To<T>()!,_=>r.Value=@default,type,method,args);
 		return r;
 	}
 	#endregion
@@ -49,8 +49,8 @@ public static class RpcHelpers{
 		var r=new ReferenceTo<T>();
 		AutoRecall(msg=>{
 			var newValue=msg[0].To<T>();
-			if(!EqualityComparer<T>.Default.Equals(r.Value,newValue))
-				onChange(r.Value=newValue);
+			if(!EqualityComparer<T?>.Default.Equals(r.Value,newValue))
+				onChange(r.Value=newValue!);
 		},type,method,args);
 		return r;
 	}
@@ -60,8 +60,8 @@ public static class RpcHelpers{
 		AutoRecall(
 			msg=>{
 				var newValue=msg[0].To<T>();
-				if(!EqualityComparer<T>.Default.Equals(r.Value,newValue))
-					onChange(r.Value=newValue);
+				if(!EqualityComparer<T?>.Default.Equals(r.Value,newValue))
+					onChange(r.Value=newValue!);
 			},
 			_=>{
 				if(!EqualityComparer<T>.Default.Equals(r.Value,@default))

@@ -90,6 +90,9 @@
 		<Compile Update="Types\Functions\FunctionCallContext.Static.cs">
 			<DependentUpon>FunctionCallContext.cs</DependentUpon>
 		</Compile>
+		<Compile Update="Types\Data\Objects\RpcDataObject.Helpers.cs">
+			<DependentUpon>RpcDataObject.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

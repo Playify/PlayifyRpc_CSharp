@@ -114,8 +114,8 @@ public partial class DynamicBinder{
 	#region Primitives
 	// This will determine if the source can be converted to the target type
 	private static bool CanChangePrimitive(Type source,Type target){
-		if((source==typeof(IntPtr)&&target==typeof(IntPtr))||
-		   (source==typeof(UIntPtr)&&target==typeof(UIntPtr))) return true;
+		if(source==typeof(IntPtr)&&target==typeof(IntPtr)||
+		   source==typeof(UIntPtr)&&target==typeof(UIntPtr)) return true;
 
 		var widerCodes=PrimitiveConversions[(int)Type.GetTypeCode(source)];
 		var targetCode=(Primitives)(1<<(int)Type.GetTypeCode(target));

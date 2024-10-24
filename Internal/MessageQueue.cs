@@ -3,14 +3,9 @@ using PlayifyRpc.Internal.Data;
 
 namespace PlayifyRpc.Internal;
 
-internal class MessageQueue:IAsyncEnumerable<RpcDataPrimitive[]>{
-	private readonly Task _task;
+internal class MessageQueue(Task task):IAsyncEnumerable<RpcDataPrimitive[]>{
 	private readonly HashSet<Action<RpcDataPrimitive[]>> _receivers=[];
 	private List<RpcDataPrimitive[]>? _initialPending=[];
-
-	public MessageQueue(Task task){
-		_task=task;
-	}
 
 	public void AddMessageListener(Delegate a)=>AddMessageListenerRaw(msg=>DynamicBinder.InvokeThrow(a,msg));
 
@@ -32,8 +27,7 @@ internal class MessageQueue:IAsyncEnumerable<RpcDataPrimitive[]>{
 		var receive=new BufferBlock<RpcDataPrimitive[]>();
 
 		AddMessageListenerRaw(msg=>receive.Post(msg));
-		// ReSharper disable once MethodSupportsCancellation
-		_=_task.ContinueWith(_=>receive.Complete());
+		_=task.ContinueWith(_=>receive.Complete(),CancellationToken.None);
 
 
 		while(await receive.OutputAvailableAsync(cancelToken).ConfigureAwait(false))
@@ -43,8 +37,8 @@ internal class MessageQueue:IAsyncEnumerable<RpcDataPrimitive[]>{
 	}
 
 
-	internal virtual void DoReceiveMessage(RpcDataPrimitive[] args){
-		if(_task.IsCompleted) return;
+	internal void DoReceiveMessage(RpcDataPrimitive[] args){
+		if(task.IsCompleted) return;
 
 		Action<RpcDataPrimitive[]>[] list;
 		lock(_receivers){

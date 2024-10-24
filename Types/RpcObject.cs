@@ -1,15 +1,15 @@
 using System.Dynamic;
 using System.Linq.Expressions;
+using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types;
 
-public readonly struct RpcObject:IDynamicMetaObjectProvider{
-	public readonly string Type;
-
-	public RpcObject(string type)=>Type=type;
+[PublicAPI]
+public readonly struct RpcObject(string type):IDynamicMetaObjectProvider{
+	public readonly string Type=type;
 
 	public RpcFunction GetFunction(string name)=>new(Type,name);
 	public PendingCall CallFunction(string name,params object?[] args)=>Rpc.CallFunction(Type,name,args);
@@ -24,16 +24,11 @@ public readonly struct RpcObject:IDynamicMetaObjectProvider{
 
 	DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)=>new MetaObject(parameter,Type);
 
-	private class MetaObject:DynamicMetaObject{
-		private readonly string _type;
-
-		public MetaObject(Expression expression,string type):base(expression,BindingRestrictions.Empty,new RpcObject(type)){
-			_type=type;
-		}
+	private class MetaObject(Expression expression,string type):DynamicMetaObject(expression,BindingRestrictions.Empty,new RpcObject(type)){
 
 		public override DynamicMetaObject BindGetMember(GetMemberBinder binder){
 			var restrictions=BindingRestrictions.GetTypeRestriction(Expression,typeof(RpcObject));
-			return new DynamicMetaObject(Expression.Convert(Expression.Constant(new RpcFunction(_type,binder.Name)),typeof(object)),restrictions);
+			return new DynamicMetaObject(Expression.Convert(Expression.Constant(new RpcFunction(type,binder.Name)),typeof(object)),restrictions);
 		}
 
 		public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder,DynamicMetaObject[] args){
@@ -48,7 +43,7 @@ public readonly struct RpcObject:IDynamicMetaObjectProvider{
 				typeof(Rpc),
 				nameof(Rpc.CallFunction),
 				genericList,
-				Expression.Constant(_type),
+				Expression.Constant(type),
 				Expression.Constant(binder.Name),
 				Expression.NewArrayInit(typeof(object),args.Select(arg=>Expression.Convert(arg.Expression,typeof(object))))
 			);

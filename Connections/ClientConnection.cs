@@ -13,8 +13,8 @@ namespace PlayifyRpc.Connections;
 internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	internal static ClientConnection? Instance{get;private set;}
 	private static TaskCompletionSource? _tcs;
-	private static TaskCompletionSource? _tcsOnce;
-	internal static Task WaitUntilConnectedOnce=>_tcsOnce?.Task??Task.FromException(new RpcConnectionException("Not yet started to connect"));
+	private protected static TaskCompletionSource? TcsOnce;
+	internal static Task WaitUntilConnectedOnce=>TcsOnce?.Task??Task.FromException(new RpcConnectionException("Not yet started to connect"));
 
 	internal static Task WaitUntilConnectedLooping=>(_tcs??=new TaskCompletionSource()).Task;
 
@@ -24,10 +24,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	protected static Logger Logger=>Rpc.Logger.WithName("Connection");
 
 
-	protected static void StartConnect(bool reconnect){
-		if(!reconnect&&_tcsOnce!=null) throw new RpcConnectionException("Already connected");
-		_tcsOnce=new TaskCompletionSource();
-	}
+	protected static void StartConnect()=>TcsOnce=new TaskCompletionSource();
 
 	protected static async Task DoConnect(ClientConnection connection,string? reportedName=null,HashSet<string>? reportedTypes=null){
 		HashSet<string> toRegister;
@@ -44,7 +41,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 
 		Rpc.IsConnected=true;
-		(_tcsOnce??=new TaskCompletionSource()).TrySetResult();
+		(TcsOnce??=new TaskCompletionSource()).TrySetResult();
 		(_tcs??=new TaskCompletionSource()).TrySetResult();
 	}
 
@@ -52,8 +49,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 		Instance=null;
 		Rpc.IsConnected=false;
 		Logger.Error("Error connecting to RPC: "+e);
-		var tcs=_tcsOnce;
-		_tcsOnce=new TaskCompletionSource();
+		var tcs=TcsOnce;
+		TcsOnce=new TaskCompletionSource();
 		tcs?.TrySetException(e);
 
 		//If already was connected, then start a new wait loop

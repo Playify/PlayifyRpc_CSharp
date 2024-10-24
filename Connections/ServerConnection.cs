@@ -13,10 +13,10 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Connections;
 
 internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
-	internal static readonly HashSet<ServerConnection> Connections=new();
+	internal static readonly HashSet<ServerConnection> Connections=[];
 	private readonly Dictionary<int,(ServerConnection respondFrom,int respondId)> _activeExecutions=new();
 	private readonly Dictionary<int,(ServerConnection respondTo,int respondId)> _activeRequests=new();
-	internal readonly HashSet<string> Types=new();
+	internal readonly HashSet<string> Types=[];
 	private readonly ServerInvoker _invoker;
 	private int _nextId;
 
@@ -89,7 +89,7 @@ internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		lock(_activeExecutions) _activeExecutions.Remove(callId);
 	}
 
-	protected virtual async Task Receive(DataInputBuff data){
+	protected async Task Receive(DataInputBuff data){
 		var packetType=(PacketType)data.ReadByte();
 		switch(packetType){
 			case PacketType.FunctionCall:{

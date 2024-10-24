@@ -43,7 +43,7 @@ public class PendingCall:IAsyncEnumerable<RpcDataPrimitive[]>{
 	public PendingCallCasted Cast(Type type)=>new(RawData,type);
 
 	public async Task ToTask()=>await TaskRaw;
-	public async Task<TNew> ToTask<TNew>()=>(await TaskRaw).To<TNew>();
+	public async Task<TNew?> ToTask<TNew>()=>(await TaskRaw).To<TNew>();
 	public async Task<object?> ToTask(Type type)=>(await TaskRaw).To(type);
 
 	public static implicit operator Task(PendingCall call)=>call.TaskRaw;

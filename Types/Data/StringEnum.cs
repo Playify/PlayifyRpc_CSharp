@@ -25,7 +25,7 @@ public static class StringEnum{
 	static StringEnum(){
 		RpcDataPrimitive.Register(
 			typeof(StringEnum<>),
-			(o,_)=>new RpcDataPrimitive(o.ToString()!),
+			(o,_)=>new RpcDataPrimitive($"{o}"),
 			(primitive,type,_)=>{
 				if(primitive.IsString(out var s)&&
 				   TryParseEnum(type.GetGenericArguments()[0],s,out var result))

@@ -8,8 +8,10 @@ namespace PlayifyRpc.Internal;
  * Allows parsing strings as rpc-calls
  *
  * Type.method(arg1,arg2) => will call the function
+ * ["Type","Method",arg1,arg2] => will call the function as well
  * Type. => will get all methods on the type
  * Type? => will check if the type exists
+ * Type.Method => will get the method signatures
  *
  * arguments should be Json
  */
@@ -26,7 +28,7 @@ internal static class Evaluate{
 			if(!array[0].TryTo<string>(out var typeFromArray,false)) throw new RpcEvalException("Error getting type from expression array");
 			if(!array[1].TryTo<string>(out var methodFromArray,false)) throw new RpcEvalException("Error getting method from expression array");
 
-			return await Rpc.CallFunctionRaw(typeFromArray,methodFromArray,array.Skip(2).ToArray());
+			return await FunctionCallContext.CallFunctionRaw(typeFromArray,methodFromArray,array.Skip(2).ToArray());
 		}
 
 		var bracket=expression.IndexOf('(');
@@ -51,7 +53,7 @@ internal static class Evaluate{
 				throw new RpcEvalException("POST data needs to be an array when used as arguments");
 
 			bracket=expression.Length;
-			expression+="("+postArgs.Substring(1,postArgs.Length-2)+")";
+			expression+=$"({postArgs.Substring(1,postArgs.Length-2)})";
 			postArgs=null;
 		}
 		if(expression[expression.Length-1]!=')') throw new RpcEvalException("No closing bracket");
@@ -87,5 +89,5 @@ internal static class Evaluate{
 		return result;
 	}
 
-	internal static async Task<string> EvalString(string s,bool pretty)=>(await EvalObject(s)).ToString(pretty);
+	internal static async Task<string> EvalString(string expression,bool pretty)=>(await EvalObject(expression)).ToString(pretty);
 }

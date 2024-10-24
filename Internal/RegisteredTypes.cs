@@ -20,18 +20,16 @@ internal static class RegisteredTypes{
 	}
 
 	private static void RegisterAssembly(Assembly assembly){
+		// ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
 		if(assembly.FullName?.StartsWith("System.")??false) return;//Skip System assemblies
 		
 		try{
-			foreach(var type in assembly.GetTypes()){
-				var sharedClass=type.GetCustomAttribute<RpcProviderAttribute>();
-				if(sharedClass!=null){
+			foreach(var type in assembly.GetTypes())
+				if(type.GetCustomAttribute<RpcProviderAttribute>() is{} provider)
 					if(typeof(Invoker).IsAssignableFrom(type)){
 						RuntimeHelpers.RunClassConstructor(type.TypeHandle);
-						_=Register(sharedClass.Type??type.Name,(Invoker)Activator.CreateInstance(type)!);
-					} else _=Register(sharedClass.Type??type.Name,new TypeInvoker(type));
-				}
-			}
+						_=Register(provider.Type??type.Name,(Invoker)Activator.CreateInstance(type)!);
+					} else _=Register(provider.Type??type.Name,new TypeInvoker(type));
 		} catch(Exception e){
 			Rpc.Logger.Critical("Error registering assembly \""+assembly+"\": "+e);
 		}

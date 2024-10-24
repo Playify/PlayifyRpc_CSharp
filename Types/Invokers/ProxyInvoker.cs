@@ -10,7 +10,11 @@ public class ProxyInvoker:Invoker{
 
 	public ProxyInvoker(Func<Task<RpcObject>> @object)=>_object=@object;
 	public ProxyInvoker(Func<RpcObject> @object)=>_object=()=>Task.Run(@object);
-	public ProxyInvoker(RpcObject @object)=>_object=()=>Task.FromResult(@object);
+
+	public ProxyInvoker(RpcObject @object){
+		var task=Task.FromResult(@object);
+		_object=()=>task;
+	}
 
 	protected override object DynamicInvoke(string? type,string method,RpcDataPrimitive[] args)=>InvokeAsync(type,method,args);
 
@@ -21,8 +25,8 @@ public class ProxyInvoker:Invoker{
 			var o=await _object();
 			var call=o.CallFunctionRaw(method,args)
 			          .WithCancellation(ctx.CancellationToken);
-			call.AddMessageListenerRaw(msg=>ctx.SendMessageRaw(msg));
-			ctx.AddMessageListenerRaw(msg=>call.SendMessageRaw(msg));
+			_=call.AddMessageListenerRaw(msg=>ctx.SendMessageRaw(msg));
+			_=ctx.AddMessageListenerRaw(msg=>call.SendMessageRaw(msg));
 
 			return await call;
 		} catch(Exception e){

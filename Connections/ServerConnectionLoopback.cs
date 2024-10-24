@@ -1,4 +1,5 @@
 using PlayifyRpc.Internal;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
@@ -37,7 +38,9 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 	internal static async Task Connect(){
 		await RegisteredTypes.SetName("RPC_SERVER_LOOPBACK");
 		await RegisteredTypes.Register("Rpc",new TypeInvoker(typeof(RpcServer)));
-		StartConnect(false);
+
+		if(TcsOnce!=null) throw new RpcConnectionException("Already connected");
+		StartConnect();
 		while(true)
 			try{
 				await using var connection=new ServerConnectionLoopbackClient();
@@ -46,7 +49,7 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 				await Task.Delay(Timeout.Infinite);
 
 
-				StartConnect(true);
+				StartConnect();
 			} catch(Exception e){
 				FailConnect(e);
 

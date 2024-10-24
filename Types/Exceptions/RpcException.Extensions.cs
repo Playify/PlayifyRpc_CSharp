@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using AsyncFriendlyStackTrace;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
@@ -22,7 +23,7 @@ public partial class RpcException{
 
 		var lines=FixString(
 #if NETFRAMEWORK
-			AsyncFriendlyStackTrace.StackTraceExtensions.ToAsyncString(new StackTrace(e,true))
+			StackTraceExtensions.ToAsyncString(new StackTrace(e,true))
 #else
 			new StackTrace(e,true).ToString()
 #endif
@@ -69,13 +70,12 @@ public partial class RpcException{
 			_prependOwnStack=false;
 			_stackTrace+=GetOwnStackTrace(this);
 		}
-		if(method!=null&&_stackTrace!=null){
-			var lastLine=_stackTrace.LastIndexOf('\n');
-			var methodAndFurther=_stackTrace.Substring(_stackTrace.IndexOf(' ',lastLine)+1);
-			var methodString=method.DeclaringType?.ToString().Replace('+','.')+"."+method.Name;
-			if(methodAndFurther.StartsWith(methodString+"(")||methodAndFurther.StartsWith(methodString+"["))
-				_stackTrace=_stackTrace.Substring(0,lastLine);
-		}
+		if(method==null||_stackTrace==null) return this;
+		var lastLine=_stackTrace.LastIndexOf('\n');
+		var methodAndFurther=_stackTrace.Substring(_stackTrace.IndexOf(' ',lastLine)+1);
+		var methodString=method.DeclaringType?.ToString().Replace('+','.')+"."+method.Name;
+		if(methodAndFurther.StartsWith(methodString+"(")||methodAndFurther.StartsWith(methodString+"["))
+			_stackTrace=_stackTrace.Substring(0,lastLine);
 		return this;
 	}
 

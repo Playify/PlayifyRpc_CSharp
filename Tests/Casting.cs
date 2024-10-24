@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
 using PlayifyRpc;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Data;
@@ -38,6 +39,8 @@ public class Casting{
 
 		Assert.That(()=>RpcDataPrimitive.Cast<JsonNull>(false),Throws.TypeOf<InvalidCastException>());
 		Assert.That(()=>RpcDataPrimitive.Cast<bool>(null),Throws.TypeOf<InvalidCastException>());
+
+		Assert.That(RpcDataPrimitive.Cast<string>(null),Is.EqualTo(null));
 	});
 
 	[Test]
@@ -52,12 +55,12 @@ public class Casting{
 	});
 
 
-	public enum IntEnum{
+	private enum IntEnum{
 		Small=12,
 		Big=500,
 	}
 
-	public enum ByteEnum:byte{
+	private enum ByteEnum:byte{
 		Small=12,
 	}
 
@@ -90,6 +93,7 @@ public class Casting{
 	});
 
 
+	[UsedImplicitly]
 	[SuppressMessage("ReSharper","InconsistentNaming")]
 	private class ExampleObjectType:RpcDataObject{
 #pragma warning disable CS0649// Field is never assigned to, and will always have its default value

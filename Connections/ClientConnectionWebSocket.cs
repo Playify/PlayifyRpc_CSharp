@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.Net;
 using PlayifyRpc.Internal;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
 using PlayifyUtility.Web;
@@ -34,7 +35,8 @@ internal class ClientConnectionWebSocket:ClientConnection{
 
 
 	internal static async Task Connect(Uri uri,NameValueCollection? headers){
-		StartConnect(false);
+		if(TcsOnce!=null) throw new RpcConnectionException("Already connected");
+		StartConnect();
 		while(true)
 			try{
 				var reportedName=Rpc.Name;
@@ -62,7 +64,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 
 				await loop;
 
-				StartConnect(true);
+				StartConnect();
 			} catch(Exception e){
 				FailConnect(e);
 

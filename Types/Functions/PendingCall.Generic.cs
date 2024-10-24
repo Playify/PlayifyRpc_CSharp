@@ -17,7 +17,7 @@ public class PendingCall<T>:PendingCall{
 
 	public PendingCall Void()=>new(RawData);
 
-	public new Task<T> ToTask()=>ToTask<T>();
+	public new Task<T> ToTask()=>ToTask<T>()!;
 	public static implicit operator Task<T>(PendingCall<T> call)=>call.ToTask();
 	public new TaskAwaiter<T> GetAwaiter()=>ToTask().GetAwaiter();
 

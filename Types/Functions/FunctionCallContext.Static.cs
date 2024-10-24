@@ -5,6 +5,7 @@ using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Streams.Data;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Functions;
 
@@ -127,4 +128,5 @@ public partial class FunctionCallContext{
 	}
 
 	public static FunctionCallContext GetContext()=>ThreadLocal.Value??throw new InvalidOperationException("FunctionCallContext not available");
+	public static bool TryGetContext(out FunctionCallContext ctx)=>ThreadLocal.Value.NotNull(out ctx!);
 }

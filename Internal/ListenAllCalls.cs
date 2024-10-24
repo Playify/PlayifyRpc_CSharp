@@ -7,7 +7,7 @@ using PlayifyUtility.Streams.Data;
 namespace PlayifyRpc.Internal;
 
 internal static class ListenAllCalls{
-	private static readonly HashSet<FunctionCallContext> Listening=new();
+	private static readonly HashSet<FunctionCallContext> Listening=[];
 
 	internal static async Task Listen(FunctionCallContext ctx){
 		lock(Listening) Listening.Add(ctx);

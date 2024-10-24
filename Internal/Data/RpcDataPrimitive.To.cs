@@ -4,9 +4,9 @@ public readonly partial struct RpcDataPrimitive{
 	public static string Stringify(object? value,bool pretty)=>From(value).ToString(pretty);
 
 	#region Cast
-	public static T Cast<T>(object? source)=>From(source).To<T>();
+	public static T Cast<T>(object? source)=>From(source).To<T>()!;
 	public static object? Cast(object? source,Type type)=>From(source).To(type);
-	public static bool TryCast<T>(object? source,out T t,bool throwOnError=false)=>From(source).TryTo(out t,throwOnError);
+	public static bool TryCast<T>(object? source,out T t,bool throwOnError=false)=>From(source).TryTo(out t!,throwOnError);
 	public static bool TryCast(object? source,Type type,out object? obj,bool throwOnError=false)=>From(source).TryTo(type,out obj,throwOnError);
 	#endregion
 
@@ -15,19 +15,19 @@ public readonly partial struct RpcDataPrimitive{
 	private static readonly Dictionary<Type,ToFunc> ToDictionary=new();
 	private static readonly List<ToFunc> ToList=[RpcDataDefaults.ToNullable];
 
-	public T To<T>()=>(T)To(typeof(T))!;
+	public T? To<T>()=>(T?)To(typeof(T));
 
 	public object? To(Type type)
 		=>TryTo(type,out var obj,true)
 			  ?obj
 			  :throw new InvalidCastException("Error converting primitive "+this+" to "+RpcDataTypeStringifier.FromType(type));
 
-	public bool TryTo<T>(out T t,bool throwOnError){
+	public bool TryTo<T>(out T? t,bool throwOnError){
 		if(TryTo(typeof(T),out var obj,throwOnError)){
-			t=(T)obj!;
+			t=(T?)obj;
 			return true;
 		}
-		t=default!;
+		t=default;
 		return false;
 	}
 

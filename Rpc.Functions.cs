@@ -24,9 +24,10 @@ public static partial class Rpc{
 
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
 	public static Task<RpcDataPrimitive> EvalObject(string expression)=>Evaluate.EvalObject(expression);
-	public static async Task<T> EvalObject<T>(string expression)=>(await Evaluate.EvalObject(expression)).To<T>();
+	public static async Task<T?> EvalObject<T>(string expression)=>(await Evaluate.EvalObject(expression)).To<T>();
 
 	public static FunctionCallContext GetContext()=>FunctionCallContext.GetContext();
+	public static bool TryGetContext(out FunctionCallContext ctx)=>FunctionCallContext.TryGetContext(out ctx);
 	public static void RunWithContext(Action func,FunctionCallContext context)=>FunctionCallContext.RunWithContext(func,context);
 	public static T RunWithContext<T>(Func<T> func,FunctionCallContext context)=>FunctionCallContext.RunWithContext(func,context);
 }

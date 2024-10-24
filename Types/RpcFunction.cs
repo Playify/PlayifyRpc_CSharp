@@ -6,14 +6,10 @@ using PlayifyRpc.Types.Invokers;
 
 namespace PlayifyRpc.Types;
 
-public readonly struct RpcFunction{
-	public readonly string Type;
-	public readonly string Method;
-
-	public RpcFunction(string type,string method){
-		Type=type;
-		Method=method;
-	}
+[PublicAPI]
+public readonly struct RpcFunction(string type,string method){
+	public readonly string Type=type;
+	public readonly string Method=method;
 
 	[PublicAPI]
 	public PendingCall Call(params object?[] args)=>Rpc.CallFunction(Type,Method,args);

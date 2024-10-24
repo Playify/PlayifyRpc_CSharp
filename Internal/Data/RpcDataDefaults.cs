@@ -43,7 +43,7 @@ internal static class RpcDataDefaults{
 			(typescript,_)=>typescript?"boolean":"bool");
 		Register<string>(
 			(s,_)=>new RpcDataPrimitive(s),
-			p=>p.IsString(out var s)?s:ContinueWithNext,
+			p=>p.IsString(out var s)?s:p.IsNull()?null:ContinueWithNext,
 			(_,_)=>"string");
 		Register<char>(
 			(c,_)=>new RpcDataPrimitive(c),
@@ -227,7 +227,7 @@ internal static class RpcDataDefaults{
 		RegisterObject<ExpandoObject>(
 			e=>e.ToTuples(),
 			(e,props,throwOnError)=>props.All(t=>{
-				if(!t.value.TryTo(out object obj,throwOnError)) return false;
+				if(!t.value.TryTo(out object? obj,throwOnError)) return false;
 				((IDictionary<string,object?>)e)[t.key]=obj;
 				return true;
 			}),

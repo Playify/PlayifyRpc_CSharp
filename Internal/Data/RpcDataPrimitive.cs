@@ -46,7 +46,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 			if(!pretty) return "{"+tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(pretty)}").Join(",")+"}";
 			else if((s=tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(pretty)}").Join(",\n"))=="") return "{}";
 			else return "{\n\t"+s.Replace("\n","\n\t")+"\n}";
-		if(IsCustom(out object custom)) return custom.ToString();
+		if(IsCustom(out object custom)) return $"{custom}";
 
 		return $"<<Invalid: {_data} of type {RpcDataTypeStringifier.FromType(_data?.GetType()??typeof(object))}>>";
 	}

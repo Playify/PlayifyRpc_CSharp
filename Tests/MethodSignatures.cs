@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using JetBrains.Annotations;
 using PlayifyRpc.Types.Data;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
@@ -7,10 +8,13 @@ using static PlayifyRpc.Internal.Data.RpcDataTypeStringifier;
 namespace Tests;
 
 public static class MethodSignatures{
+	[UsedImplicitly]
 	private struct Struct<T>;
 
+	[UsedImplicitly]
 	private class Class<T>;
 
+	[UsedImplicitly(ImplicitUseTargetFlags.Members)]
 	private enum AnyEnum{
 		A=1,
 	}
@@ -94,5 +98,5 @@ public static class MethodSignatures{
 		static void Fails(Task t){}
 	}
 
-	public static void Params(int start,params int[] rest){}//params inside another function don't work somehow, but that's caused by c#, not by PlayifyRpc
+	private static void Params(int start,params int[] rest){}//params inside another function don't work somehow, but that's caused by c#, not by PlayifyRpc
 }

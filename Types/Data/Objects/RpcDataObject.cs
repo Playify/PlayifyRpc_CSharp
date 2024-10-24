@@ -4,7 +4,7 @@ namespace PlayifyRpc.Types.Data.Objects;
 
 public partial class RpcDataObject:IRpcDataObject{
 
-	public bool TrySetProps(IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError){
+	bool IRpcDataObject.TrySetProps(IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError){
 		var (_,setters,settersIgnoreCase)=GetTypeInfos(GetType());
 
 		return props.All(tuple=>{

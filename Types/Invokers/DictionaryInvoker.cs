@@ -7,31 +7,30 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Types.Invokers;
 
 [PublicAPI]
-public class DictionaryInvoker:Invoker,IEnumerable<KeyValuePair<string,Delegate>>{
-	public readonly Dictionary<string,Delegate> Dictionary;
+public class DictionaryInvoker(Dictionary<string,Delegate> dictionary):Invoker,IEnumerable<KeyValuePair<string,Delegate>>{
+	public readonly Dictionary<string,Delegate> Dictionary=dictionary;
 
-	public DictionaryInvoker(Dictionary<string,Delegate> dictionary)=>Dictionary=dictionary;
-	public DictionaryInvoker()=>Dictionary=new Dictionary<string,Delegate>();
+	public DictionaryInvoker():this(new Dictionary<string,Delegate>()){
+	}
 
 
 	public IEnumerator<KeyValuePair<string,Delegate>> GetEnumerator()=>Dictionary.GetEnumerator();
 	IEnumerator IEnumerable.GetEnumerator()=>Dictionary.GetEnumerator();
 
 	protected override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args){
-		if(!Dictionary.TryGetValue(method,out var @delegate)){
-			@delegate=Dictionary.FirstOrNull(p=>p.Key.Equals(method,StringComparison.OrdinalIgnoreCase))?.Value;
+		if(Dictionary.TryGetValue(method,out var @delegate)) return DynamicBinder.Invoke(@delegate,type,method,args);
 
-			if(@delegate==null) throw new RpcMethodNotFoundException(type,method);
-		}
+		@delegate=Dictionary.FirstOrNull(p=>p.Key.Equals(method,StringComparison.OrdinalIgnoreCase))?.Value;
+		if(@delegate==null) throw new RpcMethodNotFoundException(type,method);
 		return DynamicBinder.Invoke(@delegate,type,method,args);
 	}
 
 	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());
 
-	protected override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts){
-		if(Dictionary.TryGetValue(method,out var d)) return new ValueTask<(string[] parameters,string returns)[]>([..RpcDataTypeStringifier.MethodSignatures(d,ts)]);
-		return new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)));
-	}
+	protected override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts)
+		=>Dictionary.TryGetValue(method,out var d)
+			  ?new ValueTask<(string[] parameters,string returns)[]>([..RpcDataTypeStringifier.MethodSignatures(d,ts)])
+			  :new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)));
 
 
 	//Used for collection initializer

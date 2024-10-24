@@ -6,8 +6,7 @@ namespace PlayifyRpc.Types.Exceptions;
 [UsedImplicitly(ImplicitUseKindFlags.InstantiatedWithFixedConstructorSignature)]
 [MeansImplicitUse]
 [BaseTypeRequired(typeof(RpcException))]
-public class RpcCustomExceptionAttribute:Attribute{
-	internal readonly string TypeTag;
+public class RpcCustomExceptionAttribute(string typeTag):Attribute{
+	internal readonly string TypeTag=typeTag;
 
-	public RpcCustomExceptionAttribute(string typeTag)=>TypeTag=typeTag;
 }

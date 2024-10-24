@@ -20,7 +20,7 @@ public partial class RpcDataObject{
 		if(p.IsNull()&&RpcDataPrimitive.CanBeNull(type)) return null;
 		if(p.IsAlready(type,out var already)) return already;
 		if(!p.IsObject(out var props)) return RpcDataPrimitive.ContinueWithNext;
-		var obj=(IRpcDataObject)p.AddAlready(Activator.CreateInstance(type));
+		var obj=(IRpcDataObject)p.AddAlready(Activator.CreateInstance(type)!);
 		try{
 			return !obj.TrySetProps(props,throwOnError)?p.RemoveAlready(obj):obj;
 		} catch(Exception) when(FunctionUtils.RunThenReturn(()=>p.RemoveAlready(obj),false)){
@@ -35,15 +35,15 @@ public partial class RpcDataObject{
 		return RpcDataTypeStringifier.TypeName(type,generics);
 	}
 
-
+//TODO what if a class overrides a property, but with a new type using the new keyword?
 	private static readonly Dictionary<Type,(
-		List<(string,Func<object,object>)> getters,
+		List<(string,Func<object,object?>)> getters,
 		Dictionary<string,(Type type,Action<object,object?> setValue)> setters,
 		Dictionary<string,(Type type,Action<object,object?> setValue)> settersIgnoreCase
 		)> Types=new();
 
 	private static (
-		List<(string,Func<object,object>)> getters,
+		List<(string,Func<object,object?>)> getters,
 		Dictionary<string,(Type type,Action<object,object?> setValue)> setters,
 		Dictionary<string,(Type type,Action<object,object?> setValue)> settersIgnoreCase
 		) GetTypeInfos(Type type){
@@ -51,9 +51,9 @@ public partial class RpcDataObject{
 			if(Types.TryGetValue(type,out var already))
 				return already;
 
+		var getters=new List<(string,Func<object,object?>)>();
 		var setters=new Dictionary<string,(Type type,Action<object,object?> setValue)>();
 		var settersIgnoreCase=new Dictionary<string,(Type type,Action<object,object?> setValue)>(StringComparer.OrdinalIgnoreCase);
-		var getters=new List<(string,Func<object,object>)>();
 
 		foreach(var member in type.GetMembers(BindingFlags.Instance|BindingFlags.Public)){
 			if(member is PropertyInfo{IsSpecialName: false} property&&property.GetCustomAttribute<RpcHiddenAttribute>()==null){
