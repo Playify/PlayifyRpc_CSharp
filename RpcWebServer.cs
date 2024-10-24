@@ -2,9 +2,11 @@ using System.Net;
 using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
 using PlayifyUtility.Web;
+using PlayifyUtility.Web.Utils;
 
 namespace PlayifyRpc;
 
@@ -157,8 +159,8 @@ public class RpcWebServer:WebBase{
 		var rawUrl=session.RawUrl;
 		if(rawUrl.EndsWith("/")) rawUrl=rawUrl.TrimEnd('/');
 
-		if(rawUrl.StartsWith("/rpc/")){
-			var s=Uri.UnescapeDataString(rawUrl.Substring("/rpc/".Length));
+		if(rawUrl.StartsWith("/rpc/")||rawUrl=="/rpc"&&session.Type is RequestType.Post or RequestType.Put){
+			var s=Uri.UnescapeDataString(rawUrl.Substring("/rpc".Length));
 
 
 			var voidResponse=false;
@@ -168,8 +170,13 @@ public class RpcWebServer:WebBase{
 				else if("/pretty".RemoveFromEndOf(ref s)) prettyResponse=true;
 				else break;
 
+			var postArgs=session.Type is RequestType.Post or RequestType.Put?await session.ReadStringAsync():null;
+
+			if(s.StartsWith("/")) s=s.Substring(1);
+
+			RpcDataPrimitive result;
 			try{
-				s=await Evaluate.EvalString(s,prettyResponse);
+				result=await Evaluate.EvalObject(s,postArgs);
 			} catch(Exception e){
 				await session.Send
 				             .Cache(false)
@@ -178,10 +185,19 @@ public class RpcWebServer:WebBase{
 			}
 			if(voidResponse)
 				await session.Send.NoContent();
-			else
+			else{
+				try{
+					s=result.ToString(prettyResponse);
+				} catch(Exception e){
+					await session.Send
+					             .Cache(false)
+					             .Text(e.ToString(),500);
+					return;
+				}
 				await session.Send
 				             .Cache(false)
 				             .Json(s);
+			}
 			return;
 		}
 
