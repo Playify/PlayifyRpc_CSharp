@@ -1,4 +1,5 @@
 using System.Dynamic;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -56,7 +57,7 @@ internal static class RpcDataDefaults{
 			(typescript,_)=>typescript?"number":"sbyte");
 		Register<byte>(
 			(n,_)=>new RpcDataPrimitive(n),
-			p=>p.IsNumber(byte.MaxValue,out var n)?(byte)n:ContinueWithNext,
+			p=>p.IsNumber(0,byte.MaxValue,out var n)?(byte)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"byte");
 		Register<short>(
 			(n,_)=>new RpcDataPrimitive(n),
@@ -64,7 +65,7 @@ internal static class RpcDataDefaults{
 			(typescript,_)=>typescript?"number":"short");
 		Register<ushort>(
 			(n,_)=>new RpcDataPrimitive(n),
-			p=>p.IsNumber(ushort.MaxValue,out var n)?(ushort)n:ContinueWithNext,
+			p=>p.IsNumber(0,ushort.MaxValue,out var n)?(ushort)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"ushort");
 		Register<int>(
 			(n,_)=>new RpcDataPrimitive(n),
@@ -72,16 +73,30 @@ internal static class RpcDataDefaults{
 			(typescript,_)=>typescript?"number":"int");
 		Register<uint>(
 			(n,_)=>new RpcDataPrimitive(n),
-			p=>p.IsNumber(uint.MaxValue,out var n)?(uint)n:ContinueWithNext,
+			p=>p.IsNumber(0,uint.MaxValue,out var n)?(uint)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"uint");
 		Register<long>(
-			(n,_)=>new RpcDataPrimitive(n),
-			p=>p.IsNumber(long.MinValue,long.MaxValue,out var n)?n:ContinueWithNext,
-			(typescript,_)=>typescript?"number":"long");
+			(n,_)=>new RpcDataPrimitive(new BigInteger(n)),
+			p=>p.IsNumber(long.MinValue,long.MaxValue,out var n)?n:ContinueWithNext,//isNumber should have better performance, and should work as well
+			(typescript,_)=>typescript?"bigint":"long");
 		Register<ulong>(
+			(n,_)=>new RpcDataPrimitive(new BigInteger(n)),
+			p=>{
+				if(p.IsBigIntegerAndNothingElse(out var n)&&n>=0&&n<=ulong.MaxValue) return (ulong)n;
+				if(p.IsNumber(0,long.MaxValue,out var l)) return (ulong)l;
+				return ContinueWithNext;
+			},
+			(typescript,_)=>typescript?"bigint":"ulong");
+		Register<BigInteger>(
 			(n,_)=>new RpcDataPrimitive(n),
-			p=>p.IsNumber(ulong.MaxValue,out var n)?n:ContinueWithNext,
-			(typescript,_)=>typescript?"number":"ulong");
+			p=>{
+				if(p.IsBigIntegerAndNothingElse(out var n)) return n;
+				if(p.IsNumber(long.MinValue,long.MaxValue,out var l)) return new BigInteger(l);
+				// ReSharper disable once CompareOfFloatsByEqualityOperator
+				if(p.IsNumber(out var d)&&Math.Floor(d)==d) return new BigInteger(d);
+				return ContinueWithNext;
+			},
+			(typescript,_)=>typescript?"bigint":"BigInteger");
 		Register<float>(
 			(f,_)=>new RpcDataPrimitive(f),
 			p=>p.IsNumber(out var d)?(float)d:ContinueWithNext,
@@ -96,9 +111,8 @@ internal static class RpcDataDefaults{
 			p=>{
 				if(p.IsNull()) return null;
 				if(p.IsBool(out var b)) return b;
+				if(p.IsBigIntegerAndNothingElse(out var big)) return big;
 				if(p.IsNumber(int.MinValue,int.MaxValue,out var i)) return (int)i;
-				//if(p.IsNumber(long.MinValue,long.MaxValue,out var l)) return l;//TODO decide what to do with longs
-				//if(p.IsNumber(ulong.MaxValue,out var ul)) return ul;
 				if(p.IsNumber(out var d)) return d;
 				if(p.IsString(out var s)) return s;
 				if(p.IsAlready(out object?[] alreadyArr)) return alreadyArr;
@@ -306,9 +320,11 @@ internal static class RpcDataDefaults{
 			var type=value.GetType();
 			if(!type.IsEnum) return null;
 			var convertible=(IConvertible)value;
-			return convertible.GetTypeCode()==TypeCode.UInt64
-				       ?new RpcDataPrimitive(convertible.ToUInt64(null))
-				       :new RpcDataPrimitive(convertible.ToInt64(null));
+			return convertible.GetTypeCode() switch{
+				TypeCode.Int64=>new RpcDataPrimitive(new BigInteger(convertible.ToInt64(null))),
+				TypeCode.UInt64=>new RpcDataPrimitive(new BigInteger(convertible.ToUInt64(null))),
+				_=>new RpcDataPrimitive(convertible.ToInt64(null)),
+			};
 		}
 
 		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){

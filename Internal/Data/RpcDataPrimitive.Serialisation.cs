@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Text;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Streams.Data;
@@ -20,8 +21,21 @@ public readonly partial struct RpcDataPrimitive{
 		{'t',(_,_,_)=>new RpcDataPrimitive(true)},
 		{'f',(_,_,_)=>new RpcDataPrimitive(false)},
 		{'i',(input,_,_)=>new RpcDataPrimitive(input.ReadInt())},
-		{'d',(input,_,_)=>new RpcDataPrimitive(input.ReadDouble())},
-		{'l',(input,_,_)=>new RpcDataPrimitive(input.ReadLong())},
+		{'d',(input,_,_)=>new RpcDataPrimitive(input.ReadDouble())},{
+			'+',(input,_,_)=>{
+				var length=input.ReadLength();
+				var bytes=new byte[length+1];
+				input.ReadFully(bytes,0,length);
+				return new RpcDataPrimitive(new BigInteger(bytes));
+			}
+		},{
+			'-',(input,_,_)=>{
+				var length=input.ReadLength();
+				var bytes=new byte[length+1];
+				input.ReadFully(bytes,0,length);
+				return new RpcDataPrimitive(-new BigInteger(bytes));
+			}
+		},
 	};
 	private static readonly Dictionary<string,ReadFunc> ReadByString=new();
 
@@ -30,12 +44,18 @@ public readonly partial struct RpcDataPrimitive{
 			output.WriteLength('n');
 		} else if(IsBool(out var b)){
 			output.WriteLength(b?'t':'f');
+		} else if(IsBigIntegerAndNothingElse(out var big)){
+			if(big.Sign<0){
+				output.WriteLength('-');
+				big=-big;
+			} else output.WriteLength('+');
+			var bytes=big.ToByteArray();
+			var length=bytes[bytes.Length-1]==0?bytes.Length-1:bytes.Length;
+			output.WriteLength(length);
+			output.Write(bytes,0,length);
 		} else if(IsNumber(int.MinValue,int.MaxValue,out var i)){
 			output.WriteLength('i');
 			output.WriteInt((int)i);
-		} else if(IsNumber(long.MinValue,long.MaxValue,out var l)){
-			output.WriteLength('l');
-			output.WriteLong(l);
 		} else if(IsNumber(out var d)){
 			output.WriteLength('d');
 			output.WriteDouble(d);

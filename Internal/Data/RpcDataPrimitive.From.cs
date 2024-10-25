@@ -1,3 +1,4 @@
+using System.Numerics;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
@@ -33,8 +34,9 @@ public readonly partial struct RpcDataPrimitive{
 			   ushort n=>new RpcDataPrimitive(n),
 			   int n=>new RpcDataPrimitive(n),
 			   uint n=>new RpcDataPrimitive(n),
-			   long n=>new RpcDataPrimitive(n),
-			   ulong n=>new RpcDataPrimitive(n),
+			   long n=>new RpcDataPrimitive(new BigInteger(n)),
+			   ulong n=>new RpcDataPrimitive(new BigInteger(n)),
+			   BigInteger n=>new RpcDataPrimitive(n),
 			   float n=>new RpcDataPrimitive(n),
 			   double n=>new RpcDataPrimitive(n),
 			   //decimal n=>RpcDataPrimitive.Number(n),

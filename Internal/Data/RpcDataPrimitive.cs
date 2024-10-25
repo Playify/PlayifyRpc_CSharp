@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 using JetBrains.Annotations;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils;
@@ -34,8 +35,8 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	public string ToString(bool pretty){
 		if(IsNull()) return "null";
 		if(IsBool(out var b)) return b?"true":"false";
+		if(IsBigIntegerAndNothingElse(out var big)) return big.ToString();
 		if(IsNumber(long.MinValue,long.MaxValue,out var l)) return l.ToString();
-		if(IsNumber(ulong.MaxValue,out var ul)) return ul.ToString();
 		if(IsNumber(out var d)) return d.ToString(CultureInfo.InvariantCulture);
 		if(IsString(out var s)) return JsonString.Escape(s);
 		if(IsArray(out var childs,out var len))
@@ -60,6 +61,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 		}
 		if(int.TryParse(s,out var i)) return new RpcDataPrimitive(i);
 		if(double.TryParse(s,out var d)) return new RpcDataPrimitive(d);
+		if(BigInteger.TryParse(s,out var big)) return new RpcDataPrimitive(big);
 		if(s[0]=='"'&&JsonString.TryUnescape(s,out var asString)) return new RpcDataPrimitive(asString);
 		if(Json.ParseOrNull(s) is{} json) return From(json);
 		return null;
@@ -90,59 +92,30 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	#endregion
 
 	#region Number
-	/*Use long and ulong instead
-	public static RpcDataPrimitive Number(byte n)=>new(n);
-	public static RpcDataPrimitive Number(sbyte n)=>new(n);
-	public static RpcDataPrimitive Number(short n)=>new(n);
-	public static RpcDataPrimitive Number(ushort n)=>new(n);
-	public static RpcDataPrimitive Number(int n)=>new(n);
-	public static RpcDataPrimitive Number(uint n)=>new(n);*/
 	public RpcDataPrimitive(long number){
 		_data=number;
 	}
 
-	public RpcDataPrimitive(ulong number){
-		_data=number<=long.MaxValue?(long)number:number;
-	}
-
-	//public static RpcDataPrimitive Number(float n)=>new(n);//use double instead
 	public RpcDataPrimitive(double number){
 		_data=number;
 	}
 
-	//public static RpcDataPrimitive Number(decimal n)=>new(n);//not supported
-
+	public RpcDataPrimitive(BigInteger number){
+		_data=number;
+	}
 
 	public bool IsNumber(long min,long max,out long l){
 		switch(_data){
 			case long ll:
 				l=ll;
 				return l>=min&&l<=max;
-			case ulong ul and <=long.MaxValue:
-				l=(long)ul;
-				return l>=min&&l<=max;
 			// ReSharper disable once CompareOfFloatsByEqualityOperator
-			case double d and >=long.MinValue and <=long.MaxValue when d==Math.Floor(d):
+			case double d when d>=min&&d<=max&&Math.Floor(d)==d:
 				l=(long)d;
-				return l>=min&&l<=max;
-			default:
-				l=default;
-				return false;
-		}
-	}
-
-	public bool IsNumber(ulong max,out ulong l){
-		switch(_data){
-			case long ll and >=0:
-				l=(ulong)ll;
-				return l<=max;
-			case ulong ul:
-				l=ul;
-				return l<=max;
-			// ReSharper disable once CompareOfFloatsByEqualityOperator
-			case double d and >=0 and <=ulong.MaxValue when d==Math.Floor(d):
-				l=(ulong)d;
-				return l<=max;
+				return true;
+			case BigInteger big when big>=min&&big<=max:
+				l=(long)big;
+				return true;
 			default:
 				l=default;
 				return false;
@@ -154,16 +127,25 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 			case long ll:
 				d=ll;
 				return true;
-			case ulong ul:
-				d=ul;
-				return true;
 			case double dd:
 				d=dd;
+				return true;
+			case BigInteger big:
+				d=(double)big;
 				return true;
 			default:
 				d=default;
 				return false;
 		}
+	}
+
+	public bool IsBigIntegerAndNothingElse(out BigInteger big){
+		if(_data is BigInteger bb){
+			big=bb;
+			return true;
+		}
+		big=default;
+		return false;
 	}
 	#endregion
 

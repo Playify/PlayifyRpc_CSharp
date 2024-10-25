@@ -18,9 +18,7 @@ public class Casting{
 
 	[Test]
 	public void General()=>Assert.Multiple(()=>{
-		Assert.That(new RpcDataPrimitive(1ul),Is.EqualTo(new RpcDataPrimitive(1)));
 		Assert.That(new RpcDataPrimitive("Q"),Is.EqualTo(new RpcDataPrimitive('Q')));
-		//TODO Assert.That(RpcDataPrimitive.Number(1d),Is.EqualTo(RpcDataPrimitive.Number(1ul)));
 	});
 
 	[Test]
