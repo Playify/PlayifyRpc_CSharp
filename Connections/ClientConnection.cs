@@ -11,20 +11,18 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Connections;
 
 internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
-	internal static ClientConnection? Instance{get;private set;}
-	private static TaskCompletionSource? _tcs;
-	private protected static TaskCompletionSource? TcsOnce;
-	internal static Task WaitUntilConnectedOnce=>TcsOnce?.Task??Task.FromException(new RpcConnectionException("Not yet started to connect"));
-
-	internal static Task WaitUntilConnectedLooping=>(_tcs??=new TaskCompletionSource()).Task;
-
-	private readonly Dictionary<int,PendingCallRawData> _activeRequests=new();
-	private readonly Dictionary<int,FunctionCallContext> _currentlyExecuting=new();
-
 	protected static Logger Logger=>Rpc.Logger.WithName("Connection");
 
+	#region Connecting
+	internal static ClientConnection? Instance{get;private set;}
+	private static TaskCompletionSource? _connectionAttempt;
+	private static TaskCompletionSource? _connectionAttemptOnce;
+	internal static Task WaitUntilConnectedOnce=>_connectionAttemptOnce?.Task??Task.FromException(new RpcConnectionException("Not yet started to connect"));
+	internal static Task WaitUntilConnectedLooping=>(_connectionAttempt??=new TaskCompletionSource()).Task;
 
-	protected static void StartConnect()=>TcsOnce=new TaskCompletionSource();
+	
+	protected static bool IsConnecting()=>_connectionAttemptOnce!=null;
+	protected static void StartConnect()=>_connectionAttemptOnce=new TaskCompletionSource();
 
 	protected static async Task DoConnect(ClientConnection connection,string? reportedName=null,HashSet<string>? reportedTypes=null){
 		HashSet<string> toRegister;
@@ -35,28 +33,31 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 		Instance=connection;
 
 		if(toRegister.Count!=0||toDelete.Count!=0){
-			if(Rpc.Name!=reportedName) await FunctionCallContext.CallFunction(null,"H",Rpc.Name,toRegister.ToArray(),toDelete.ToArray());
-			else await FunctionCallContext.CallFunction(null,"H",toRegister.ToArray(),toDelete.ToArray());
-		} else if(Rpc.Name!=reportedName) await FunctionCallContext.CallFunction(null,"H",Rpc.Name);
+			if(Rpc.Name!=reportedName) await Invoker.CallFunction(null,"H",Rpc.Name,toRegister.ToArray(),toDelete.ToArray());
+			else await Invoker.CallFunction(null,"H",toRegister.ToArray(),toDelete.ToArray());
+		} else if(Rpc.Name!=reportedName) await Invoker.CallFunction(null,"H",Rpc.Name);
 
 
 		Rpc.IsConnected=true;
-		(TcsOnce??=new TaskCompletionSource()).TrySetResult();
-		(_tcs??=new TaskCompletionSource()).TrySetResult();
+		(_connectionAttemptOnce??=new TaskCompletionSource()).TrySetResult();
+		(_connectionAttempt??=new TaskCompletionSource()).TrySetResult();
 	}
 
 	protected static void FailConnect(Exception e){
 		Instance=null;
 		Rpc.IsConnected=false;
 		Logger.Error("Error connecting to RPC: "+e);
-		var tcs=TcsOnce;
-		TcsOnce=new TaskCompletionSource();
+		var tcs=_connectionAttemptOnce;
+		_connectionAttemptOnce=new TaskCompletionSource();
 		tcs?.TrySetException(e);
 
 		//If already was connected, then start a new wait loop
-		if(_tcs?.Task.IsCompleted??false) _tcs=null;
+		if(_connectionAttempt?.Task.IsCompleted??false) _connectionAttempt=null;
 	}
+	#endregion
 
+	private readonly Dictionary<int,PendingCallRawData> _activeRequests=new();
+	private readonly Dictionary<int,FunctionCallContext> _currentlyExecuting=new();
 
 	internal void SendCall(int callId,PendingCallRawData call,DataOutputBuff buff){
 		lock(_activeRequests) _activeRequests.Add(callId,call);
@@ -108,12 +109,11 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 							SendRaw(msg);
 						},
 						tcs,
-						()=>FunctionCallContext.CallFunction<string>(null,"c",callId));
+						()=>Invoker.CallFunction<string>(null,"c",callId));
 					lock(_currentlyExecuting) _currentlyExecuting.Add(callId,context);
 
 					try{
-						var obj=await FunctionCallContext.RunWithContextAsync(()=>local.Invoke(type,method,args),context,type,method,args);
-						var result=RpcDataPrimitive.From(obj);
+						var result=await Invoker.RunAndAwait(ctx=>local.Invoke(type,method,args,ctx),context,type,method,args);
 						tcs.TrySetResult(result);
 						await Resolve(callId,result);
 					} catch(Exception e){//Inner catch handles normal errors, outer catch handles data exceptions

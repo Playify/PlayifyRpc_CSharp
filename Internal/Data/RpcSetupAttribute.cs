@@ -19,11 +19,9 @@ public class RpcSetupAttribute:Attribute{
 		if(assembly.FullName?.StartsWith("System.")??false) return;//Skip System assemblies
 
 		try{
-			foreach(var type in assembly.GetTypes()){
-				var attribute=type.GetCustomAttribute<RpcSetupAttribute>();
-				if(attribute==null) continue;
-				type.RunClassConstructor();
-			}
+			foreach(var type in assembly.GetTypes())
+				if(type.IsDefined(typeof(RpcSetupAttribute),true))
+					type.RunClassConstructor();
 		} catch(Exception e){
 			Rpc.Logger.Critical("Error registering assembly \""+assembly+"\": "+e);
 		}

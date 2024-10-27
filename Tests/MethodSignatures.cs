@@ -31,6 +31,8 @@ public static class MethodSignatures{
 		Assert.That(FromType(typeof((bool,bool?)?)),Is.EqualTo("(bool,bool?)?"));
 		Assert.That(FromType(typeof(bool?)),Is.EqualTo("bool?"));
 		Assert.That(FromType(typeof(byte[]),true),Is.EqualTo("Uint8Array"));
+		Assert.That(FromType(typeof(ValueTuple<int>),true),Is.EqualTo("[number]"));
+		Assert.That(FromType(typeof(ValueTuple),true),Is.EqualTo("[]"));
 	});
 
 	[Test]

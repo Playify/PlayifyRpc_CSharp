@@ -2,7 +2,7 @@ using PlayifyRpc.Internal.Data;
 
 namespace PlayifyRpc.Types.Data.Objects;
 
-public partial class RpcDataObject:IRpcDataObject{
+public abstract partial class RpcDataObject:IRpcDataObject{
 
 	bool IRpcDataObject.TrySetProps(IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError){
 		var (_,setters,settersIgnoreCase)=GetTypeInfos(GetType());
@@ -21,7 +21,7 @@ public partial class RpcDataObject:IRpcDataObject{
 
 	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(Dictionary<object,RpcDataPrimitive> already){
 		foreach(var (key,getValue) in GetTypeInfos(GetType()).getters)
-			yield return (key,RpcDataPrimitive.From(getValue(this)));
+			yield return (key,RpcDataPrimitive.From(getValue(this),already));
 		foreach(var tuple in GetExtraProps(already))
 			yield return tuple;
 	}

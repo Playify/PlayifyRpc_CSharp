@@ -19,7 +19,7 @@ internal static class RpcDataDefaults{
 
 
 	static RpcDataDefaults(){
-		RegisterFallback(ArraysAndTuples.From,ArraysAndTuples.To,ArraysAndTuples.Stringify);
+		typeof(ArraysAndTuples).RunClassConstructor();
 		RegisterFallback(Enums.From,Enums.To,Enums.Stringify);
 
 		RegisterPrimitives();
@@ -32,7 +32,7 @@ internal static class RpcDataDefaults{
 		Register<VoidType>(
 			(_,_)=>new RpcDataPrimitive(),
 			_=>default(VoidType),
-			(_,_)=>"null");
+			(_,_)=>"void");
 		Register<DBNull>(
 			(_,_)=>new RpcDataPrimitive(),
 			p=>p.IsNull()?DBNull.Value:ContinueWithNext,
@@ -256,6 +256,14 @@ internal static class RpcDataDefaults{
 	}
 
 	private static class ArraysAndTuples{
+		static ArraysAndTuples(){
+			RegisterFallback(From,To,Stringify);
+			Register<ValueTuple>(
+				(_,_)=>new RpcDataPrimitive(()=>([],0)),
+				p=>p.IsArray(out _,out var length)&&length==0?new ValueTuple():ContinueWithNext,
+				(typescript,generics)=>typescript?"[]":"()"
+			);
+		}
 
 		private static readonly Type[] ValueTupleTypes=[
 			typeof(ValueTuple),
@@ -269,13 +277,13 @@ internal static class RpcDataDefaults{
 			typeof(ValueTuple<,,,,,,,>),
 		];
 
-		public static RpcDataPrimitive? From(object value,Dictionary<object,RpcDataPrimitive> already)=>value switch{
+		private static RpcDataPrimitive? From(object value,Dictionary<object,RpcDataPrimitive> already)=>value switch{
 			ITuple t=>already[t]=new RpcDataPrimitive(()=>(Enumerable.Range(0,t.Length).Select(i=>RpcDataPrimitive.From(t[i],already)),t.Length)),
 			Array arr=>already[arr]=new RpcDataPrimitive(()=>(arr.Cast<object>().Select(o=>RpcDataPrimitive.From(o,already)),arr.Length)),
 			_=>null,
 		};
 
-		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
+		private static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
 			if(type.IsArray){
 				if(primitive.IsNull()) return null;
 				if(primitive.IsAlready(type,out var already)) return already;
@@ -305,7 +313,7 @@ internal static class RpcDataDefaults{
 			return ContinueWithNext;
 		}
 
-		public static string? Stringify(Type type,bool typescript,bool input,Func<string?> tupleName,NullabilityInfo? nullability,string[] generics){
+		private static string? Stringify(Type type,bool typescript,bool input,Func<string?> tupleName,NullabilityInfo? nullability,string[] generics){
 			if(type.IsArray) return RpcDataTypeStringifier.Stringify(type.GetElementType()!,typescript,input,tupleName,nullability?.ElementType)+"[]";
 			if(type.IsGenericType&&ValueTupleTypes.Contains(type.GetGenericTypeDefinition())){
 				var inner=generics.Select(t=>RpcDataTypeStringifier.Parameter(typescript,t,tupleName())).Join(",");
@@ -330,7 +338,7 @@ internal static class RpcDataDefaults{
 		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
 			if(!type.IsEnum) return ContinueWithNext;
 
-			if(primitive.IsString(out var s)) return StringEnum.TryParseEnum(type,s,out var result)?result:ContinueWithNext;
+			if(primitive.IsString(out var s)) return StringEnums.TryParseEnum(type,s,out var result)?result:ContinueWithNext;
 			if(primitive.TryTo(type.GetEnumUnderlyingType(),out var number,throwOnError)) return Enum.ToObject(type,number!);
 			return ContinueWithNext;
 		}
@@ -348,6 +356,7 @@ internal static class RpcDataDefaults{
 			var rpcFunction=RpcFunction.RegisterFunction(func);
 			return already[func]=new RpcDataPrimitive(rpcFunction,writer,()=>RpcFunction.UnregisterFunction(func));
 		};
+
 		public static string? Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics){
 			if(typeof(Delegate).IsAssignableFrom(type)) return RpcDataTypeStringifier.TypeName(type,generics);
 			return null;

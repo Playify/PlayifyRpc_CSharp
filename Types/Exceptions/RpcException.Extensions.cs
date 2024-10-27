@@ -4,6 +4,7 @@ using System.Text;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
+using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Utils.Extensions;
 #if NETFRAMEWORK
 using AsyncFriendlyStackTrace;
@@ -13,7 +14,7 @@ namespace PlayifyRpc.Types.Exceptions;
 
 public partial class RpcException{
 	private static readonly List<string> HiddenMethods=[
-		$"{typeof(FunctionCallContext).FullName}.{nameof(FunctionCallContext.RunWithContextAsync)}(",
+		$"{typeof(Invoker).FullName}.",//everything from Invoker type
 		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.ToTask)}(",
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalObject)}(",
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalString)}(",
@@ -81,15 +82,13 @@ public partial class RpcException{
 		return this;
 	}
 
-	public RpcException Append(string s){
+	public RpcException Append(string? type,string? method,RpcDataPrimitive[]? args){
 		Freeze();
-		_stackTrace+="\n\trpc "+s;
+		_stackTrace+="\n\trpc "+
+		             (args==null
+			              ?"<<"+nameof(Rpc.CallLocal)+">>"
+			              :(type??"<<null>>")+"."+(method??"<<null>>")+"("+
+			               args.Select(r=>RpcDataPrimitive.Stringify(r,false)).Join(",")+")");
 		return this;
 	}
-
-	public RpcException Append(string? type,string? method,RpcDataPrimitive[]? args)
-		=>Append(args==null
-			         ?"<<"+nameof(Rpc.CallLocal)+">>"
-			         :(type??"<<null>>")+"."+(method??"<<null>>")+"("+
-			          args.Select(r=>RpcDataPrimitive.Stringify(r,false)).Join(",")+")");
 }

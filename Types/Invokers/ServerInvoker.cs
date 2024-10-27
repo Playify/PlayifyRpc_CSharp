@@ -2,11 +2,12 @@ using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Invokers;
 
-internal class ServerInvoker:Invoker{
+internal class ServerInvoker:Invoker{//TODO this should be able to be a TypeInvoker
 	private readonly ServerConnection _connection;
 	private readonly List<(string name,int? args,Delegate @delegate)> _methods;
 
@@ -45,11 +46,11 @@ internal class ServerInvoker:Invoker{
 	private void Unregister(params string[] types)=>_connection.Unregister(types,true);
 
 
-	protected override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args){
+	protected override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx){
 		foreach(var (name,i,@delegate) in _methods)
 			if(method.Equals(name,StringComparison.OrdinalIgnoreCase)
 			   &&(!i.TryGet(out var argCount)||argCount==args.Length))
-				return DynamicBinder.Invoke(@delegate,type,method,args);
+				return DynamicBinder.InvokeMethod(@delegate,type,method,args,ctx);
 		throw new RpcMethodNotFoundException(type,method);
 	}
 

@@ -39,7 +39,7 @@ internal class ServerConnectionLoopbackClient:ClientConnection{
 		await RegisteredTypes.SetName("RPC_SERVER_LOOPBACK");
 		await RegisteredTypes.Register("Rpc",new TypeInvoker(typeof(RpcServer)));
 
-		if(TcsOnce!=null) throw new RpcConnectionException("Already connected");
+		if(IsConnecting()) throw new RpcConnectionException("Already connected");
 		StartConnect();
 		while(true)
 			try{

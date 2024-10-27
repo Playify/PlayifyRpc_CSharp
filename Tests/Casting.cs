@@ -51,6 +51,13 @@ public class Casting{
 		Assert.That(()=>RpcDataPrimitive.Cast<int>(1.5f),Throws.TypeOf<InvalidCastException>());
 		Assert.That(()=>RpcDataPrimitive.Cast<int>(uint.MaxValue),Throws.TypeOf<InvalidCastException>());
 	});
+	[Test]
+	public void Cyclic()=>Assert.Multiple(()=>{
+		var list=new object[1];
+		list[0]=list;
+
+		Assert.That(RpcDataPrimitive.From(list).ToString(false),Is.EqualTo("[<<Cyclic Reference>>]"));
+	});
 
 
 	private enum IntEnum{

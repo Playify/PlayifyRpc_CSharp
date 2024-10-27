@@ -56,12 +56,12 @@ public partial class RpcDataObject{
 		var settersIgnoreCase=new Dictionary<string,(Type type,Action<object,object?> setValue)>(StringComparer.OrdinalIgnoreCase);
 
 		foreach(var member in type.GetMembers(BindingFlags.Instance|BindingFlags.Public)){
-			if(member is PropertyInfo{IsSpecialName: false} property&&property.GetCustomAttribute<RpcHiddenAttribute>()==null){
+			if(member is PropertyInfo{IsSpecialName: false} property&&!property.IsDefined(typeof(RpcHiddenAttribute),true)){
 				if(property.CanWrite)
 					settersIgnoreCase.TryAdd(property.Name,setters[property.Name]=(property.PropertyType,(o,v)=>property.SetValue(o,v)));
 				if(property.CanRead)
 					getters.Add((property.Name,o=>property.GetValue(o)));
-			} else if(member is FieldInfo{IsSpecialName: false} field&&field.GetCustomAttribute<RpcHiddenAttribute>()==null){
+			} else if(member is FieldInfo{IsSpecialName: false} field&&!field.IsDefined(typeof(RpcHiddenAttribute),true)){
 				settersIgnoreCase.TryAdd(field.Name,setters[field.Name]=(field.FieldType,(o,v)=>field.SetValue(o,v)));
 				getters.Add((field.Name,o=>field.GetValue(o)));
 			}

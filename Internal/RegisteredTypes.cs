@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using PlayifyRpc.Types;
-using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Utils.Extensions;
 
@@ -39,7 +38,7 @@ internal static class RegisteredTypes{
 		lock(Registered)
 			Registered.Add(type,invoker);
 		try{
-			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"+",type);
+			if(Rpc.IsConnected) await Invoker.CallFunction(null,"+",type);
 		} catch(Exception e){
 			Rpc.Logger.Error($"Error registering type \"{type}\": {e}");
 
@@ -54,7 +53,7 @@ internal static class RegisteredTypes{
 			if(!Registered.ContainsKey(type))
 				return;
 		try{
-			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"-",type);
+			if(Rpc.IsConnected) await Invoker.CallFunction(null,"-",type);
 		} catch(Exception e){
 			Rpc.Logger.Error($"Error unregistering type \"{type}\": {e}");
 
@@ -67,7 +66,7 @@ internal static class RegisteredTypes{
 	internal static async Task SetName(string? name){
 		Name=name;
 		try{
-			if(Rpc.IsConnected) await FunctionCallContext.CallFunction(null,"N",name);
+			if(Rpc.IsConnected) await Invoker.CallFunction(null,"N",name);
 		} catch(Exception e){
 			Rpc.Logger.Error($"Error changing name to \"{name}\": {e}");
 		}

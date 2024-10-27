@@ -32,7 +32,7 @@ public static partial class Rpc{
 	public static string GenerateTypeName()=>"$"+Id+"$"+Guid.NewGuid().ToString("N");
 
 
-	public static async Task<RpcObject?> GetObjectWithFallback(string type,params string[] fallback)//
+	public static async Task<RpcObject?> GetObjectWithFallback(string type,params string[] fallback)
 		=>await CallFunction<RpcObject>("Rpc","GetObjectWithFallback",fallback.Prepend(type).Cast<object?>().ToArray());
 
 	public static async Task<int> CheckTypes(params string[] types)=>await CallFunction<int>("Rpc","CheckTypes",types.Cast<object?>().ToArray());

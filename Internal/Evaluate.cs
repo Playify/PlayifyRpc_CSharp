@@ -1,6 +1,6 @@
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
-using PlayifyRpc.Types.Functions;
+using PlayifyRpc.Types.Invokers;
 
 namespace PlayifyRpc.Internal;
 
@@ -28,7 +28,8 @@ internal static class Evaluate{
 			if(!array[0].TryTo<string>(out var typeFromArray,false)) throw new RpcEvalException("Error getting type from expression array");
 			if(!array[1].TryTo<string>(out var methodFromArray,false)) throw new RpcEvalException("Error getting method from expression array");
 
-			return await FunctionCallContext.CallFunctionRaw(typeFromArray,methodFromArray,array.Skip(2).ToArray());
+			if(typeFromArray==null) throw new NullReferenceException("Type is null");
+			return await Invoker.CallFunctionRaw(typeFromArray,methodFromArray,array.Skip(2).ToArray());
 		}
 
 		var bracket=expression.IndexOf('(');
@@ -82,7 +83,7 @@ internal static class Evaluate{
 				} else throw new RpcEvalException("Error parsing arguments");
 			args.Add(obj.Value);
 		}
-		var result=await FunctionCallContext.CallFunctionRaw(type,method,args.ToArray());
+		var result=await Invoker.CallFunctionRaw(type,method,args.ToArray());
 		foreach(var primitive in args)
 			if(primitive.IsDisposable(out var action))
 				action();

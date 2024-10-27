@@ -1,118 +1,132 @@
 using System.Reflection;
-using PlayifyRpc.Types;
 
 namespace PlayifyRpc.Internal.Data;
 
-public partial class DynamicBinder{
-	private static (MethodBase method,ParameterInfo[] par)?[] CreateCandidates(MethodBase[] match){
-		var candidates=new (MethodBase method,ParameterInfo[] par)?[match.Length];
-		for(var i=0;i<match.Length;i++){
-			if(match[i].DeclaringType==typeof(object)) continue;
-			if(match[i].GetCustomAttribute<RpcHiddenAttribute>()!=null) continue;
-			var par=match[i].GetParameters();
-
-			candidates[i]=(match[i],par);
-		}
-		return candidates;
-	}
-
-	private static bool FilterByArgLength(MethodBase method,ParameterInfo[] par,object?[] args,Type?[] argTypes,out Type? paramArrayType){
+public static partial class DynamicBinder{
+	private static bool FilterByArgLength(MethodInfo method,ParameterInfo[] parameters,RpcDataPrimitive[] args,out Type? paramArrayType){
 		paramArrayType=null;
-		if(par.Length==0)
-			return args.Length==0||(method.CallingConvention&CallingConventions.VarArgs)!=0;
-		if(par.Length>args.Length){//Not enough args
+		if(parameters.Length==0) return args.Length==0||(method.CallingConvention&CallingConventions.VarArgs)!=0;
 
-			//Everything needs to have a default value
-			int j;
-			for(j=args.Length;j<par.Length-1;j++)
-				if(par[j].DefaultValue==DBNull.Value)
+		if(args.Length<parameters.Length){//Not enough args
+
+			// If the number of parameters is greater than the number of args then
+			// we are in the situation were we may be using default values.
+			var j=args.Length;
+			for(;j<parameters.Length-1;j++)
+				if(!parameters[j].HasDefaultValue)
+					return false;
+
+			var last=parameters[j];
+			if(last.HasDefaultValue) return true;
+			if(!last.ParameterType.IsArray||
+			   !last.IsDefined(typeof(ParamArrayAttribute),true)) return false;
+
+			paramArrayType=last.ParameterType.GetElementType();
+			return true;
+		}
+
+		if(args.Length>parameters.Length){//Too many args
+			//Check params array
+			var last=parameters[parameters.Length-1];
+			if(!last.ParameterType.IsArray||
+			   !last.IsDefined(typeof(ParamArrayAttribute),true)) return false;
+
+			paramArrayType=last.ParameterType.GetElementType();
+		} else{
+			//Normally in C# you can pass in an array for ParamArray as well as single objects.
+			//But over RPC this is not allowed, therfore we don't add any check if the last value could be an array
+			var last=parameters[parameters.Length-1];
+			if(last.ParameterType.IsArray&&
+			   last.IsDefined(typeof(ParamArrayAttribute),true)){
+				paramArrayType=last.ParameterType.GetElementType();
+			}
+		}
+		return true;
+	}
+
+	/*
+	Returns true if method2 is more specific
+	Returns false if method1 is more specific
+	Returns null if ambiguous
+	 */
+	private static bool? FindMostSpecificMethod(
+		MethodInfo method1,ParameterInfo[] parameters1,Type? paramArray1,
+		MethodInfo method2,ParameterInfo[] parameters2,Type? paramArray2,
+		int argsLength
+	){
+		// A method using params is always less specific than one not using params
+		if(paramArray1!=null^paramArray2!=null) return paramArray1!=null;
+
+
+		var less1=false;
+		var less2=false;
+		for(var i=0;i<argsLength;i++){
+			var c1=paramArray1!=null&&i>=parameters1.Length-1?paramArray1:parameters1[i].ParameterType;
+			var c2=paramArray2!=null&&i>=parameters2.Length-1?paramArray2:parameters2[i].ParameterType;
+
+			if(c1==c2) continue;
+
+			switch(FindMostSpecificType(c1,c2)){
+				case null:
+					less1=less2=true;
 					break;
-
-			if(j!=par.Length-1) return false;
-
-			if(par[j].DefaultValue==DBNull.Value){
-				if(!par[j].ParameterType.IsArray||
-				   !par[j].IsDefined(typeof(ParamArrayAttribute),true)) return false;
-
-				paramArrayType=par[j].ParameterType.GetElementType();
+				case false:
+					less1=true;
+					break;
+				case true:
+					less2=true;
+					break;
 			}
-			return true;
-		}
-		if(par.Length<args.Length){//Too many args
-
-			//check var ParamsArray
-			var lastArgPos=par.Length-1;
-			if(!par[lastArgPos].ParameterType.IsArray||
-			   !par[lastArgPos].IsDefined(typeof(ParamArrayAttribute),true)) return false;
-
-			paramArrayType=par[lastArgPos].ParameterType.GetElementType();
-			return true;
+			if(less1&&less2) break;
 		}
 
-		{
-			var lastArgPos=par.Length-1;
-			if(par[lastArgPos].ParameterType.IsArray
-			   &&par[lastArgPos].IsDefined(typeof(ParamArrayAttribute),true)
-			   &&!par[lastArgPos].ParameterType.IsAssignableFrom(argTypes[lastArgPos]))
-				paramArrayType=par[lastArgPos].ParameterType.GetElementType();
-			return true;
+		// Two ways p1Less and p2Less can be equal. All the arguments are the
+		//  same they both equal false, otherwise there were things that both
+		//  were the most specific type on....
+		if(less1==less2){
+			// if we cannot tell which is a better match based on parameter types (p1Less == p2Less),
+			// let's see which one has the most matches without using the params array (the longer one wins).
+			if(!less1&&parameters1.Length!=parameters2.Length)
+				return parameters1.Length<parameters2.Length;
+		} else return less2;
+		
+		//Check if methods have exact same signature
+		if(parameters1.Length!=parameters2.Length) return null;
+		for(var i=0;i<parameters1.Length;i++)
+			if(parameters1[i].ParameterType!=parameters2[i].ParameterType)
+				return null;
+
+		var depth1=method1.DeclaringType;
+		var depth2=method2.DeclaringType;
+		while(depth1!=null&&depth2!=null){
+			depth1=depth1.BaseType;
+			depth2=depth2.BaseType;
 		}
+		if(depth1==depth2) return null;//Same depth
+		return depth2!=null;
 	}
 
-	private static Type? GetNthArgType(BindingFlags bindingAttr,ParameterInfo[] par,object?[] args,Type? paramArrayType,int index){
-		if(paramArrayType!=null&&index>=par.Length-1)
-			return paramArrayType;
-		var type=par[index].ParameterType;
-		if(type.IsByRef) type=type.GetElementType();
-		if(type==typeof(object)) return null;//Will accept all
+	private static bool? FindMostSpecificType(Type c1,Type c2){
+		if(c1==c2) return null;
+		
+		bool c1FromC2;
+		bool c2FromC1;
+		
 
-		if((bindingAttr&BindingFlags.OptionalParamBinding)!=0&&args[index]==Type.Missing) return null;
-
-		return type;
-	}
-
-	private static void CorrectArgs(MethodBase method,ParameterInfo[] par,ref object?[] args,Type? paramArrayType){
-		// If the parameters and the args are not the same length or there is a paramArray
-		//  then we need to create an argument array.
-
-		if(par.Length==args.Length){
-			if(paramArrayType!=null){
-				var objs=new object[par.Length];
-				var lastPos=par.Length-1;
-				Array.Copy(args,objs,lastPos);
-				objs[lastPos]=Array.CreateInstance(paramArrayType,1);
-				((Array)objs[lastPos]).SetValue(RpcDataPrimitive.Cast(args[lastPos],paramArrayType),0);
-				args=objs;
-			}
-		} else if(par.Length>args.Length){
-			object?[] objs=new object[par.Length];
-
-			int i;
-			for(i=0;i<args.Length;i++) objs[i]=args[i];
-
-			for(;i<par.Length-1;i++) objs[i]=par[i].DefaultValue;
-
-			if(paramArrayType!=null) objs[i]=Array.CreateInstance(paramArrayType,0);// create an empty array for the
-
-			else objs[i]=par[i].DefaultValue;
-
-			args=objs;
-		} else if((method.CallingConvention&CallingConventions.VarArgs)==0){
-			var objs=new object[par.Length];
-			var paramArrayPos=par.Length-1;
-			Array.Copy(args,objs,paramArrayPos);
-			objs[paramArrayPos]=Array.CreateInstance(paramArrayType??throw new NullReferenceException(),args.Length-paramArrayPos);
-			var array=(Array)objs[paramArrayPos];
-			for(var i=0;i<args.Length-paramArrayPos;i++)
-				array.SetValue(RpcDataPrimitive.Cast(args[paramArrayPos+i],paramArrayType),i);
-
-			args=objs;
+		if(c1.IsPrimitive&&c2.IsPrimitive){
+			c1FromC2=CanChangePrimitive(c2,c1);
+			c2FromC1=CanChangePrimitive(c1,c2);
+		} else{
+			c1FromC2=c1.IsAssignableFrom(c2);
+			c2FromC1=c2.IsAssignableFrom(c1);
 		}
+
+		if(c1FromC2==c2FromC1) return null;
+		return c1FromC2;
 	}
 
 
 	#region Primitives
-	// This will determine if the source can be converted to the target type
 	private static bool CanChangePrimitive(Type source,Type target){
 		if(source==typeof(IntPtr)&&target==typeof(IntPtr)||
 		   source==typeof(UIntPtr)&&target==typeof(UIntPtr)) return true;

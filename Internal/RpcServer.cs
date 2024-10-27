@@ -5,6 +5,7 @@ using PlayifyRpc.Types;
 using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
+using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
@@ -45,13 +46,13 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 				try{
 					return (c.PrettyName,await new RpcObject("$"+c.Id).GetRpcVersion());
 				} catch(RpcMetaMethodNotFoundException){
-					return (c.PrettyName," Old Version");
+					return (c.PrettyName,"Old Version");
 				} catch(RpcException e){
-					return (c.PrettyName," Error:"+e);
+					return (c.PrettyName,"Error:"+e);
 				}
 			}));
 		return new StringMap<string>((await task).OrderBy(t=>t.PrettyName).ToDictionary());
-	}
+	}//TODO also add reverse view from version to clients
 
 	public static StringMap<string[]> GetRegistrations(bool includeHidden=false){
 		lock(ServerConnection.Connections){
@@ -70,10 +71,9 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	}
 
 	#region Clones from Rpc class
-	public static Task<RpcDataPrimitive> CallFunction(string type,string method,params RpcDataPrimitive[] args){
-		var ctx=Rpc.GetContext();
-		var call=FunctionCallContext.CallFunctionRaw(type,method,args)
-		                            .WithCancellation(ctx.CancellationToken);
+	public static Task<RpcDataPrimitive> CallFunction(FunctionCallContext ctx,string type,string method,params RpcDataPrimitive[] args){
+		if(type==null) throw new NullReferenceException("Type is null");
+		var call=Invoker.CallFunctionRaw(type,method,args).WithCancellation(ctx.CancellationToken);
 		call.AddMessageListenerRaw(msg=>ctx.SendMessageRaw(msg));
 		ctx.AddMessageListenerRaw(msg=>call.SendMessageRaw(msg));
 
@@ -82,10 +82,10 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
 	public static Task<RpcDataPrimitive> EvalObject(string expression)=>Evaluate.EvalObject(expression);
-	public static Task ListenCalls()=>ListenAllCalls.Listen(Rpc.GetContext());
+	public static Task ListenCalls(FunctionCallContext ctx)=>ListenAllCalls.Listen(ctx);
 	#endregion
 
-	#region Extension Methods, not available via eval
+	#region Extension Methods (otherwise only available in eval using specialized syntax)
 	public static bool Exists(string type)=>CheckType(type);
 	public static Task<string[]> GetMethods(string type)=>new RpcObject(type).GetMethods();
 	public static Task<(string[] parameters,string returns)[]> GetMethodSignatures(string type,string method,bool typescript=false)=>new RpcFunction(type,method).GetMethodSignatures(typescript);

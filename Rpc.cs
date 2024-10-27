@@ -1,8 +1,10 @@
-﻿using System.Diagnostics;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyUtility.Loggers;
+#if NETFRAMEWORK
+using System.Diagnostics;
+#endif
 
 namespace PlayifyRpc;
 

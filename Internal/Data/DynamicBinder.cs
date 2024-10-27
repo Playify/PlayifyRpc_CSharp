@@ -1,142 +1,154 @@
-using System.Globalization;
 using System.Reflection;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
 
-public partial class DynamicBinder:Binder{
-	private static readonly ThreadLocal<MethodInfo?> CurrentMethod=new();
-	private static DynamicBinder? _instance;
-	public static DynamicBinder Instance=>_instance??=new DynamicBinder();
+public static partial class DynamicBinder{
 
-	private DynamicBinder(){
-	}
+	public static object? InvokeMethod(Delegate func,string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)
+		=>InvokeMethod(func.Target,[func.Method],type,method,args,ctx);
 
-	//Intentionally throws MethodAccessException instead of MethodMissingException
-	public sealed override MethodBase BindToMethod(BindingFlags bindingAttr,MethodBase[] match,ref object?[] args,
-		ParameterModifier[]? modifiers,CultureInfo? cultureInfo,string[]? names,out object? state){
-		if(names!=null) throw new NotSupportedException("Named arguments are not supported");
-		if(match==null||match.Length==0) throw new ArgumentException(nameof(match));
+	public static object? InvokeMethod(object? instance,IList<MethodInfo> overloads,string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)
+		=>InvokeThrow(instance,overloads,args,msg=>new RpcMethodNotFoundException(type,method,msg),ctx);
 
-		if(CurrentMethod.Value is{} only){
-			match=match.Contains(only)?[only]:[];
-			CurrentMethod.Value=null;
-		}
+	public static object? InvokeMeta(Delegate func,string? type,string meta,RpcDataPrimitive[] args,FunctionCallContext ctx)
+		=>InvokeThrow(func.Target,[func.Method],args,msg=>new RpcMetaMethodNotFoundException(type,meta,msg),ctx);
 
-		state=null;
+	public static object? InvokeThrow(Delegate func,RpcDataPrimitive[] args)=>InvokeThrow(func.Target,[func.Method],args,msg=>new RpcException(null,null,msg,""),null);
 
-		//Create candidates
-		var candidates=CreateCandidates(match);
-		if(candidates.All(c=>!c.HasValue)) throw new MethodAccessException("Method not found");
+	public static object? InvokeThrow(object? instance,IList<MethodInfo> overloads,RpcDataPrimitive[] args,Func<string,RpcException> error,FunctionCallContext? ctx){
+		try{
+			if(overloads.Count==0) throw error("No overload found at all");
 
+			var candidates=new ParameterInfo[]?[overloads.Count];
+			for(var i=0;i<overloads.Count;i++){
+				var parameters=overloads[i].GetParameters();
+				if(parameters.Any(p=>p.IsOut||p.ParameterType.IsByRef)) continue;//No viable overload, 'ref' and 'out' is not supported
 
-		//Create cache for arg types
-		var paramArrayTypes=new Type?[candidates.Length];
-
-		var argTypes=new Type?[args.Length];
-		for(var i=0;i<args.Length;i++)
-			argTypes[i]=args[i]?.GetType();
-
-
-		//Filter by arg length
-		for(var canIndex=0;canIndex<candidates.Length;canIndex++){
-			if(!candidates[canIndex].TryGet(out var candidate)) continue;
-			var (method,par)=candidate;
-			if(!FilterByArgLength(method,par,args,argTypes,out paramArrayTypes[canIndex]))
-				candidates[canIndex]=null;
-		}
-		if(candidates.All(c=>!c.HasValue)) throw new MethodAccessException("Method doesn't accept "+args.Length+" arguments");
-
-
-		//Filter by arg types
-		var candidateArgTypes=new Type?[candidates.Length];
-		for(var argIndex=0;argIndex<args.Length;argIndex++){
-			//Get all arg types
-			for(var canIndex=0;canIndex<candidates.Length;canIndex++)
-				if(!candidates[canIndex].TryGet(out var candidate)) candidateArgTypes[canIndex]=null;
-				else candidateArgTypes[canIndex]=GetNthArgType(bindingAttr,candidate.par,args,paramArrayTypes[canIndex],argIndex);
-
-			Type? nThCommonType=null;
-			for(var canIndex=0;canIndex<candidates.Length;canIndex++)
-				if(nThCommonType==null) nThCommonType=candidateArgTypes[canIndex];
-				else if(candidateArgTypes[canIndex]==null){
-				} else if(nThCommonType!=candidateArgTypes[canIndex]){//Not common, each candidate has to be checked separately
-
-					for(canIndex=0;canIndex<candidates.Length;canIndex++){
-						if(candidateArgTypes[canIndex] is not{} candidateArgType) continue;
-						var value=args[argIndex];
-						if(!RpcDataPrimitive.TryCast(value,candidateArgType,out _))
-							candidates[canIndex]=null;
+				if(ctx!=null){//Filter out FunctionCallContext parameter, it gets filled in later but for now it is in the way
+					var fccIndex=Array.FindIndex(parameters,p=>p.ParameterType==typeof(FunctionCallContext));
+					if(fccIndex!=-1){
+						var newParameters=new ParameterInfo[parameters.Length-1];
+						Array.Copy(parameters,newParameters,fccIndex);
+						Array.Copy(parameters,fccIndex+1,newParameters,fccIndex,parameters.Length-fccIndex-1);
+						parameters=newParameters;
 					}
-
-					nThCommonType=null;
-					break;
 				}
 
-			if(nThCommonType==null) continue;//Type will be accepted, so next arg can be handled
-
-			try{
-				//Try casting the corresponding arg to the type, and throw if not correct
-				RpcDataPrimitive.Cast(args[argIndex],nThCommonType);
-				/*don't use 'args[argIndex]=' here, as it should also work for the TryCast variant, that can't use that*/
-			} catch(RpcDataException e){
-				e.Data["argIndex"]=argIndex;
-				throw;
+				candidates[i]=parameters;
 			}
-		}
-		var currentMin=Array.FindIndex(candidates,c=>c!=null);
-		if(currentMin==-1) throw new MethodAccessException("Method doesn't accept those argument types");
+			if(candidates.All(c=>c==null)) throw error("No viable overload found");
+
+			var paramArrayTypes=new Type?[candidates.Length];
+
+			//Check based on argument length
+			for(var i=0;i<candidates.Length;i++)
+				if(candidates[i] is{} candidate&&!FilterByArgLength(overloads[i],candidate,args,out paramArrayTypes[i]))
+					candidates[i]=null;
+			if(candidates.All(c=>c==null)) throw error("Method doesn't accept "+args.Length+" arguments");
 
 
-		var ambiguous=false;
-		for(var canIndex=currentMin+1;canIndex<candidates.Length;canIndex++){
-			if(!candidates[canIndex].TryGet(out var newTuple)||
-			   !candidates[currentMin].TryGet(out var oldTuple))
-				continue;
+			//Check parameters one by one
+			var typesOfCurrentArg=new Type?[candidates.Length];
+			for(var argIndex=0;argIndex<args.Length;argIndex++){
+				//get all current args of all candidates
+				for(var candidateIndex=0;candidateIndex<candidates.Length;candidateIndex++)
+					typesOfCurrentArg[candidateIndex]=
+						candidates[candidateIndex] is not{} candidate
+							?null
+							:argIndex>=candidate.Length-1&&paramArrayTypes[candidateIndex] is{} paramArray
+								?paramArray
+								:candidate[argIndex].ParameterType;
 
-			#region Walk all of the methods looking the most specific method to invoke
-			var newMin=FindMostSpecificMethod(oldTuple,
-				paramArrayTypes[currentMin],
-				newTuple,
-				paramArrayTypes[canIndex],
-				argTypes,
-				args);
+				
+				var isCommonType=true;
+				Type? commonType=null;
+				for(var candidateIndex=0;candidateIndex<candidates.Length;candidateIndex++)
+					if(commonType==null) commonType=typesOfCurrentArg[candidateIndex];
+					else if(typesOfCurrentArg[candidateIndex] is{} currType&&currType!=commonType)
+						isCommonType=false;
 
-			if(newMin==0) ambiguous=true;
-			else if(newMin==2){
-				currentMin=canIndex;
-				ambiguous=false;
+				if(isCommonType){
+					if(commonType==null) throw error("Error casting arguments");
+
+					try{
+						args[argIndex].TryTo(commonType,out _,true);
+					} catch(RpcDataException e){
+						e.Data["argIndex"]=argIndex;
+						throw;
+					}
+				} else{
+					for(var candidateIndex=0;candidateIndex<candidates.Length;candidateIndex++)
+						if(typesOfCurrentArg[candidateIndex] is{} type&&!args[argIndex].TryTo(type,out _,false))
+							candidates[candidateIndex]=null;
+					if(candidates.All(c=>c==null)){
+						var e=error("Method doesn't accept those argument types");
+						e.Data["argIndex"]=argIndex;
+						throw e;
+					}
+				}
 			}
-			#endregion
 
+			var currentMin=Array.FindIndex(candidates,c=>c!=null);
+
+			var ambiguous=false;
+			var old=candidates[currentMin]!;
+			for(var i=currentMin+1;i<candidates.Length;i++)
+				if(candidates[i] is{} @new)
+					//Walk all methods looking for the most specific one
+					if(!FindMostSpecificMethod(
+						   overloads[currentMin],old,paramArrayTypes[currentMin],
+						   overloads[i],@new,paramArrayTypes[i],
+						   args.Length
+					   ).TryGet(out var isMoreSpecific)) ambiguous=true;
+					else if(isMoreSpecific){
+						currentMin=i;
+						old=@new;
+						ambiguous=false;
+					}
+			if(ambiguous){
+				var e=error("Call is ambiguous");
+				e.Data["ambiguous"]=true;
+				throw e;
+			}
+
+
+			//Best candidate found, read all args and invoke
+
+			var method=overloads[currentMin];
+			var paramsArrayType=paramArrayTypes[currentMin];
+
+			var allParameters=method.GetParameters();
+			var arguments=new object?[allParameters.Length];
+			var rpcArgIndex=0;
+
+			for(var i=0;i<allParameters.Length;i++){
+				var allParam=allParameters[i];
+				if(i==allParameters.Length-1&&paramsArrayType!=null){
+					var paramsArray=Array.CreateInstance(paramsArrayType,Math.Max(0,args.Length-rpcArgIndex));
+					for(var paramsIndex=0;paramsIndex<paramsArray.Length;paramsIndex++)
+						paramsArray.SetValue(args[rpcArgIndex++].To(paramsArrayType),paramsIndex);
+					rpcArgIndex=args.Length;
+					arguments[i]=paramsArray;
+				} else if(old.Length<=rpcArgIndex||allParam!=old[rpcArgIndex]){//Parameter was filtered out beforehand, fill it with FunctionCallContext
+					arguments[i]=ctx;
+				} else if(rpcArgIndex<args.Length){
+					arguments[i]=args[rpcArgIndex++].To(allParam.ParameterType);
+				} else{
+					rpcArgIndex++;
+					arguments[i]=allParam.DefaultValue;
+				}
+				//maybe somewhere in here, there should be a check for method.CallingConvention&CallingConventions.VarArgs
+			}
+
+
+			return method.Invoke(instance,arguments);
+		} catch(TargetInvocationException e){
+			throw RpcException.WrapAndFreeze(e.InnerException??e);
+		} catch(Exception e){
+			throw RpcException.WrapAndFreeze(e);
 		}
-
-		if(ambiguous) throw new AmbiguousMatchException();
-
-		{
-			var (method,par)=candidates[currentMin]!.Value;
-			var paramArrayType=paramArrayTypes[currentMin];
-			CorrectArgs(method,par,ref args,paramArrayType);
-			return method;
-		}
-	}
-
-	public override object ChangeType(object value,Type type,CultureInfo? cultureInfo)=>RpcDataPrimitive.Cast(value,type)!;
-
-	public override FieldInfo BindToField(BindingFlags bindingAttr,FieldInfo[] match,
-		object value,CultureInfo? cultureInfo)
-		=>throw new NotSupportedException();
-
-	public override MethodBase SelectMethod(BindingFlags bindingAttr,MethodBase[] match,
-		Type[] types,ParameterModifier[]? modifiers)
-		=>throw new NotSupportedException();
-
-	public override PropertyInfo SelectProperty(BindingFlags bindingAttr,PropertyInfo[] match,
-		Type? returnType,Type[]? indexes,ParameterModifier[]? modifiers)
-		=>throw new NotSupportedException();
-
-
-	public override void ReorderArgumentArray(ref object?[] args,object state){
 	}
 }

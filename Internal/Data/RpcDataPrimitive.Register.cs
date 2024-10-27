@@ -38,7 +38,7 @@ public readonly partial struct RpcDataPrimitive{
 		Func<T,IEnumerable<(string key,RpcDataPrimitive value)>,bool,bool> setProps,
 		RpcDataTypeStringifier.KnownFunc toString
 	) where T : notnull,new()=>Register<T>(
-		(p,a)=>a[p]=new RpcDataPrimitive(()=>getProps(p).Select(t=>(t.key,From(t.value)))),
+		(p,a)=>a[p]=new RpcDataPrimitive(()=>getProps(p).Select(t=>(t.key,From(t.value,a)))),
 		(p,throwOnError)=>{
 			if(p.IsNull()&&CanBeNull(typeof(T))) return null;
 			if(p.IsAlready(out T already)) return already;

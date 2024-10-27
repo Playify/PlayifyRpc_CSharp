@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
+using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types;
@@ -16,10 +17,10 @@ public readonly struct RpcObject(string type):IDynamicMetaObjectProvider{
 	public PendingCall<T> CallFunction<T>(string name,params object?[] args)=>Rpc.CallFunction<T>(Type,name,args);
 	public PendingCall<RpcDataPrimitive> CallFunctionRaw(string name,RpcDataPrimitive[] args)=>Rpc.CallFunctionRaw(Type,name,args);
 
-	public Task<string[]> GetMethods()=>FunctionCallContext.CallFunction<string[]>(Type,null,"M");
+	public Task<string[]> GetMethods()=>Invoker.CallFunction<string[]>(Type,null,"M");
 	public Task<(string[] parameters,string returns)[]> GetMethodSignatures(string method,bool typeScript=false)=>GetFunction(method).GetMethodSignatures(typeScript);
-	public Task<string> GetRpcVersion()=>FunctionCallContext.CallFunction<string>(Type,null,"V");
-	public Task<bool> Exists()=>FunctionCallContext.CallFunction<bool>(null,"E",Type);
+	public Task<string> GetRpcVersion()=>Invoker.CallFunction<string>(Type,null,"V");
+	public Task<bool> Exists()=>Invoker.CallFunction<bool>(null,"E",Type);
 
 
 	DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)=>new MetaObject(parameter,Type);

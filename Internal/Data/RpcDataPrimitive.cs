@@ -32,21 +32,38 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	#region Parse & ToString
 	public override string ToString()=>ToString(true);
 
-	public string ToString(bool pretty){
+	public string ToString(bool pretty)=>ToString(pretty,null);
+
+	private string ToString(bool pretty,Stack<RpcDataPrimitive>? already){
 		if(IsNull()) return "null";
 		if(IsBool(out var b)) return b?"true":"false";
 		if(IsBigIntegerAndNothingElse(out var big)) return big.ToString();
 		if(IsNumber(long.MinValue,long.MaxValue,out var l)) return l.ToString();
 		if(IsNumber(out var d)) return d.ToString(CultureInfo.InvariantCulture);
 		if(IsString(out var s)) return JsonString.Escape(s);
-		if(IsArray(out var childs,out var len))
+		if(already?.Contains(this)??false) return "<<Cyclic Reference>>";
+		if(IsArray(out var childs,out var len)){
 			if(len==0) return "[]";
-			else if(pretty) return $"[\n\t{childs.Join(",\n").Replace("\n","\n\t")}\n]";
-			else return $"[{childs.Join(",")}]";
-		if(IsObject(out var tuples))
-			if(!pretty) return "{"+tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(pretty)}").Join(",")+"}";
-			else if((s=tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(pretty)}").Join(",\n"))=="") return "{}";
-			else return "{\n\t"+s.Replace("\n","\n\t")+"\n}";
+			(already??=[]).Push(this);
+			s=pretty
+				  ?$"[\n\t{childs
+				           .Select(c=>c.ToString(true,already))
+				           .Join(",\n")
+				           .Replace("\n","\n\t")}\n]"
+				  :$"[{childs
+				       .Select(c=>c.ToString(false,already))
+				       .Join(",")}]";
+			already.Pop();
+			return s;
+		}
+		if(IsObject(out var tuples)){
+			(already??=[]).Push(this);
+			if(!pretty) s="{"+tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(false,already)}").Join(",")+"}";
+			else if((s=tuples.Select(kv=>$"{JsonString.Escape(kv.key)}:{kv.value.ToString(true,already)}").Join(",\n"))=="") s="{}";
+			else s="{\n\t"+s.Replace("\n","\n\t")+"\n}";
+			already.Pop();
+			return s;
+		}
 		if(IsCustom(out object custom)) return $"{custom}";
 
 		return $"<<Invalid: {_data} of type {RpcDataTypeStringifier.FromType(_data?.GetType()??typeof(object))}>>";
@@ -69,18 +86,12 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	#endregion
 
 	#region Null
-	public RpcDataPrimitive(){
-		_data=null;
-	}
-
+	public RpcDataPrimitive()=>_data=null;
 	public bool IsNull()=>_data==null;
 	#endregion
 
 	#region Boolean
-	public RpcDataPrimitive(bool @bool){
-		_data=@bool;
-	}
-
+	public RpcDataPrimitive(bool @bool)=>_data=@bool;
 	public bool IsBool(out bool b){
 		if(_data is bool bb){
 			b=bb;
@@ -92,18 +103,9 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	#endregion
 
 	#region Number
-	public RpcDataPrimitive(long number){
-		_data=number;
-	}
-
-	public RpcDataPrimitive(double number){
-		_data=number;
-	}
-
-	public RpcDataPrimitive(BigInteger number){
-		_data=number;
-	}
-
+	public RpcDataPrimitive(long number)=>_data=number;
+	public RpcDataPrimitive(double number)=>_data=number;
+	public RpcDataPrimitive(BigInteger number)=>_data=number;
 	public bool IsNumber(long min,long max,out long l){
 		switch(_data){
 			case long ll:
@@ -150,15 +152,8 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	#endregion
 
 	#region String
-	public RpcDataPrimitive(string @string){
-		_data=@string;
-	}
-
-	public RpcDataPrimitive(char @char){
-		_data=@char;
-	}
-
-
+	public RpcDataPrimitive(string @string)=>_data=@string;
+	public RpcDataPrimitive(char @char)=>_data=@char;
 	public bool IsString(out string s){
 		switch(_data){
 			case string ss:
@@ -172,7 +167,6 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 				return false;
 		}
 	}
-
 	internal bool IsChar(out char c){
 		switch(_data){
 			case char cc:
@@ -286,5 +280,4 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 			  ?tuple.Item3.NotNull(out a!)
 			  :FunctionUtils.TryGetNever(out a!);
 	#endregion
-
 }

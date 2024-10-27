@@ -3,7 +3,6 @@ using System.Text;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
-using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Types.Invokers;
 using PlayifyUtility.Loggers;
 using PlayifyUtility.Streams.Data;
@@ -204,8 +203,7 @@ internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 			var args=RpcDataPrimitive.ReadArray(data);
 
 			try{
-				var obj=await FunctionCallContext.RunWithContextAsync(()=>connection._invoker.Invoke(null!,method,args),null!,null,method,args);
-				var result=RpcDataPrimitive.From(obj);
+				var result=await Invoker.RunAndAwait(ctx=>connection._invoker.Invoke(null!,method,args,ctx),null!,null,method,args);
 				await connection.Resolve(callId,result);
 			} catch(Exception e){
 				await connection.Reject(callId,e);

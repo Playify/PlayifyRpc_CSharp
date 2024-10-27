@@ -35,7 +35,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 
 
 	internal static async Task Connect(Uri uri,NameValueCollection? headers){
-		if(TcsOnce!=null) throw new RpcConnectionException("Already connected");
+		if(IsConnecting()) throw new RpcConnectionException("Already connected");
 		StartConnect();
 		while(true)
 			try{

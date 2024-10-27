@@ -16,8 +16,8 @@ public partial class RpcException{
 		
 		try{
 			foreach(var type in assembly.GetTypes()){
-				var attribute=type.GetCustomAttribute<RpcCustomExceptionAttribute>();
-				if(attribute==null) continue;
+				if(type.GetCustomAttribute<RpcCustomExceptionAttribute>() is not{} attribute) continue;
+				
 				if(!typeof(RpcException).IsAssignableFrom(type)) throw new Exception("Type "+type+" does not inherit from "+nameof(RpcException));
 
 				//Prefer the constructor with 5 parameters, if that's not available, then check for a 4 parameter constructor

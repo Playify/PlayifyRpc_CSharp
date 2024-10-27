@@ -6,7 +6,7 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Types.Data.Objects;
 
 [PublicAPI]
-public class RpcDataObjectExtraProps:RpcDataObject{
+public abstract class RpcDataObjectExtraProps:RpcDataObject{
 	[RpcHidden]public readonly InsertionOrderDictionary<string,RpcDataPrimitive> ExtraProps=new();
 
 	protected override bool TrySetExtraProp(string s,RpcDataPrimitive primitive,bool throwOnError)=>ExtraProps.TryAdd(s,primitive);

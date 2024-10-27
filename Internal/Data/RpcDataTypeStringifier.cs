@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using PlayifyRpc.Types.Functions;
 using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
@@ -14,9 +15,7 @@ public static class RpcDataTypeStringifier{
 
 	public delegate string? UnknownFunc(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics);
 
-	static RpcDataTypeStringifier(){
-		RpcSetupAttribute.LoadAll();
-	}
+	static RpcDataTypeStringifier()=>RpcSetupAttribute.LoadAll();
 
 
 	public static string FromType(Type type,bool typescript=false)=>Stringify(type,typescript,true,()=>null,null);
@@ -29,10 +28,18 @@ public static class RpcDataTypeStringifier{
 		var returns=ParameterType(method.ReturnParameter!,false,typescript);
 		var list=new List<string>(prevParameters);
 
+		var filteredFcc=false;
+
 		foreach(var parameter in method.GetParameters()){
 			if(parameter.IsOptional) yield return (list.ToArray(),returns);
+			if(parameter.IsOut||parameter.ParameterType.IsByRef) yield break;//'ref' and 'out' is not supported
 
-			var @params=parameter.ParameterType.IsArray&&parameter.GetCustomAttribute<ParamArrayAttribute>()!=null?typescript?"...":"params ":"";
+			if(!filteredFcc&&parameter.ParameterType==typeof(FunctionCallContext)){
+				filteredFcc=true;
+				continue;//Skip this argument (once)
+			}
+
+			var @params=parameter.ParameterType.IsArray&&parameter.IsDefined(typeof(ParamArrayAttribute),true)?typescript?"...":"params ":"";
 			var parameterType=ParameterType(parameter,true,typescript);
 			list.Add(@params+Parameter(typescript,parameterType,parameter.Name));
 		}

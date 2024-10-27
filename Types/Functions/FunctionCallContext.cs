@@ -7,10 +7,7 @@ namespace PlayifyRpc.Types.Functions;
 public delegate void MessageFunc(params RpcDataPrimitive[] args);
 
 [PublicAPI]
-public partial class FunctionCallContext{
-	private static int _nextId;
-
-	private static readonly ThreadLocal<FunctionCallContext?> ThreadLocal=new();
+public sealed partial class FunctionCallContext{
 	private readonly CancellationTokenSource _cts=new();
 	private readonly MessageFunc _send;
 	private readonly Func<Task<string>> _caller;

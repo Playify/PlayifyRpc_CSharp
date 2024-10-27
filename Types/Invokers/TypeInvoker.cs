@@ -2,6 +2,7 @@ using System.Reflection;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Invokers;
@@ -9,80 +10,52 @@ namespace PlayifyRpc.Types.Invokers;
 [PublicAPI]
 public class TypeInvoker:Invoker{
 	private readonly object? _instance;
-	private readonly Type _type;
+	private readonly Dictionary<string,List<MethodInfo>> _methods;
 
-	private BindingFlags BindingFlags
-		=>BindingFlags.InvokeMethod|
-		  BindingFlags.IgnoreCase|
-		  BindingFlags.Public|
-		  BindingFlags.OptionalParamBinding|
-		  BindingFlags.Static|
-		  (_instance!=null
-			   ?BindingFlags.FlattenHierarchy|
-			    BindingFlags.Instance
-			   :0);
-
-	protected TypeInvoker(){
-		_type=GetType();
-		_instance=this;
+	// ReSharper disable once RedundantCast
+	protected TypeInvoker():this((Type)null!){
 	}
 
 	public TypeInvoker(object instance):this(instance.GetType(),instance){
 	}
 
 	public TypeInvoker(Type type,object? instance=null){
-		_type=type;
+		if(type==null!){
+			type=GetType();
+			instance=this;
+		}
 		_instance=instance;
 		type.RunClassConstructor();
+
+		var bindingFlags=BindingFlags.InvokeMethod|
+		                 BindingFlags.IgnoreCase|
+		                 BindingFlags.Public|
+		                 BindingFlags.OptionalParamBinding|
+		                 BindingFlags.Static|
+		                 (_instance!=null
+			                  ?BindingFlags.FlattenHierarchy|
+			                   BindingFlags.Instance
+			                  :0);
+		_methods=type.GetMethods(bindingFlags)
+		             .Where(m=>m.DeclaringType!=typeof(object))
+		             .Where(m=>!m.IsDefined(typeof(RpcHiddenAttribute),true))
+		             .ToLookup(m=>m.Name,StringComparer.OrdinalIgnoreCase)
+		             .ToDictionary(g=>g.Key,g=>g.ToList(),StringComparer.OrdinalIgnoreCase);
 	}
 
-	protected sealed override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args){
-		try{
-			return _type.InvokeMember(method,
-				BindingFlags,
-				DynamicBinder.Instance,
-				_instance,
-				args.Cast<object>().ToArray());
-		} catch(TargetInvocationException e){
-			throw RpcException.WrapAndFreeze(e.InnerException??e);
-		} catch(MissingMethodException){
-			if(GetMethodsDirect().Any(m=>m.Equals(method,StringComparison.OrdinalIgnoreCase)))
-				throw new RpcMethodNotFoundException(type,method,"Method doesn't accept "+args.Length+" arguments");
-			throw new RpcMethodNotFoundException(type,method);
-		} catch(MethodAccessException e){
-			throw new RpcMethodNotFoundException(type,method,e.Message);
-		} catch(AmbiguousMatchException){
-			throw new RpcMethodNotFoundException(type,method,"Call is ambiguous"){Data={{"ambiguous",true}}};
-		} catch(RpcDataException e){
-			throw new RpcMethodNotFoundException(type,method,"Error casting arguments",e);
-		} catch(Exception e){
-			throw RpcException.WrapAndFreeze(e);
-		}
-	}
+	protected sealed override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)
+		=>!_methods.TryGetValue(method,out var list)
+			  ?throw new RpcMethodNotFoundException(type,method)
+			  :DynamicBinder.InvokeMethod(_instance,list,type,method,args,ctx);
 
-	private IEnumerable<string> GetMethodsDirect()=>_type.GetMethods(BindingFlags)
-	                                                     .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
-	                                                     .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder
-	                                                     .Select(m=>m.Name)
-	                                                     .Distinct();
+	protected sealed override ValueTask<string[]> GetMethods()
+		=>new(_methods.Select(g=>g.Key).ToArray());
 
-	protected sealed override ValueTask<string[]> GetMethods()=>new(GetMethodsDirect().ToArray());
-
-	protected sealed override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts){
-		var signatures=_type.GetMethods(BindingFlags)
-		                    .Where(m=>m.DeclaringType!=typeof(object))//in DynamicInvoke, this is handled inside the DynamicBinder
-		                    .Where(m=>m.GetCustomAttribute<RpcHiddenAttribute>()==null)//in DynamicInvoke, this is handled inside the DynamicBinder
-		                    .Where(m=>m.Name.Equals(method,StringComparison.OrdinalIgnoreCase))
-		                    .SelectMany(m=>RpcDataTypeStringifier.MethodSignatures(m,ts))
-		                    .ToArray();
-		return signatures.Length==0
-			       ?new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)))
-			       :new ValueTask<(string[] parameters,string returns)[]>(signatures);
-	}
-}
-
-[PublicAPI]
-public class TypeInvoker<T>:TypeInvoker{
-	public TypeInvoker():base(typeof(T)){}
-	public TypeInvoker(T? instance):base(typeof(T),instance){}
+	protected sealed override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts)
+		=>_methods.TryGetValue(method,out var list)
+			  ?new ValueTask<(string[] parameters,string returns)[]>(
+				  list.SelectMany(m=>RpcDataTypeStringifier.MethodSignatures(m,ts)).ToArray())
+			  :new ValueTask<(string[] parameters,string returns)[]>(
+				  Task.FromException<(string[] parameters,string returns)[]>(
+					  new RpcMethodNotFoundException(type,method)));
 }

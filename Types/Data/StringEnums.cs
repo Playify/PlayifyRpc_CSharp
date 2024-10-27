@@ -21,8 +21,8 @@ public readonly struct StringEnum<T>(T value) where T : struct,Enum{
 
 [RpcSetup]
 [PublicAPI]
-public static class StringEnum{
-	static StringEnum(){
+public static class StringEnums{
+	static StringEnums(){
 		RpcDataPrimitive.Register(
 			typeof(StringEnum<>),
 			(o,_)=>new RpcDataPrimitive($"{o}"),
@@ -32,7 +32,7 @@ public static class StringEnum{
 					return Activator.CreateInstance(type,result);
 				return RpcDataPrimitive.ContinueWithNext;
 			},
-			(_,generics)=>RpcDataTypeStringifier.TypeName(typeof(StringEnum),generics)
+			(_,generics)=>RpcDataTypeStringifier.TypeName(typeof(StringEnum<>),generics)
 		);
 	}
 
