@@ -251,9 +251,9 @@ internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				Logger.Warning(types.Length==1
 					               ?$"Tried registering Type \"{types[0]}\""
 					               :$"Tried registering Types \"{types.Join("\",\"")}\"");
-			throw new Exception(failed.Length==1
-				                    ?$"Type \"{failed[0]}\" was already registered"
-				                    :$"Types \"{failed.Join("\",\"")}\" were already registered");
+			throw new RpcException(failed.Length==1
+				                       ?$"Type \"{failed[0]}\" was already registered"
+				                       :$"Types \"{failed.Join("\",\"")}\" were already registered");
 		}
 		if(log)
 			Logger.Info(types.Length==1
@@ -276,9 +276,9 @@ internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 				Logger.Warning(types.Length==1
 					               ?$"Tried unregistering Type \"{types[0]}\""
 					               :$"Tried unregistering Types \"{types.Join("\",\"")}\"");
-			throw new Exception(failed.Length==1
-				                    ?$"Type \"{failed[0]}\" was not registered"
-				                    :$"Types \"{failed.Join("\",\"")}\" were not registered");
+			throw new RpcException(failed.Length==1
+				                       ?$"Type \"{failed[0]}\" was not registered"
+				                       :$"Types \"{failed.Join("\",\"")}\" were not registered");
 		}
 		if(log)
 			Logger.Info(types.Length==1
@@ -291,6 +291,6 @@ internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 		lock(_activeRequests)
 			if(_activeRequests.TryGetValue(callId,out var tuple))
 				return tuple.respondTo.PrettyName;
-		throw new Exception("Error finding caller");
+		throw new RpcException("Error finding caller");
 	}
 }

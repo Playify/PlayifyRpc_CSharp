@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 using PlayifyRpc.Types.Data;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
-using static PlayifyRpc.Internal.Data.RpcDataTypeStringifier;
+using static PlayifyRpc.Internal.Data.RpcTypeStringifier;
 
 namespace Tests;
 

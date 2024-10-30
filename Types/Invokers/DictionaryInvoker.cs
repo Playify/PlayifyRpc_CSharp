@@ -22,18 +22,18 @@ public class DictionaryInvoker(Dictionary<string,Delegate> dictionary):Invoker,I
 	IEnumerator IEnumerable.GetEnumerator()=>Dictionary.GetEnumerator();
 
 	protected override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx){
-		if(Dictionary.TryGetValue(method,out var @delegate)) return DynamicBinder.InvokeMethod(@delegate,type,method,args,ctx);
+		if(Dictionary.TryGetValue(method,out var @delegate)) return RpcInvoker.InvokeMethod(@delegate,type,method,args,ctx);
 
 		@delegate=Dictionary.FirstOrNull(p=>p.Key.Equals(method,StringComparison.OrdinalIgnoreCase))?.Value;
 		if(@delegate==null) throw new RpcMethodNotFoundException(type,method);
-		return DynamicBinder.InvokeMethod(@delegate,type,method,args,ctx);
+		return RpcInvoker.InvokeMethod(@delegate,type,method,args,ctx);
 	}
 
 	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());
 
 	protected override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts)
 		=>Dictionary.TryGetValue(method,out var d)
-			  ?new ValueTask<(string[] parameters,string returns)[]>([..RpcDataTypeStringifier.MethodSignatures(d,ts)])
+			  ?new ValueTask<(string[] parameters,string returns)[]>([..RpcTypeStringifier.MethodSignatures(d,ts)])
 			  :new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)));
 
 

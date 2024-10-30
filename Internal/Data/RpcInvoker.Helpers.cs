@@ -2,7 +2,7 @@ using System.Reflection;
 
 namespace PlayifyRpc.Internal.Data;
 
-public static partial class DynamicBinder{
+public static partial class RpcInvoker{
 	private static bool FilterByArgLength(MethodInfo method,ParameterInfo[] parameters,RpcDataPrimitive[] args,out Type? paramArrayType){
 		paramArrayType=null;
 		if(parameters.Length==0) return args.Length==0||(method.CallingConvention&CallingConventions.VarArgs)!=0;

@@ -32,7 +32,7 @@ public static class StringEnums{
 					return Activator.CreateInstance(type,result);
 				return RpcDataPrimitive.ContinueWithNext;
 			},
-			(_,generics)=>RpcDataTypeStringifier.TypeName(typeof(StringEnum<>),generics)
+			(_,generics)=>RpcTypeStringifier.TypeName(typeof(StringEnum<>),generics)
 		);
 	}
 

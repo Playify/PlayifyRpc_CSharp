@@ -1,5 +1,5 @@
 using System.Text;
-using PlayifyUtility.Utils;
+using PlayifyRpc.Types;
 
 namespace PlayifyRpc.Internal.Data;
 
@@ -14,48 +14,26 @@ public readonly partial struct RpcDataPrimitive{
 		return Nullable.GetUnderlyingType(type)!=null;
 	}
 
-	public static void RegisterFallback(FromFuncMaybe from,ToFunc? to,RpcDataTypeStringifier.UnknownFunc toString){
+	public static void RegisterFallback(FromFuncMaybe from,ToFunc? to,RpcTypeStringifier.UnknownFunc toString){
 		FromList.Add(from);
 		if(to!=null) ToList.Add(to);
-		RpcDataTypeStringifier.ToStringList.Add(toString);
+		RpcTypeStringifier.ToStringList.Add(toString);
 	}
 
-	public static void Register<T>(FromFunc<T>? from,Func<RpcDataPrimitive,object?> to,RpcDataTypeStringifier.KnownFunc toString)
+	public static void Register<T>(FromFunc<T>? from,Func<RpcDataPrimitive,object?> to,RpcTypeStringifier.KnownFunc toString)
 		=>Register(typeof(T),from==null?null:(o,p)=>from((T)o,p),(p,_,_)=>to(p),toString);
 
-	public static void Register<T>(FromFunc<T>? from,Func<RpcDataPrimitive,bool,object?> to,RpcDataTypeStringifier.KnownFunc toString)
+	public static void Register<T>(FromFunc<T>? from,Func<RpcDataPrimitive,bool,object?> to,RpcTypeStringifier.KnownFunc toString)
 		=>Register(typeof(T),from==null?null:(o,p)=>from((T)o,p),(p,_,throwOnError)=>to(p,throwOnError),toString);
 
-	public static void Register(Type type,FromFunc? from,ToFunc to,RpcDataTypeStringifier.KnownFunc toString){
+	public static void Register(Type type,FromFunc? from,ToFunc to,RpcTypeStringifier.KnownFunc toString){
 		if(from!=null) FromDictionary.Add(type,from);
 		ToDictionary.Add(type,to);
-		RpcDataTypeStringifier.ToStringDictionary.Add(type,toString);
+		RpcTypeStringifier.ToStringDictionary.Add(type,toString);
 	}
 
-	#region Object
-	public static void RegisterObject<T>(
-		Func<T,IEnumerable<(string key,object? value)>> getProps,
-		Func<T,IEnumerable<(string key,RpcDataPrimitive value)>,bool,bool> setProps,
-		RpcDataTypeStringifier.KnownFunc toString
-	) where T : notnull,new()=>Register<T>(
-		(p,a)=>a[p]=new RpcDataPrimitive(()=>getProps(p).Select(t=>(t.key,From(t.value,a)))),
-		(p,throwOnError)=>{
-			if(p.IsNull()&&CanBeNull(typeof(T))) return null;
-			if(p.IsAlready(out T already)) return already;
-			if(!p.IsObject(out var props)) return ContinueWithNext;
-			var obj=p.AddAlready(new T());
-			try{
-				return setProps(obj,props,throwOnError)?obj:p.RemoveAlready(obj);
-			} catch(Exception) when(FunctionUtils.RunThenReturn(()=>p.RemoveAlready(obj),false)){
-				return ContinueWithNext;
-			}
-		},
-		toString
-	);
-	#endregion
-
 	#region Custom
-	internal static void RegisterCustomBase<T>(WriteFunc writer,RpcDataTypeStringifier.KnownFunc toString,Action<T>? dispose=null) where T : notnull{
+	internal static void RegisterCustomBase<T>(WriteFunc writer,RpcTypeStringifier.KnownFunc toString,Action<T>? dispose=null) where T : notnull{
 		Register<T>(
 			(p,a)=>a[p]=new RpcDataPrimitive(p,writer,dispose==null?null:()=>dispose(p)),
 			p=>{
@@ -69,11 +47,11 @@ public readonly partial struct RpcDataPrimitive{
 	}
 
 	internal static void RegisterCustom<T>(char dataId,ReadFunc<T> read,WriteFunc<T> write,
-		RpcDataTypeStringifier.KnownFunc toString,Action<T>? dispose=null) where T : notnull
+		RpcTypeStringifier.KnownFunc toString,Action<T>? dispose=null) where T : notnull
 		=>RegisterCustom(dataId,read,write,toString,dispose,out _);
 
 	internal static void RegisterCustom<T>(char dataId,ReadFunc<T> read,WriteFunc<T> write,
-		RpcDataTypeStringifier.KnownFunc toString,Action<T>? dispose,out WriteFunc writer) where T : notnull{
+		RpcTypeStringifier.KnownFunc toString,Action<T>? dispose,out WriteFunc writer) where T : notnull{
 
 		var localCopy=writer=(data,t,already)=>{
 			data.WriteLength(dataId);
@@ -90,7 +68,7 @@ public readonly partial struct RpcDataPrimitive{
 	}
 
 	public static void RegisterCustom<T>(string dataId,ReadFunc<T> read,WriteFunc<T> write,
-		RpcDataTypeStringifier.KnownFunc toString,Action<T>? dispose=null) where T : notnull{
+		RpcTypeStringifier.KnownFunc toString,Action<T>? dispose=null) where T : notnull{
 
 		var bytes=Encoding.UTF8.GetBytes(dataId);
 		WriteFunc writer=(data,t,already)=>{

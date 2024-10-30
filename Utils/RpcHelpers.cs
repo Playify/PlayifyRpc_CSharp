@@ -1,4 +1,6 @@
 using JetBrains.Annotations;
+using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.HelperClasses;
@@ -72,4 +74,13 @@ public static class RpcHelpers{
 	}
 	#endregion
 
+	#region Clone
+	//Deep clones an IRpcDataObject
+	public static T Clone<T>(this T t) where T : IRpcDataObject{
+		var instance=Activator.CreateInstance<T>();
+		if(!instance.TrySetProps(t.GetProps(new Dictionary<object,RpcDataPrimitive>()),true))
+			throw new RpcDataException("Error cloning "+t);
+		return instance;
+	}
+	#endregion
 }

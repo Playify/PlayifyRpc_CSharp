@@ -72,7 +72,7 @@ public class RpcWebServer:WebBase{
 		var server=new RpcWebServer(rpcJs,rpcToken);
 		var task=server.RunHttp(endPoint);
 
-		Rpc.ConnectLoopback();
+		_=ServerConnectionLoopbackClient.Connect().Catch(Rpc.Logger.Error);
 
 		await task;
 	}

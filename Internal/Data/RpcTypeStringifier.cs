@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using PlayifyRpc.Types;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Utils;
@@ -7,7 +8,7 @@ using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
 
-public static class RpcDataTypeStringifier{
+public static class RpcTypeStringifier{
 	public static readonly Dictionary<Type,KnownFunc> ToStringDictionary=new();
 	public static readonly List<UnknownFunc> ToStringList=[];
 
@@ -15,7 +16,9 @@ public static class RpcDataTypeStringifier{
 
 	public delegate string? UnknownFunc(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics);
 
-	static RpcDataTypeStringifier()=>RpcSetupAttribute.LoadAll();
+	static RpcTypeStringifier(){
+		RpcSetupAttribute.LoadAll();
+	}
 
 
 	public static string FromType(Type type,bool typescript=false)=>Stringify(type,typescript,true,()=>null,null);

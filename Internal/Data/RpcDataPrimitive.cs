@@ -18,13 +18,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	public override int GetHashCode()=>_data?.GetHashCode()??0;
 	public static bool operator !=(RpcDataPrimitive left,RpcDataPrimitive right)=>!(left==right);
 
-	public static bool operator ==(RpcDataPrimitive left,RpcDataPrimitive right){
-		if(Equals(left._data,right._data)) return true;
-		if(left._data is char c1&&right._data is string{Length: 1} s1) return c1==s1[0];
-		if(right._data is char c2&&left._data is string{Length: 1} s2) return c2==s2[0];
-
-		return false;
-	}
+	public static bool operator ==(RpcDataPrimitive left,RpcDataPrimitive right)=>Equals(left._data,right._data);
 
 	public bool Equals(RpcDataPrimitive other)=>this==other;
 	#endregion
@@ -66,7 +60,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 		}
 		if(IsCustom(out object custom)) return $"{custom}";
 
-		return $"<<Invalid: {_data} of type {RpcDataTypeStringifier.FromType(_data?.GetType()??typeof(object))}>>";
+		return $"<<Invalid: {_data} of type {RpcTypeStringifier.FromType(_data?.GetType()??typeof(object))}>>";
 	}
 
 	public static RpcDataPrimitive? Parse(string s){
@@ -213,11 +207,6 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	public object RemoveAlready(object? value){
 		_already?.Remove(value);
 		return ContinueWithNext;
-	}
-
-	public T? RemoveAlready<T>(object? value){
-		_already?.Remove(value);
-		return default;
 	}
 	#endregion
 

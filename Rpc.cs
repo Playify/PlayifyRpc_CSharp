@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 using PlayifyRpc.Internal;
-using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types;
 using PlayifyUtility.Loggers;
 #if NETFRAMEWORK
 using System.Diagnostics;

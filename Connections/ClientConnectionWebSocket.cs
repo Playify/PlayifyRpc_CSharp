@@ -34,12 +34,13 @@ internal class ClientConnectionWebSocket:ClientConnection{
 	}
 
 
-	internal static async Task Connect(Uri uri,NameValueCollection? headers){
+	internal static async Task Connect(string? name,Uri uri,NameValueCollection? headers){
 		if(IsConnecting()) throw new RpcConnectionException("Already connected");
 		StartConnect();
 		while(true)
 			try{
-				var reportedName=Rpc.Name;
+				if(name!=null) RegisteredTypes.Name=name;
+				var reportedName=RegisteredTypes.Name;
 				var reportedTypes=new HashSet<string>();
 
 				var query="id="+WebUtility.UrlEncode(Rpc.Id);

@@ -5,7 +5,7 @@ using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
 
-public static partial class DynamicBinder{
+public static partial class RpcInvoker{
 
 	public static object? InvokeMethod(Delegate func,string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)
 		=>InvokeMethod(func.Target,[func.Method],type,method,args,ctx);
@@ -62,7 +62,7 @@ public static partial class DynamicBinder{
 								?paramArray
 								:candidate[argIndex].ParameterType;
 
-				
+
 				var isCommonType=true;
 				Type? commonType=null;
 				for(var candidateIndex=0;candidateIndex<candidates.Length;candidateIndex++)
@@ -143,6 +143,20 @@ public static partial class DynamicBinder{
 				//maybe somewhere in here, there should be a check for method.CallingConvention&CallingConventions.VarArgs
 			}
 
+			if(ctx!=null&&//If ctx==null, then the IDE already showed the user that a function is obsolete
+			   method.GetCustomAttribute<ObsoleteAttribute>() is{} obsolete){
+				Task.Run(async ()=>{
+					string? caller=null;
+					try{
+						caller=await ctx.GetCaller();
+					} catch(Exception){/*ignored*/
+					}
+					if(caller==Rpc.PrettyName) return;//If called locally, then ignore it, IDE already should have warned
+					Rpc.Logger.Warning($"{caller??"<<someone>>"} is calling {
+						ctx.Type??"<<null>>"}.{ctx.Method??"<<null>>"} which is obsolete{
+							(obsolete.Message==null?".":": "+obsolete.Message)}");
+				});
+			}
 
 			return method.Invoke(instance,arguments);
 		} catch(TargetInvocationException e){

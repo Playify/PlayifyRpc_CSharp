@@ -20,7 +20,7 @@ public readonly partial struct RpcDataPrimitive{
 	public object? To(Type type)
 		=>TryTo(type,out var obj,true)
 			  ?obj
-			  :throw new InvalidCastException("Error converting primitive "+this+" to "+RpcDataTypeStringifier.FromType(type));
+			  :throw new InvalidCastException("Error converting primitive "+this+" to "+RpcTypeStringifier.FromType(type));
 
 	public bool TryTo<T>(out T? t,bool throwOnError){
 		if(TryTo(typeof(T),out var obj,throwOnError)){
@@ -45,7 +45,7 @@ public readonly partial struct RpcDataPrimitive{
 			if(result!=ContinueWithNext) return true;
 		}
 		if(throwOnError)
-			throw new InvalidCastException("Error converting primitive "+this+" to "+RpcDataTypeStringifier.FromType(type));
+			throw new InvalidCastException("Error converting primitive "+this+" to "+RpcTypeStringifier.FromType(type));
 		result=null!;
 		return false;
 	}

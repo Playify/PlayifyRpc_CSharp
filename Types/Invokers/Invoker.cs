@@ -23,15 +23,15 @@ public abstract partial class Invoker{
 			"V"=>GetRpcVersion,
 			_=>throw new RpcMetaMethodNotFoundException(type,meta),
 		};
-		return DynamicBinder.InvokeMeta(@delegate,type,meta,args.Skip(1).ToArray(),ctx);
+		return RpcInvoker.InvokeMeta(@delegate,type,meta,args.Skip(1).ToArray(),ctx);
 	}
 
 	protected ValueTask<(string[] arguments,string returns)[]> GetMethodSignaturesBase(string? method,bool ts=false){
 		if(method!=null) return GetMethodSignatures(MetaCallType.Value,method,ts);
 		return new ValueTask<(string[] arguments,string returns)[]>([
-			..RpcDataTypeStringifier.MethodSignatures(GetMethods,ts,"M"),
-			..RpcDataTypeStringifier.MethodSignatures(GetMethodSignaturesBase,ts,"S"),
-			..RpcDataTypeStringifier.MethodSignatures(GetRpcVersion,ts,"V"),
+			..RpcTypeStringifier.MethodSignatures(GetMethods,ts,"M"),
+			..RpcTypeStringifier.MethodSignatures(GetMethodSignaturesBase,ts,"S"),
+			..RpcTypeStringifier.MethodSignatures(GetRpcVersion,ts,"V"),
 		]);
 	}
 

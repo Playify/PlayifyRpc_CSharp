@@ -57,6 +57,6 @@ public readonly partial struct RpcDataPrimitive{
 		foreach(var func in FromList)
 			if(func(value,already).TryGet(out var primitive))
 				return primitive;
-		throw new InvalidCastException("Can't convert "+value+" of type "+RpcDataTypeStringifier.FromType(type)+" to primitive");
+		throw new InvalidCastException("Can't convert "+value+" of type "+RpcTypeStringifier.FromType(type)+" to primitive");
 	}
 }

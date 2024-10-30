@@ -39,14 +39,14 @@ public class TypeInvoker:Invoker{
 		_methods=type.GetMethods(bindingFlags)
 		             .Where(m=>m.DeclaringType!=typeof(object))
 		             .Where(m=>!m.IsDefined(typeof(RpcHiddenAttribute),true))
-		             .ToLookup(m=>m.Name,StringComparer.OrdinalIgnoreCase)
+		             .ToLookup(m=>m.GetCustomAttribute<RpcNamedAttribute>()?.Name??m.Name,StringComparer.OrdinalIgnoreCase)
 		             .ToDictionary(g=>g.Key,g=>g.ToList(),StringComparer.OrdinalIgnoreCase);
 	}
 
 	protected sealed override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)
 		=>!_methods.TryGetValue(method,out var list)
 			  ?throw new RpcMethodNotFoundException(type,method)
-			  :DynamicBinder.InvokeMethod(_instance,list,type,method,args,ctx);
+			  :RpcInvoker.InvokeMethod(_instance,list,type,method,args,ctx);
 
 	protected sealed override ValueTask<string[]> GetMethods()
 		=>new(_methods.Select(g=>g.Key).ToArray());
@@ -54,7 +54,7 @@ public class TypeInvoker:Invoker{
 	protected sealed override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts)
 		=>_methods.TryGetValue(method,out var list)
 			  ?new ValueTask<(string[] parameters,string returns)[]>(
-				  list.SelectMany(m=>RpcDataTypeStringifier.MethodSignatures(m,ts)).ToArray())
+				  list.SelectMany(m=>RpcTypeStringifier.MethodSignatures(m,ts)).ToArray())
 			  :new ValueTask<(string[] parameters,string returns)[]>(
 				  Task.FromException<(string[] parameters,string returns)[]>(
 					  new RpcMethodNotFoundException(type,method)));

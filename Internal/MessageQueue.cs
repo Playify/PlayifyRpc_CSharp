@@ -7,7 +7,7 @@ internal class MessageQueue(Task task):IAsyncEnumerable<RpcDataPrimitive[]>{
 	private readonly HashSet<Action<RpcDataPrimitive[]>> _receivers=[];
 	private List<RpcDataPrimitive[]>? _initialPending=[];
 
-	public void AddMessageListener(Delegate a)=>AddMessageListenerRaw(msg=>DynamicBinder.InvokeThrow(a,msg));
+	public void AddMessageListener(Delegate a)=>AddMessageListenerRaw(msg=>RpcInvoker.InvokeThrow(a,msg));
 
 	public void AddMessageListenerRaw(Action<RpcDataPrimitive[]> a){
 		lock(_receivers)

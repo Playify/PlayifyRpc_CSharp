@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Dynamic;
 using System.Numerics;
 using System.Reflection;
@@ -20,11 +21,11 @@ internal static class RpcDataDefaults{
 
 	static RpcDataDefaults(){
 		typeof(ArraysAndTuples).RunClassConstructor();
-		RegisterFallback(Enums.From,Enums.To,Enums.Stringify);
+		typeof(Enums).RunClassConstructor();
 
 		RegisterPrimitives();
 		Register<RpcDataPrimitive>((p,_)=>p,p=>p,(typescript,_)=>typescript?"any":"dynamic");
-		RegisterJson();
+		typeof(Jsons).RunClassConstructor();
 		RegisterRpcTypes();
 	}
 
@@ -134,74 +135,6 @@ internal static class RpcDataDefaults{
 			(typescript,_)=>typescript?"any":"dynamic");
 	}
 
-	private static void RegisterJson(){
-		Register<JsonNull>(
-			(_,_)=>new RpcDataPrimitive(),
-			p=>p.IsNull()?JsonNull.Null:ContinueWithNext,
-			(_,_)=>"null");
-		Register<JsonBool>(
-			(b,_)=>new RpcDataPrimitive(b.Value),
-			p=>p.IsBool(out var b)?JsonBool.Get(b):ContinueWithNext,
-			(typescript,_)=>typescript?"boolean":"bool");
-		Register<JsonNumber>(
-			(n,_)=>new RpcDataPrimitive(n.Value),
-			p=>p.IsNumber(out var d)?new JsonNumber(d):ContinueWithNext,
-			(typescript,_)=>typescript?"number":"double");
-		Register<JsonString>(
-			(s,_)=>new RpcDataPrimitive(s.Value),
-			p=>p.IsString(out var s)?new JsonString(s):ContinueWithNext,
-			(_,_)=>"string");
-		Register<JsonArray>(
-			(a,already)=>already[a]=new RpcDataPrimitive(()=>(a.Select(j=>From(j,already)),a.Count)),
-			(p,throwOnError)=>{
-				if(p.IsAlready(out JsonArray already)) return already;
-				if(!p.IsArray(out var primitives)) return ContinueWithNext;
-				return ReadJsonArray(p,primitives,throwOnError)??ContinueWithNext;
-			},
-			(typescript,_)=>typescript?"any[]":"dynamic[]");
-		RegisterObject<JsonObject>(
-			e=>e.Select(kv=>(kv.Key,(object?)kv.Value)),
-			(e,props,throwOnError)=>props.All(t=>{
-				if(ReadJson(t.value,throwOnError) is not{} child) return false;
-				e[t.key]=child;
-				return true;
-			}),
-			(_,_)=>"object");
-		Register<Json>(
-			null,
-			(p,throwOnError)=>ReadJson(p,throwOnError)??ContinueWithNext,
-			(typescript,_)=>typescript?"any":"dynamic");
-		return;
-
-		static Json? ReadJson(RpcDataPrimitive primitive,bool throwOnError){
-			if(primitive.IsNull()) return JsonNull.Null;
-			if(primitive.IsBool(out var b)) return JsonBool.Get(b);
-			if(primitive.IsNumber(out var d)) return new JsonNumber(d);
-			if(primitive.IsString(out var s)) return new JsonString(s);
-			if(primitive.IsAlready(out Json already)) return already;
-			if(primitive.IsArray(out var arr)) return ReadJsonArray(primitive,arr,throwOnError);
-			if(primitive.IsObject(out var obj)) return ReadJsonObject(primitive,obj,throwOnError);
-			if(throwOnError) throw new InvalidCastException("Error converting primitive "+primitive+" to a Json value");
-			return null;
-		}
-
-		static JsonArray? ReadJsonArray(RpcDataPrimitive p,IEnumerable<RpcDataPrimitive> primitives,bool throwOnError){
-			var array=p.AddAlready(new JsonArray());
-			foreach(var child in primitives)
-				if(ReadJson(child,throwOnError) is{} json) array.Add(json);
-				else return p.RemoveAlready<JsonArray>(array);
-			return array;
-		}
-
-		static JsonObject? ReadJsonObject(RpcDataPrimitive p,IEnumerable<(string key,RpcDataPrimitive value)> primitives,bool throwOnError){
-			var obj=p.AddAlready(new JsonObject());
-			foreach(var (key,child) in primitives)
-				if(ReadJson(child,throwOnError) is{} json) obj.Add(key,json);
-				else return p.RemoveAlready<JsonObject>(obj);
-			return obj;
-		}
-	}
-
 	private static void RegisterRpcTypes(){
 		RegisterCustom<DateTime>('D',
 			(input,create)=>create(DateTimeOffset.FromUnixTimeMilliseconds(input.ReadLong()).LocalDateTime,false),
@@ -230,7 +163,9 @@ internal static class RpcDataDefaults{
 			(output,value,_)=>output.WriteString(value.Type),
 			(_,_)=>nameof(RpcObject));
 		RegisterCustom<RpcFunction>('F',
-			(input,create)=>create(new RpcFunction(input.ReadString()??throw new NullReferenceException(),input.ReadString()??throw new NullReferenceException()),true),
+			(input,create)=>create(new RpcFunction(
+				input.ReadString()??throw new NullReferenceException(),
+				input.ReadString()??throw new NullReferenceException()),true),
 			(output,value,_)=>{
 				output.WriteString(value.Type);
 				output.WriteString(value.Method);
@@ -238,13 +173,23 @@ internal static class RpcDataDefaults{
 			(_,_)=>nameof(RpcFunction),null,out var writer);
 		RegisterFallback(Delegates.From(writer),null,Delegates.Stringify);
 
-		RegisterObject<ExpandoObject>(
-			e=>e.ToTuples(),
-			(e,props,throwOnError)=>props.All(t=>{
-				if(!t.value.TryTo(out object? obj,throwOnError)) return false;
-				((IDictionary<string,object?>)e)[t.key]=obj;
-				return true;
-			}),
+		Register<ExpandoObject>(
+			(a,already)=>already[a]=new RpcDataPrimitive(()=>a.Select(j=>(j.Key,From(j.Value,already)))),
+			(p,throwOnError)=>{
+				if(p.IsNull()) return null;
+				if(p.IsAlready(out ExpandoObject already)) return already;
+				if(!p.IsObject(out var props)) return ContinueWithNext;
+				var expando=(IDictionary<string,object?>)p.AddAlready(new ExpandoObject());
+				foreach(var (key,child) in props)
+					try{
+						if(child.TryTo(out object? o,throwOnError)) expando.Add(key,o);
+						else return p.RemoveAlready(expando);
+					} catch(Exception e){
+						p.RemoveAlready(expando);
+						throw new InvalidCastException("Error converting primitive "+p+" to ExpandoObject, due to property "+JsonString.Escape(key),e);
+					}
+				return expando;
+			},
 			(_,_)=>"object");
 	}
 
@@ -261,12 +206,34 @@ internal static class RpcDataDefaults{
 			Register<ValueTuple>(
 				(_,_)=>new RpcDataPrimitive(()=>([],0)),
 				p=>p.IsArray(out _,out var length)&&length==0?new ValueTuple():ContinueWithNext,
-				(typescript,generics)=>typescript?"[]":"()"
+				(typescript,_)=>typescript?"[]":"()"
 			);
+			Register(
+				typeof(List<>),
+				(list,already)=>new RpcDataPrimitive(()=>(
+					                                         ((IEnumerable)list).Cast<object>().Select(o=>RpcDataPrimitive.From(o,already))
+					                                         ,((IList)list).Count)),
+				(p,type,throwOnError)=>{
+					if(p.IsNull()) return null;
+					if(p.IsAlready(type,out var already)) return already;
+					if(!p.IsArray(out var arr)) return ContinueWithNext;
+					var elementType=type.GetGenericArguments()[0];
+					var instance=p.AddAlready((IList)Activator.CreateInstance(type)!);
+					foreach(var sub in arr)
+						try{
+							if(sub.TryTo(elementType,out var child,throwOnError)) instance.Add(child);
+							else return p.RemoveAlready(instance);
+						} catch(Exception e){
+							p.RemoveAlready(instance);
+							throw new InvalidCastException("Error converting primitive "+p+" to List<"+RpcTypeStringifier.FromType(elementType)+">, due to index "+instance.Count,e);
+						}
+					return instance;
+				},
+				(_,generics)=>generics.Single()+"[]");
 		}
 
 		private static readonly Type[] ValueTupleTypes=[
-			typeof(ValueTuple),
+			//typeof(ValueTuple),
 			typeof(ValueTuple<>),
 			typeof(ValueTuple<,>),
 			typeof(ValueTuple<,,>),
@@ -293,8 +260,13 @@ internal static class RpcDataDefaults{
 				var array=primitive.AddAlready(Array.CreateInstance(elementType,len));
 				var i=0;
 				foreach(var sub in arr)
-					if(sub.TryTo(elementType,out var child,throwOnError)) array.SetValue(child,i++);
-					else return primitive.RemoveAlready(array);
+					try{
+						if(sub.TryTo(elementType,out var child,throwOnError)) array.SetValue(child,i++);
+						else return primitive.RemoveAlready(array);
+					} catch(Exception e){
+						primitive.RemoveAlready(array);
+						throw new InvalidCastException("Error converting primitive "+primitive+" to "+RpcTypeStringifier.FromType(elementType)+"[], due to index "+i,e);
+					}
 				return array;
 			}
 			if(type.IsGenericType&&ValueTupleTypes.Contains(type.GetGenericTypeDefinition())){
@@ -314,17 +286,106 @@ internal static class RpcDataDefaults{
 		}
 
 		private static string? Stringify(Type type,bool typescript,bool input,Func<string?> tupleName,NullabilityInfo? nullability,string[] generics){
-			if(type.IsArray) return RpcDataTypeStringifier.Stringify(type.GetElementType()!,typescript,input,tupleName,nullability?.ElementType)+"[]";
+			if(type.IsArray) return RpcTypeStringifier.Stringify(type.GetElementType()!,typescript,input,tupleName,nullability?.ElementType)+"[]";
 			if(type.IsGenericType&&ValueTupleTypes.Contains(type.GetGenericTypeDefinition())){
-				var inner=generics.Select(t=>RpcDataTypeStringifier.Parameter(typescript,t,tupleName())).Join(",");
+				var inner=generics.Select(t=>RpcTypeStringifier.Parameter(typescript,t,tupleName())).Join(",");
 				return typescript?$"[{inner}]":$"({inner})";
 			}
 			return null;
 		}
 	}
 
+	private static class Jsons{
+		static Jsons(){
+			Register<JsonNull>(
+				(_,_)=>new RpcDataPrimitive(),
+				p=>p.IsNull()?JsonNull.Null:ContinueWithNext,
+				(_,_)=>"null");
+			Register<JsonBool>(
+				(b,_)=>new RpcDataPrimitive(b.Value),
+				p=>p.IsBool(out var b)?JsonBool.Get(b):ContinueWithNext,
+				(typescript,_)=>typescript?"boolean":"bool");
+			Register<JsonNumber>(
+				(n,_)=>new RpcDataPrimitive(n.Value),
+				p=>p.IsNumber(out var d)?new JsonNumber(d):ContinueWithNext,
+				(typescript,_)=>typescript?"number":"double");
+			Register<JsonString>(
+				(s,_)=>new RpcDataPrimitive(s.Value),
+				p=>p.IsString(out var s)?new JsonString(s):ContinueWithNext,
+				(_,_)=>"string");
+			Register<JsonArray>(
+				(a,already)=>already[a]=new RpcDataPrimitive(()=>(a.Select(j=>From(j,already)),a.Count)),
+				(p,throwOnError)=>{
+					if(p.IsAlready(out JsonArray already)) return already;
+					if(!p.IsArray(out var primitives)) return ContinueWithNext;
+					return ReadJsonArray(p,primitives,throwOnError)??ContinueWithNext;
+				},
+				(typescript,_)=>typescript?"any[]":"dynamic[]");
+			Register<JsonObject>(
+				(a,already)=>already[a]=new RpcDataPrimitive(()=>a.Select(j=>(j.Key,From(j.Value,already)))),
+				(p,throwOnError)=>{
+					if(p.IsAlready(out JsonObject already)) return already;
+					if(!p.IsObject(out var props)) return ContinueWithNext;
+					return ReadJsonObject(p,props,throwOnError)??ContinueWithNext;
+				},
+				(_,_)=>"object");
+			Register<Json>(
+				null,
+				(p,throwOnError)=>ReadJson(p,throwOnError)??ContinueWithNext,
+				(typescript,_)=>typescript?"any":"dynamic");
+		}
+
+		private static Json? ReadJson(RpcDataPrimitive primitive,bool throwOnError){
+			if(primitive.IsNull()) return JsonNull.Null;
+			if(primitive.IsBool(out var b)) return JsonBool.Get(b);
+			if(primitive.IsNumber(out var d)) return new JsonNumber(d);
+			if(primitive.IsString(out var s)) return new JsonString(s);
+			if(primitive.IsAlready(out Json already)) return already;
+			if(primitive.IsArray(out var arr)) return ReadJsonArray(primitive,arr,throwOnError);
+			if(primitive.IsObject(out var obj)) return ReadJsonObject(primitive,obj,throwOnError);
+			if(throwOnError) throw new InvalidCastException("Error converting primitive "+primitive+" to a Json value");
+			return null;
+		}
+
+		private static JsonArray? ReadJsonArray(RpcDataPrimitive p,IEnumerable<RpcDataPrimitive> primitives,bool throwOnError){
+			var array=p.AddAlready(new JsonArray());
+			foreach(var child in primitives)
+				try{
+					if(ReadJson(child,throwOnError) is{} json) array.Add(json);
+					else{
+						p.RemoveAlready(array);
+						return null;
+					}
+				} catch(Exception e){
+					p.RemoveAlready(array);
+					throw new InvalidCastException("Error converting primitive "+p+" to JsonArray, due to index "+array.Count,e);
+				}
+			return array;
+		}
+
+		private static JsonObject? ReadJsonObject(RpcDataPrimitive p,IEnumerable<(string key,RpcDataPrimitive value)> primitives,bool throwOnError){
+			var obj=p.AddAlready(new JsonObject());
+			foreach(var (key,child) in primitives)
+				try{
+					if(ReadJson(child,throwOnError) is{} json) obj.Add(key,json);
+					else{
+						p.RemoveAlready(obj);
+						return null;
+					}
+				} catch(Exception e){
+					p.RemoveAlready(obj);
+					throw new InvalidCastException("Error converting primitive "+p+" to JsonObject, due to property "+JsonString.Escape(key),e);
+				}
+			return obj;
+		}
+	}
+
 	private static class Enums{
-		public static RpcDataPrimitive? From(object value,Dictionary<object,RpcDataPrimitive> already){
+		static Enums(){
+			RegisterFallback(From,To,Stringify);
+		}
+
+		private static RpcDataPrimitive? From(object value,Dictionary<object,RpcDataPrimitive> already){
 			var type=value.GetType();
 			if(!type.IsEnum) return null;
 			var convertible=(IConvertible)value;
@@ -335,7 +396,7 @@ internal static class RpcDataDefaults{
 			};
 		}
 
-		public static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
+		private static object? To(RpcDataPrimitive primitive,Type type,bool throwOnError){
 			if(!type.IsEnum) return ContinueWithNext;
 
 			if(primitive.IsString(out var s)) return StringEnums.TryParseEnum(type,s,out var result)?result:ContinueWithNext;
@@ -343,8 +404,8 @@ internal static class RpcDataDefaults{
 			return ContinueWithNext;
 		}
 
-		public static string? Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics){
-			if(type.IsEnum) return RpcDataTypeStringifier.TypeName(type,generics);
+		private static string? Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics){
+			if(type.IsEnum) return RpcTypeStringifier.TypeName(type,generics);
 			return null;
 		}
 	}
@@ -358,7 +419,7 @@ internal static class RpcDataDefaults{
 		};
 
 		public static string? Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics){
-			if(typeof(Delegate).IsAssignableFrom(type)) return RpcDataTypeStringifier.TypeName(type,generics);
+			if(typeof(Delegate).IsAssignableFrom(type)) return RpcTypeStringifier.TypeName(type,generics);
 			return null;
 		}
 	}

@@ -1,26 +1,38 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using PlayifyRpc;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Data.Objects;
+using PlayifyRpc.Utils;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
 
 namespace Tests;
 
 public class Casting{
+	[SuppressMessage("ReSharper","InconsistentNaming")]
+	private class ExampleObjectType:RpcDataObject{
+		public string? a;
+		public string? A;
+	}
+
+	[SuppressMessage("ReSharper","InconsistentNaming")]
+	[UsedImplicitly(ImplicitUseTargetFlags.Members)]
+	private struct ExampleStructType:IRpcDataObject{
+		public readonly string? a;
+		public readonly string? A;
+		public bool TrySetProps(IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError)=>RpcDataObject.DefaultTrySetProps(ref this,props,throwOnError);
+
+		public IEnumerable<(string key,RpcDataPrimitive value)> GetProps(Dictionary<object,RpcDataPrimitive> already)=>RpcDataObject.DefaultGetProps(this,already);
+	}
 
 	[SetUp]
 	public void Setup(){
 		typeof(Rpc).RunClassConstructor();
 	}
-
-	[Test]
-	public void General()=>Assert.Multiple(()=>{
-		Assert.That(new RpcDataPrimitive("Q"),Is.EqualTo(new RpcDataPrimitive('Q')));
-	});
-
+	
 	[Test]
 	public void Nulls()=>Assert.Multiple(()=>{
 		Assert.That(RpcDataPrimitive.Cast<object>(JsonNull.Null),Is.EqualTo(null));
@@ -51,6 +63,7 @@ public class Casting{
 		Assert.That(()=>RpcDataPrimitive.Cast<int>(1.5f),Throws.TypeOf<InvalidCastException>());
 		Assert.That(()=>RpcDataPrimitive.Cast<int>(uint.MaxValue),Throws.TypeOf<InvalidCastException>());
 	});
+
 	[Test]
 	public void Cyclic()=>Assert.Multiple(()=>{
 		var list=new object[1];
@@ -91,19 +104,43 @@ public class Casting{
 		};
 
 		Assert.That(RpcDataPrimitive.Cast<Json>(stringMap).ToString(),Is.EqualTo(json.ToString()));
-		var customType=RpcDataPrimitive.Cast<ExampleObjectType>(json);
-		Assert.That(customType.a,Is.EqualTo(stringMap["a"]));
-		Assert.That(customType.A,Is.EqualTo(stringMap["A"]));
-		Assert.That(RpcDataPrimitive.Cast<Json>(customType).ToString(),Is.EqualTo(json.ToString()));
+		var customObject=RpcDataPrimitive.Cast<ExampleObjectType>(json);
+		Assert.That(customObject.a,Is.EqualTo(stringMap["a"]));
+		Assert.That(customObject.A,Is.EqualTo(stringMap["A"]));
+		Assert.That(RpcDataPrimitive.Cast<Json>(customObject).ToString(),Is.EqualTo(json.ToString()));
+		var customStruct=RpcDataPrimitive.Cast<ExampleStructType>(json);
+		Assert.That(customStruct.a,Is.EqualTo(stringMap["a"]));
+		Assert.That(customStruct.A,Is.EqualTo(stringMap["A"]));
+		Assert.That(RpcDataPrimitive.Cast<Json>(customStruct).ToString(),Is.EqualTo(json.ToString()));
+	});
+
+	[Test]
+	public void Errors()=>Assert.Multiple(()=>{
+		var obj=new StringMap<object>{
+			{
+				"a",new object[]{
+					new Regex("TEST"),//Not supported by json
+				}
+			},
+		};
+		var exception=Assert.Throws<InvalidCastException>(()=>RpcDataPrimitive.Cast<Json>(obj))!;
+		StringAssert.Contains("index 0",exception.ToString());
+		StringAssert.Contains("property \"a\"",exception.ToString());
 	});
 
 
-	[UsedImplicitly]
-	[SuppressMessage("ReSharper","InconsistentNaming")]
-	private class ExampleObjectType:RpcDataObject{
-#pragma warning disable CS0649// Field is never assigned to, and will always have its default value
-		public string? a;
-		public string? A;
-#pragma warning restore CS0649// Field is never assigned to, and will always have its default value
-	}
+	[Test]
+	public void Cloning()/*=>Assert.Multiple(()=>*/{
+		var @base=new StringMap<Json[]>{
+			{
+				"a",[
+					new JsonObject().Push(out var inner),
+				]
+			},
+		};
+		var clone=@base.Clone();
+		Assert.That(clone,Is.EqualTo(@base));//Structure should stay the same
+		Assert.That(clone,Is.Not.SameAs(@base));//direct childs should change
+		Assert.That(inner,Is.Not.SameAs(clone["a"][0]));//deep childs should also change
+	}//);
 }

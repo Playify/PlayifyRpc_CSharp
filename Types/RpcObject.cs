@@ -37,7 +37,7 @@ public readonly struct RpcObject(string type):IDynamicMetaObjectProvider{
 			Type[]? genericList=(generics?.Count??0) switch{
 				0=>null,
 				1=>[generics![0]],
-				var cnt=>throw new Exception("To many generic arguments "+cnt+" generics found)"),
+				var cnt=>throw new Exception("To many generic arguments: "+cnt+" generics found)"),
 			};
 
 			var callExpression=Expression.Call(

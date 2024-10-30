@@ -39,7 +39,7 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 		lock(ServerConnection.Connections) return ServerConnection.Connections.Select(c=>c.PrettyName).OrderBy(s=>s).ToArray();
 	}
 
-	public static async Task<StringMap<string>> GetAllVersions(){
+	public static async Task<StringMap<string>> GetConnectionVersions(){
 		Task<(string PrettyName,string version)[]> task;
 		lock(ServerConnection.Connections)
 			task=Task.WhenAll(ServerConnection.Connections.Select(async c=>{
@@ -52,7 +52,16 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 				}
 			}));
 		return new StringMap<string>((await task).OrderBy(t=>t.PrettyName).ToDictionary());
-	}//TODO also add reverse view from version to clients
+	}
+
+	public static async Task<StringMap<string[]>> GetUsedVersions(){
+		var versions=await GetConnectionVersions();
+
+		var map=new StringMap<string[]>();
+		foreach(var grouping in versions.ToLookup(kv=>kv.Value,kv=>kv.Key).OrderBy(g=>g.Key))
+			map.Add(grouping.Key,grouping.ToArray());
+		return map;
+	}
 
 	public static StringMap<string[]> GetRegistrations(bool includeHidden=false){
 		lock(ServerConnection.Connections){

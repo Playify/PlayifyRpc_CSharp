@@ -22,9 +22,9 @@ public partial class RpcDataObject{
 		if(!p.IsObject(out var props)) return RpcDataPrimitive.ContinueWithNext;
 		var obj=(IRpcDataObject)p.AddAlready(Activator.CreateInstance(type)!);
 		try{
-			return !obj.TrySetProps(props,throwOnError)?p.RemoveAlready(obj):obj;
+			return obj.TrySetProps(props,throwOnError)?obj:p.RemoveAlready(obj);
 		} catch(Exception) when(FunctionUtils.RunThenReturn(()=>p.RemoveAlready(obj),false)){
-			return RpcDataPrimitive.ContinueWithNext;
+			throw;
 		}
 	}
 
@@ -32,10 +32,9 @@ public partial class RpcDataObject{
 		if(!typeof(IRpcDataObject).IsAssignableFrom(type)) return null;
 		if(type.IsInterface) return null;
 
-		return RpcDataTypeStringifier.TypeName(type,generics);
+		return RpcTypeStringifier.TypeName(type,generics);
 	}
 
-//TODO what if a class overrides a property, but with a new type using the new keyword?
 	private static readonly Dictionary<Type,(
 		List<(string,Func<object,object?>)> getters,
 		Dictionary<string,(Type type,Action<object,object?> setValue)> setters,
@@ -51,21 +50,26 @@ public partial class RpcDataObject{
 			if(Types.TryGetValue(type,out var already))
 				return already;
 
+		var gettersLimiter=new HashSet<string>();
 		var getters=new List<(string,Func<object,object?>)>();
 		var setters=new Dictionary<string,(Type type,Action<object,object?> setValue)>();
 		var settersIgnoreCase=new Dictionary<string,(Type type,Action<object,object?> setValue)>(StringComparer.OrdinalIgnoreCase);
 
-		foreach(var member in type.GetMembers(BindingFlags.Instance|BindingFlags.Public)){
+		foreach(var member in type.GetMembers(BindingFlags.Instance|BindingFlags.Public))
 			if(member is PropertyInfo{IsSpecialName: false} property&&!property.IsDefined(typeof(RpcHiddenAttribute),true)){
+				var name=property.GetCustomAttribute<RpcNamedAttribute>()?.Name??property.Name;
 				if(property.CanWrite)
-					settersIgnoreCase.TryAdd(property.Name,setters[property.Name]=(property.PropertyType,(o,v)=>property.SetValue(o,v)));
-				if(property.CanRead)
-					getters.Add((property.Name,o=>property.GetValue(o)));
+					settersIgnoreCase.TryAdd(name,
+						setters[name]=(property.PropertyType,(o,v)=>property.SetValue(o,v)));
+				if(property.CanRead&&gettersLimiter.Add(name))
+					getters.Add((name,o=>property.GetValue(o)));
 			} else if(member is FieldInfo{IsSpecialName: false} field&&!field.IsDefined(typeof(RpcHiddenAttribute),true)){
-				settersIgnoreCase.TryAdd(field.Name,setters[field.Name]=(field.FieldType,(o,v)=>field.SetValue(o,v)));
-				getters.Add((field.Name,o=>field.GetValue(o)));
+				var name=field.GetCustomAttribute<RpcNamedAttribute>()?.Name??field.Name;
+				settersIgnoreCase.TryAdd(name,
+					setters[name]=(field.FieldType,(o,v)=>field.SetValue(o,v)));
+				if(gettersLimiter.Add(name))
+					getters.Add((name,o=>field.GetValue(o)));
 			}
-		}
 
 		lock(Types)
 			return Types[type]=(getters,setters,settersIgnoreCase);
