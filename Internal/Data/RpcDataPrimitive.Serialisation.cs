@@ -6,17 +6,8 @@ using PlayifyUtility.Streams.Data;
 namespace PlayifyRpc.Internal.Data;
 
 public readonly partial struct RpcDataPrimitive{
-	public delegate RpcDataPrimitive ReadFunc(DataInput data,Dictionary<int,RpcDataPrimitive> already,int index);
 
-	public delegate RpcDataPrimitive ReadFunc<out T>(DataInput data,ReadCustomCreator<T> create);
-
-	public delegate RpcDataPrimitive ReadCustomCreator<in T>(T value,bool addAlready);
-
-	public delegate void WriteFunc(DataOutputBuff data,object value,Dictionary<RpcDataPrimitive,int> already);
-
-	public delegate void WriteFunc<in T>(DataOutput data,T value,Dictionary<RpcDataPrimitive,int> already);
-
-	private static readonly Dictionary<char,ReadFunc> ReadByChar=new(){
+	internal static readonly Dictionary<char,RpcData.ReadFunc> ReadByChar=new(){
 		{'n',(_,_,_)=>new RpcDataPrimitive()},
 		{'t',(_,_,_)=>new RpcDataPrimitive(true)},
 		{'f',(_,_,_)=>new RpcDataPrimitive(false)},
@@ -37,7 +28,7 @@ public readonly partial struct RpcDataPrimitive{
 			}
 		},
 	};
-	private static readonly Dictionary<string,ReadFunc> ReadByString=new();
+	internal static readonly Dictionary<string,RpcData.ReadFunc> ReadByString=new();
 
 	public void Write(DataOutputBuff output,Dictionary<RpcDataPrimitive,int> already){
 		if(IsNull()){
@@ -93,7 +84,8 @@ public readonly partial struct RpcDataPrimitive{
 		}
 	}
 
-	public static RpcDataPrimitive[] ReadArray(DataInputBuff input)=>input.ReadArray(already=>Read(input,already),new Dictionary<int,RpcDataPrimitive>())??[];
+	public static RpcDataPrimitive[] ReadArray(DataInputBuff input)
+		=>input.ReadArray(already=>Read(input,already),new Dictionary<int,RpcDataPrimitive>())??[];
 
 	public static RpcDataPrimitive Read(DataInputBuff input,Dictionary<int,RpcDataPrimitive> already){
 		var index=input.GetBufferOffsetAndLength().off;

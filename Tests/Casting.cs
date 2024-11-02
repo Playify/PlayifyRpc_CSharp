@@ -19,13 +19,21 @@ public class Casting{
 	}
 
 	[SuppressMessage("ReSharper","InconsistentNaming")]
+	private class ReducedObjectType:RpcDataObject{
+		public string? a;
+	}
+
+	[SuppressMessage("ReSharper","InconsistentNaming")]
 	[UsedImplicitly(ImplicitUseTargetFlags.Members)]
 	private struct ExampleStructType:IRpcDataObject{
 		public readonly string? a;
 		public readonly string? A;
-		public bool TrySetProps(IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError)=>RpcDataObject.DefaultTrySetProps(ref this,props,throwOnError);
 
-		public IEnumerable<(string key,RpcDataPrimitive value)> GetProps(Dictionary<object,RpcDataPrimitive> already)=>RpcDataObject.DefaultGetProps(this,already);
+		public bool TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataPrimitive original)
+			=>RpcDataObject.Reflection.SetProps(ref this,props,throwOnError,original);
+
+		public IEnumerable<(string key,RpcDataPrimitive value)> GetProps(Dictionary<object,RpcDataPrimitive> already)
+			=>RpcDataObject.Reflection.GetProps(this,already);
 	}
 
 	[SetUp]
@@ -126,11 +134,14 @@ public class Casting{
 		var exception=Assert.Throws<InvalidCastException>(()=>RpcDataPrimitive.Cast<Json>(obj))!;
 		StringAssert.Contains("index 0",exception.ToString());
 		StringAssert.Contains("property \"a\"",exception.ToString());
+
+		//If property is not found, it should appear in the stack trace
+		StringAssert.Contains("property \"A\"",Assert.Throws<InvalidCastException>(()=>RpcDataPrimitive.Cast<ReducedObjectType>(new ExampleObjectType()))!.ToString());
 	});
 
 
 	[Test]
-	public void Cloning()/*=>Assert.Multiple(()=>*/{
+	public void Cloning()=>Assert.Multiple(()=>{
 		var @base=new StringMap<Json[]>{
 			{
 				"a",[
@@ -142,5 +153,5 @@ public class Casting{
 		Assert.That(clone,Is.EqualTo(@base));//Structure should stay the same
 		Assert.That(clone,Is.Not.SameAs(@base));//direct childs should change
 		Assert.That(inner,Is.Not.SameAs(clone["a"][0]));//deep childs should also change
-	}//);
+	});
 }

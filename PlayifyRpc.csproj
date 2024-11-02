@@ -51,9 +51,6 @@
 		<Compile Update="Internal\Data\RpcDataPrimitive.From.cs">
 			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
 		</Compile>
-		<Compile Update="Internal\Data\RpcDataPrimitive.Register.cs">
-			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
-		</Compile>
 		<Compile Update="Internal\Data\RpcDataPrimitive.To.cs">
 			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
 		</Compile>
@@ -81,14 +78,23 @@
 		<Compile Update="Types\Functions\FunctionCallContext.Static.cs">
 			<DependentUpon>FunctionCallContext.cs</DependentUpon>
 		</Compile>
-		<Compile Update="Types\Data\Objects\RpcDataObject.Helpers.cs">
+		<Compile Update="Types\Data\Objects\RpcDataObject.Reflection.cs">
 			<DependentUpon>RpcDataObject.cs</DependentUpon>
 		</Compile>
 		<Compile Update="Internal\Data\RpcInvoker.Helpers.cs">
-			<DependentUpon>DynamicBinder.cs</DependentUpon>
+			<DependentUpon>RpcInvoker.cs</DependentUpon>
 		</Compile>
 		<Compile Update="Types\Invokers\Invoker.CallFunction.cs">
 		  <DependentUpon>Invoker.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\RpcDataDefaults.cs">
+			<DependentUpon>RpcData.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\RpcData.Delegates.cs">
+			<DependentUpon>RpcData.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\RpcData.Register.cs">
+			<DependentUpon>RpcData.cs</DependentUpon>
 		</Compile>
 	</ItemGroup>
 

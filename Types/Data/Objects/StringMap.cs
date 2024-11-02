@@ -1,6 +1,7 @@
 using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
 using PlayifyUtility.HelperClasses;
+using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Data.Objects;
@@ -30,8 +31,14 @@ public sealed class StringMap<T>:InsertionOrderDictionary<string,T>,IRpcDataObje
 	}
 
 
-	bool IRpcDataObject.TrySetProps(IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError)=>props.All(tuple=>
-		tuple.primitive.TryTo(out T? child,throwOnError)&&this!.TryAdd(tuple.s,child));
+	bool IRpcDataObject.TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataPrimitive original)=>props.All(tuple=>{
+		try{
+			return tuple.value.TryTo(out T? child,throwOnError)&&this!.TryAdd(tuple.key,child);
+		} catch(Exception e){
+			throw new InvalidCastException("Error converting primitive "+original+" to "+RpcTypeStringifier.FromType(GetType())+
+			                               ", due to property "+JsonString.Escape(tuple.key),e);
+		}
+	});
 
 	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(Dictionary<object,RpcDataPrimitive> already)
 		=>this.Select(kv=>(kv.Key,RpcDataPrimitive.From(kv.Value,already)));
@@ -39,8 +46,8 @@ public sealed class StringMap<T>:InsertionOrderDictionary<string,T>,IRpcDataObje
 
 [PublicAPI]
 public sealed class StringMap:InsertionOrderDictionary<string,RpcDataPrimitive>,IRpcDataObject{
-	bool IRpcDataObject.TrySetProps(IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError)=>props.All(tuple=>
-		this.TryAdd(tuple.s,tuple.primitive));
+	bool IRpcDataObject.TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataPrimitive original)
+		=>props.All(tuple=>this.TryAdd(tuple.key,tuple.value));
 
 	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(Dictionary<object,RpcDataPrimitive> already)=>this.ToTuples();
 }

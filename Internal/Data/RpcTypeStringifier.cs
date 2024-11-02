@@ -9,7 +9,7 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Internal.Data;
 
 public static class RpcTypeStringifier{
-	public static readonly Dictionary<Type,KnownFunc> ToStringDictionary=new();
+	public static readonly Dictionary<Type,UnknownFunc> ToStringDictionary=new();
 	public static readonly List<UnknownFunc> ToStringList=[];
 
 	public delegate string KnownFunc(bool typescript,string[] generics);
@@ -21,7 +21,7 @@ public static class RpcTypeStringifier{
 	}
 
 
-	public static string FromType(Type type,bool typescript=false)=>Stringify(type,typescript,true,()=>null,null);
+	public static string FromType(Type type,bool typescript=false)=>StringifySubType(type,typescript,true,()=>null,null);
 
 	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(Delegate method,bool typescript,params string[] prevParameters)
 		=>MethodSignatures(method.Method,typescript,prevParameters);
@@ -44,7 +44,7 @@ public static class RpcTypeStringifier{
 
 			var @params=parameter.ParameterType.IsArray&&parameter.IsDefined(typeof(ParamArrayAttribute),true)?typescript?"...":"params ":"";
 			var parameterType=ParameterType(parameter,true,typescript);
-			list.Add(@params+Parameter(typescript,parameterType,parameter.Name));
+			list.Add(@params+CombineParameter(typescript,parameterType,parameter.Name));
 		}
 		yield return (list.ToArray(),returns);
 	}
@@ -65,16 +65,15 @@ public static class RpcTypeStringifier{
 					nullability=nullability?.GenericTypeArguments[0];
 				} else break;
 
-		return Stringify(type,typescript,input,()=>tupleNames?[tupleIndex++],nullability);
+		return StringifySubType(type,typescript,input,()=>tupleNames?[tupleIndex++],nullability);
 	}
 
-	public static string Stringify(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability){
+	public static string StringifySubType(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability){
 		var isNullable=(input?nullability?.ReadState:nullability?.WriteState)==NullabilityState.Nullable;
 		if(Nullable.GetUnderlyingType(type) is{} underlying){
 			isNullable=true;
 			type=underlying;
 		}
-		var suffix=isNullable?typescript?"|null":"?":"";
 
 		var generics=!type.IsGenericType
 			             ?[]
@@ -82,25 +81,33 @@ public static class RpcTypeStringifier{
 			              .GetGenericArguments()
 			              .Zip(
 				              nullability?.GenericTypeArguments??EnumerableUtils.RepeatForever<NullabilityInfo?>(null),
-				              (t,n)=>Stringify(t,typescript,input,tuplename,n))
+				              (t,n)=>StringifySubType(t,typescript,input,tuplename,n))
 			              .ToArray();
 
-		if(ToStringDictionary.TryGetValue(type,out var fromDict))
-			return fromDict(typescript,generics)+suffix;
-		if(type.IsGenericType&&ToStringDictionary.TryGetValue(type.GetGenericTypeDefinition(),out fromDict))
-			return fromDict(typescript,generics);
-		foreach(var fromList in ToStringList)
-			if(fromList(type,typescript,input,tuplename,nullability,generics) is{} s)
-				return s+suffix;
+		string? result=null;
+		if((input?RpcData.GetForInput(ToStringDictionary,type):RpcData.GetForOutput(ToStringDictionary,type)) is{} fromDict){
+			result=fromDict(type,typescript,input,tuplename,nullability,generics);
+		} else
+			foreach(var fromList in ToStringList)
+				if((result=fromList(type,typescript,input,tuplename,nullability,generics))!=null)
+					break;
 
-		return typescript
-			       ?$"unknwon{suffix} /*{TypeName(type,generics).Replace("/*","/#").Replace("*/","#/")}*/"
-			       :$"Unknown<{TypeName(type,generics)}>{suffix}";
+		if(result==null)
+			return typescript
+				       ?$"unknown{(isNullable?"|null":"")} /*{CombineTypeName(type,generics).Replace("/*","/#").Replace("*/","#/")}*/"
+				       :$"Unknown<{CombineTypeName(type,generics)}>{(isNullable?"?":"")}";
+
+
+		if(result is "null" or "void") return result;//Not nullable
+		//Don't check for literals here, they could also be nullable
+
+		if(isNullable) result+=typescript?"|null":"?";
+		return result;
 	}
 
 
 	#region Helpers
-	public static string TypeName(Type type,string[] generics){
+	public static string CombineTypeName(Type type,string[] generics){
 		var name=type.Name;
 		var genericIndex=name.IndexOf('`');
 		if(genericIndex!=-1) name=name.Substring(0,genericIndex);
@@ -108,7 +115,7 @@ public static class RpcTypeStringifier{
 		return name;
 	}
 
-	internal static string Parameter(bool typescript,string type,string? name){
+	internal static string CombineParameter(bool typescript,string type,string? name){
 		if(name==null) return type;
 		if(type=="") return name;
 		if(type=="null"||type[0] is '"' or '\''||double.TryParse(type,out _)) return type;//Constant value

@@ -23,16 +23,16 @@ public readonly struct StringEnum<T>(T value) where T : struct,Enum{
 [PublicAPI]
 public static class StringEnums{
 	static StringEnums(){
-		RpcDataPrimitive.Register(
+		RpcData.Register(
 			typeof(StringEnum<>),
 			(o,_)=>new RpcDataPrimitive($"{o}"),
 			(primitive,type,_)=>{
 				if(primitive.IsString(out var s)&&
 				   TryParseEnum(type.GetGenericArguments()[0],s,out var result))
 					return Activator.CreateInstance(type,result);
-				return RpcDataPrimitive.ContinueWithNext;
+				return RpcData.ContinueWithNext;
 			},
-			(_,generics)=>RpcTypeStringifier.TypeName(typeof(StringEnum<>),generics)
+			(_,generics)=>RpcTypeStringifier.CombineTypeName(typeof(StringEnum<>),generics)
 		);
 	}
 

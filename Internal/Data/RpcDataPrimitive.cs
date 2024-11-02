@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Numerics;
 using JetBrains.Annotations;
+using PlayifyRpc.Internal.Utils;
+using PlayifyRpc.Types;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
@@ -9,7 +11,9 @@ namespace PlayifyRpc.Internal.Data;
 
 [PublicAPI]
 public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
-	public static readonly object ContinueWithNext=new();
+	static RpcDataPrimitive(){
+		RpcSetupAttribute.LoadAll();
+	}
 
 	#region Data
 	private readonly object? _data;
@@ -86,14 +90,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 
 	#region Boolean
 	public RpcDataPrimitive(bool @bool)=>_data=@bool;
-	public bool IsBool(out bool b){
-		if(_data is bool bb){
-			b=bb;
-			return true;
-		}
-		b=false;
-		return false;
-	}
+	public bool IsBool(out bool b)=>_data.TryCast(out b);
 	#endregion
 
 	#region Number
@@ -135,45 +132,12 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 		}
 	}
 
-	public bool IsBigIntegerAndNothingElse(out BigInteger big){
-		if(_data is BigInteger bb){
-			big=bb;
-			return true;
-		}
-		big=default;
-		return false;
-	}
+	public bool IsBigIntegerAndNothingElse(out BigInteger big)=>_data.TryCast(out big);
 	#endregion
 
 	#region String
 	public RpcDataPrimitive(string @string)=>_data=@string;
-	public RpcDataPrimitive(char @char)=>_data=@char;
-	public bool IsString(out string s){
-		switch(_data){
-			case string ss:
-				s=ss;
-				return true;
-			case char c:
-				s=char.ToString(c);
-				return true;
-			default:
-				s=null!;
-				return false;
-		}
-	}
-	internal bool IsChar(out char c){
-		switch(_data){
-			case char cc:
-				c=cc;
-				return true;
-			case string{Length: 1} s:
-				c=s[0];
-				return true;
-			default:
-				c=default;
-				return false;
-		}
-	}
+	public bool IsString(out string s)=>_data.TryCast(out s);
 	#endregion
 
 	#region Already
@@ -206,7 +170,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 
 	public object RemoveAlready(object? value){
 		_already?.Remove(value);
-		return ContinueWithNext;
+		return RpcData.ContinueWithNext;
 	}
 	#endregion
 
@@ -247,14 +211,14 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	#endregion
 
 	#region Custom
-	public RpcDataPrimitive(object custom,WriteFunc write,Action? dispose){
+	public RpcDataPrimitive(object custom,RpcData.WriteFunc write,Action? dispose){
 		_data=(custom,write,dispose);
 	}
 
 	public bool IsCustom<T>(out T value)=>IsCustom(out value,out _);
 
-	public bool IsCustom<T>(out T value,out WriteFunc write){
-		if(_data is ValueTuple<object,WriteFunc,Action?>{Item1: T found} tuple){
+	public bool IsCustom<T>(out T value,out RpcData.WriteFunc write){
+		if(_data is ValueTuple<object,RpcData.WriteFunc,Action?>{Item1: T found} tuple){
 			value=found;
 			write=tuple.Item2;
 			return true;
@@ -265,7 +229,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	}
 
 	public bool IsDisposable(out Action a)
-		=>_data is ValueTuple<object,WriteFunc,Action?> tuple
+		=>_data is ValueTuple<object,RpcData.WriteFunc,Action?> tuple
 			  ?tuple.Item3.NotNull(out a!)
 			  :FunctionUtils.TryGetNever(out a!);
 	#endregion

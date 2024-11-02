@@ -16,7 +16,6 @@ public sealed class RpcHiddenAttribute:Attribute;
  */
 [PublicAPI]
 [AttributeUsage(AttributeTargets.Field|AttributeTargets.Property|AttributeTargets.Method)]
-[MeansImplicitUse]
 public sealed class RpcNamedAttribute(string name):Attribute{
 	public readonly string Name=name;
 }
@@ -36,6 +35,7 @@ public sealed class RpcProviderAttribute(string? type=null):Attribute{
  * Classes with this Attribute get initialized, as soon as Rpc initializes. (static constructor gets called)
  */
 [AttributeUsage(AttributeTargets.Class)]
+[MeansImplicitUse]
 public class RpcSetupAttribute:Attribute{
 	private static bool _loaded;
 

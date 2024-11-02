@@ -4,14 +4,8 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Internal.Data;
 
 public readonly partial struct RpcDataPrimitive{
-	public delegate RpcDataPrimitive FromFunc(object value,Dictionary<object,RpcDataPrimitive> already);
-
-	public delegate RpcDataPrimitive FromFunc<in T>(T value,Dictionary<object,RpcDataPrimitive> already);
-
-	public delegate RpcDataPrimitive? FromFuncMaybe(object value,Dictionary<object,RpcDataPrimitive> already);
-
-	private static readonly Dictionary<Type,FromFunc> FromDictionary=new();
-	private static readonly List<FromFuncMaybe> FromList=[];
+	internal static readonly Dictionary<Type,RpcData.FromFunc> FromDictionary=new();
+	internal static readonly List<RpcData.FromFuncMaybe> FromList=[];
 
 	public static RpcDataPrimitive[] FromArray(object?[] values){
 		Dictionary<object,RpcDataPrimitive>? already=null;
@@ -26,7 +20,7 @@ public readonly partial struct RpcDataPrimitive{
 			   true=>new RpcDataPrimitive(true),
 			   false=>new RpcDataPrimitive(false),
 			   string s=>new RpcDataPrimitive(s),
-			   char c=>new RpcDataPrimitive(c),
+			   char c=>new RpcDataPrimitive(char.ToString(c)),
 
 			   byte n=>new RpcDataPrimitive(n),
 			   sbyte n=>new RpcDataPrimitive(n),
@@ -39,21 +33,17 @@ public readonly partial struct RpcDataPrimitive{
 			   BigInteger n=>new RpcDataPrimitive(n),
 			   float n=>new RpcDataPrimitive(n),
 			   double n=>new RpcDataPrimitive(n),
-			   //decimal n=>RpcDataPrimitive.Number(n),
 
 			   RpcDataPrimitive p=>p,
 			   _=>(RpcDataPrimitive?)null,
 		   } is{} simple) return simple;
-		if(value==null) return new RpcDataPrimitive();//Don't know why, but somehow the null check from before didn't count properly for nullability checks
+		if(value==null) return new RpcDataPrimitive();//C# doesn't recognize the nullcheck from before
 
 		if(already.TryGetValue(value,out var alreadyFound)) return alreadyFound;
-
+		
 		var type=value.GetType();
-		if(FromDictionary.TryGetValue(type,out var fromType))
-			return fromType(value,already);
-		if(type.IsGenericType&&FromDictionary.TryGetValue(type.GetGenericTypeDefinition(),out fromType))
-			return fromType(value,already);
-
+		if(RpcData.GetForInput(FromDictionary,type) is{} fromDict)
+			return fromDict(value,already);
 		foreach(var func in FromList)
 			if(func(value,already).TryGet(out var primitive))
 				return primitive;
