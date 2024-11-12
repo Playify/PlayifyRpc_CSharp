@@ -103,7 +103,7 @@ internal static class RpcDataDefaults{
 			},
 			(typescript,_)=>typescript?"bigint":"ulong");
 		Register<BigInteger>(
-			(n,_)=>new RpcDataPrimitive(n),
+			(n,already)=>new RpcDataPrimitive(n),
 			(p,_)=>{
 				if(p.IsBigIntegerAndNothingElse(out var n)) return n;
 				if(p.IsNumber(long.MinValue,long.MaxValue,out var l)) return new BigInteger(l);
@@ -151,35 +151,35 @@ internal static class RpcDataDefaults{
 
 	private static void RegisterRpcTypes(){
 		RegisterCustom<DateTime>('D',
-			(input,create)=>create(DateTimeOffset.FromUnixTimeMilliseconds(input.ReadLong()).LocalDateTime,false),
+			(input,create)=>create(DateTimeOffset.FromUnixTimeMilliseconds(input.ReadLong()).LocalDateTime),
 			(output,value,_)=>output.WriteLong(new DateTimeOffset(value).ToUnixTimeMilliseconds()),
 			(typescript,_)=>typescript?"Date":"DateTime");
 		RegisterCustom<byte[]>('b',
-			(input,create)=>create(input.ReadFully(input.ReadLength()),true),
+			(input,create)=>create(input.ReadFully(input.ReadLength())),
 			(output,value,_)=>{
 				output.WriteLength(value.Length);
 				output.Write(value);
 			},
 			(typescript,_)=>typescript?"Uint8Array":"byte[]");
 		RegisterCustom<Exception>('E',
-			(input,create)=>create(RpcException.Read(input),true),
+			(input,create)=>create(RpcException.Read(input)),
 			(output,value,_)=>RpcException.WrapAndFreeze(value).Write(output),
 			(typescript,_)=>typescript?"RpcError":nameof(RpcException));
 		RegisterCustom<Regex>('R',
-			(input,create)=>create(new Regex(input.ReadString()??"",(RegexOptions)(input.ReadByte()&3)),true),
+			(input,create)=>create(new Regex(input.ReadString()??"",(RegexOptions)(input.ReadByte()&3))),
 			(output,value,_)=>{
 				output.WriteString(value.ToString());
 				output.WriteByte((byte)(value.Options&(RegexOptions)3));
 			},
 			(typescript,_)=>typescript?"RegExp":nameof(Regex));
 		RegisterCustom<RpcObject>('O',
-			(input,create)=>create(new RpcObject(input.ReadString()??throw new NullReferenceException()),true),
+			(input,create)=>create(new RpcObject(input.ReadString()??throw new NullReferenceException())),
 			(output,value,_)=>output.WriteString(value.Type),
 			(_,_)=>nameof(RpcObject));
 		var rpcFunctionWriter=RegisterCustom<RpcFunction>('F',
 			(input,create)=>create(new RpcFunction(
 				input.ReadString()??throw new NullReferenceException(),
-				input.ReadString()??throw new NullReferenceException()),true),
+				input.ReadString()??throw new NullReferenceException())),
 			(output,value,_)=>{
 				output.WriteString(value.Type);
 				output.WriteString(value.Method);
