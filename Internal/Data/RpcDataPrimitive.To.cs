@@ -20,7 +20,7 @@ public readonly partial struct RpcDataPrimitive{
 			  ?obj
 			  :throw new InvalidCastException("Error converting primitive "+this+" to "+RpcTypeStringifier.FromType(type));
 
-	public bool TryTo<T>(out T? t,bool throwOnError){
+	public bool TryTo<T>(out T? t,bool throwOnError=false){
 		if(TryTo(typeof(T),out var obj,throwOnError)){
 			t=(T?)obj;
 			return true;
@@ -29,7 +29,7 @@ public readonly partial struct RpcDataPrimitive{
 		return false;
 	}
 
-	public bool TryTo(Type type,out object? result,bool throwOnError){
+	public bool TryTo(Type type,out object? result,bool throwOnError=false){
 		if(RpcData.GetForOutput(ToDictionary,type) is{} fromDict){
 			result=fromDict(this,type,throwOnError);
 			if(result!=RpcData.ContinueWithNext) return true;

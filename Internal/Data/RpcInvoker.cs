@@ -144,7 +144,7 @@ public static partial class RpcInvoker{
 			}
 
 			if(ctx!=null&&//If ctx==null, then the IDE already showed the user that a function is obsolete
-			   method.GetCustomAttribute<ObsoleteAttribute>() is{} obsolete){
+			   method.GetCustomAttribute<ObsoleteAttribute>() is{} obsolete)
 				Task.Run(async ()=>{
 					string? caller=null;
 					try{
@@ -156,7 +156,6 @@ public static partial class RpcInvoker{
 						ctx.Type??"<<null>>"}.{ctx.Method??"<<null>>"} which is obsolete{
 							(obsolete.Message==null?".":": "+obsolete.Message)}");
 				});
-			}
 
 			return method.Invoke(instance,arguments);
 		} catch(TargetInvocationException e){

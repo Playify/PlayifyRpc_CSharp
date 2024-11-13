@@ -95,7 +95,15 @@ public readonly partial struct RpcDataPrimitive{
 			//Already, String, Object, Array
 			objectId=-objectId;
 			switch(objectId&3){
-				case 0:return already[index-objectId/4];
+				case 0:{
+					index-=objectId/4;
+					if(already.TryGetValue(index,out var found))
+						return found;
+					//as fallback, try reading the value again
+					var (b,off,len)=input.GetBufferOffsetAndLength();
+					var temp=new DataInputBuff(b,index,len+off-index);
+					return Read(temp,already);
+				}
 				case 1:return already[index]=new RpcDataPrimitive(Encoding.UTF8.GetString(input.ReadFully(objectId/4)));
 				case 2:{
 					var properties=new List<(string key,RpcDataPrimitive value)>();
