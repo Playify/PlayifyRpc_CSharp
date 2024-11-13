@@ -49,13 +49,10 @@ public static partial class RpcData{
 			write(data,(T)t,already);
 		};
 		RegisterCustomBase(writer,toString,dispose);
-		RpcDataPrimitive.ReadByChar.Add(dataId,(data,already,index)=>{
-			return read(data,(t,addAlready)=>{
-				var custom=new RpcDataPrimitive(t,writer,dispose==null?null:()=>dispose(t));
-				if(addAlready) already[index]=custom;
-				return custom;
-			});
-		});
+		RpcDataPrimitive.ReadByChar.Add(dataId,(data,already,index)=>
+			read(data,t=>
+				already[index]=new RpcDataPrimitive(t,writer,
+					dispose==null?null:()=>dispose(t))));
 		return writer;
 	}
 
@@ -70,13 +67,10 @@ public static partial class RpcData{
 			write(data,(T)t,already);
 		};
 		RegisterCustomBase(writer,toString,dispose);
-		RpcDataPrimitive.ReadByString.Add(dataId,(data,already,index)=>{
-			return read(data,(t,addAlready)=>{
-				var custom=new RpcDataPrimitive(t,writer,dispose==null?null:()=>dispose(t));
-				if(addAlready) already[index]=custom;
-				return custom;
-			});
-		});
+		RpcDataPrimitive.ReadByString.Add(dataId,(data,already,index)=>
+			read(data,t=>
+				already[index]=new RpcDataPrimitive(t,writer,
+					dispose==null?null:()=>dispose(t))));
 	}
 	#endregion
 

@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Numerics;
 using JetBrains.Annotations;
-using PlayifyRpc.Internal.Utils;
 using PlayifyRpc.Types;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils;
@@ -97,6 +96,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	public RpcDataPrimitive(long number)=>_data=number;
 	public RpcDataPrimitive(double number)=>_data=number;
 	public RpcDataPrimitive(BigInteger number)=>_data=number;
+
 	public bool IsNumber(long min,long max,out long l){
 		switch(_data){
 			case long ll:
@@ -233,4 +233,5 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 			  ?tuple.Item3.NotNull(out a!)
 			  :FunctionUtils.TryGetNever(out a!);
 	#endregion
+
 }

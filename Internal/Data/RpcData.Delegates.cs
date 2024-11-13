@@ -21,7 +21,7 @@ public static partial class RpcData{
 
 	public delegate RpcDataPrimitive ReadFunc<out T>(DataInput data,ReadCustomCreator<T> create);
 
-	public delegate RpcDataPrimitive ReadCustomCreator<in T>(T value,bool addAlready);
+	public delegate RpcDataPrimitive ReadCustomCreator<in T>(T value);
 
 	public delegate void WriteFunc(DataOutput data,object value,Dictionary<RpcDataPrimitive,int> already);
 
