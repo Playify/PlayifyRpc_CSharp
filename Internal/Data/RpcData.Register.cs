@@ -28,37 +28,38 @@ public static partial class RpcData{
 	}
 
 	#region Custom
-	private static void RegisterCustomBase<T>(WriteFunc writer,RpcTypeStringifier.KnownFunc toString,Action<T>? dispose=null) where T : notnull{
+	private static ReadFunc RegisterCustomBase<T>(ReadFunc<T> read,WriteFunc writer,RpcTypeStringifier.KnownFunc toStringType,Func<T,string>? toStringInstance,Action<T>? dispose) where T : notnull{
+
 		Register<T>(
-			(p,a)=>a[p]=new RpcDataPrimitive(p,writer,dispose==null?null:()=>dispose(p)),
+			(p,a)=>a[p]=Create(p),
 			(p,_)=>{
 				if(p.IsNull()&&CanBeNull(typeof(T))) return null;
 				if(p.IsAlready(out T already)) return already;
 				if(p.IsCustom(out T custom)) return p.AddAlready(custom);
 				return ContinueWithNext;
 			},
-			toString
+			toStringType
 		);
+
+		return (data,already,index)=>read(data,t=>already[index]=Create(t));
+
+		RpcDataPrimitive Create(T t)=>new(t,writer,dispose==null?null:()=>dispose(t),toStringInstance==null?null:()=>toStringInstance(t));
 	}
 
 	internal static WriteFunc RegisterCustom<T>(char dataId,ReadFunc<T> read,WriteFunc<T> write,
-		RpcTypeStringifier.KnownFunc toString,Action<T>? dispose=null) where T : notnull{
+		RpcTypeStringifier.KnownFunc toStringType,Func<T,string>? toStringInstance=null,Action<T>? dispose=null) where T : notnull{
 
 		WriteFunc writer=(data,t,already)=>{
 			data.WriteLength(dataId);
 			write(data,(T)t,already);
 		};
-		RegisterCustomBase(writer,toString,dispose);
-		RpcDataPrimitive.ReadByChar.Add(dataId,(data,already,index)=>
-			read(data,t=>
-				already[index]=new RpcDataPrimitive(t,writer,
-					dispose==null?null:()=>dispose(t))));
+		RpcDataPrimitive.ReadByChar.Add(dataId,RegisterCustomBase(read,writer,toStringType,toStringInstance,dispose));
 		return writer;
 	}
 
 	[PublicAPI]
-	public static void RegisterCustom<T>(string dataId,ReadFunc<T> read,WriteFunc<T> write,
-		RpcTypeStringifier.KnownFunc toString,Action<T>? dispose=null) where T : notnull{
+	public static WriteFunc RegisterCustom<T>(string dataId,ReadFunc<T> read,WriteFunc<T> write,
+		RpcTypeStringifier.KnownFunc toStringType,Func<T,string>? toStringInstance=null,Action<T>? dispose=null) where T : notnull{
 
 		var bytes=Encoding.UTF8.GetBytes(dataId);
 		WriteFunc writer=(data,t,already)=>{
@@ -66,11 +67,8 @@ public static partial class RpcData{
 			data.Write(bytes);
 			write(data,(T)t,already);
 		};
-		RegisterCustomBase(writer,toString,dispose);
-		RpcDataPrimitive.ReadByString.Add(dataId,(data,already,index)=>
-			read(data,t=>
-				already[index]=new RpcDataPrimitive(t,writer,
-					dispose==null?null:()=>dispose(t))));
+		RpcDataPrimitive.ReadByString.Add(dataId,RegisterCustomBase(read,writer,toStringType,toStringInstance,dispose));
+		return writer;
 	}
 	#endregion
 

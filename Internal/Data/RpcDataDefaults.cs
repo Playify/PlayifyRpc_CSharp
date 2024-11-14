@@ -103,7 +103,7 @@ internal static class RpcDataDefaults{
 			},
 			(typescript,_)=>typescript?"bigint":"ulong");
 		Register<BigInteger>(
-			(n,already)=>new RpcDataPrimitive(n),
+			(n,_)=>new RpcDataPrimitive(n),
 			(p,_)=>{
 				if(p.IsBigIntegerAndNothingElse(out var n)) return n;
 				if(p.IsNumber(long.MinValue,long.MaxValue,out var l)) return new BigInteger(l);
@@ -160,7 +160,8 @@ internal static class RpcDataDefaults{
 				output.WriteLength(value.Length);
 				output.Write(value);
 			},
-			(typescript,_)=>typescript?"Uint8Array":"byte[]");
+			(typescript,_)=>typescript?"Uint8Array":"byte[]",
+			bytes=>$"[{bytes.Join(',')}]");
 		RegisterCustom<Exception>('E',
 			(input,create)=>create(RpcException.Read(input)),
 			(output,value,_)=>RpcException.WrapAndFreeze(value).Write(output),
@@ -171,7 +172,13 @@ internal static class RpcDataDefaults{
 				output.WriteString(value.ToString());
 				output.WriteByte((byte)(value.Options&(RegexOptions)3));
 			},
-			(typescript,_)=>typescript?"RegExp":nameof(Regex));
+			(typescript,_)=>typescript?"RegExp":nameof(Regex),
+			regex=>{
+				var s="/"+regex.ToString().Replace("/","\\/")+"/";
+				if((regex.Options&RegexOptions.IgnoreCase)!=0) s+="i";
+				if((regex.Options&RegexOptions.Multiline)!=0) s+="m";
+				return s;
+			});
 		RegisterCustom<RpcObject>('O',
 			(input,create)=>create(new RpcObject(input.ReadString()??throw new NullReferenceException())),
 			(output,value,_)=>output.WriteString(value.Type),
@@ -188,7 +195,7 @@ internal static class RpcDataDefaults{
 		Register<Delegate>(
 			(func,already)=>already[func]=new RpcDataPrimitive(
 				                RpcFunction.RegisterFunction(func),rpcFunctionWriter,
-				                ()=>RpcFunction.UnregisterFunction(func)),
+				                ()=>RpcFunction.UnregisterFunction(func),null),
 			null,
 			(_,_)=>nameof(RpcFunction)
 		);

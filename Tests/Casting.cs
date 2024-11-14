@@ -40,7 +40,7 @@ public class Casting{
 	public void Setup(){
 		typeof(Rpc).RunClassConstructor();
 	}
-	
+
 	[Test]
 	public void Nulls()=>Assert.Multiple(()=>{
 		Assert.That(RpcDataPrimitive.Cast<object>(JsonNull.Null),Is.EqualTo(null));
@@ -79,6 +79,9 @@ public class Casting{
 
 		Assert.That(RpcDataPrimitive.From(list).ToString(false),Is.EqualTo("[<<Cyclic Reference>>]"));
 	});
+
+	[Test]
+	public void ToStringOfPrimitives()=>Assert.Multiple(()=>{Assert.That(RpcDataPrimitive.From(new byte[]{0,1,2}).ToString(false),Is.EqualTo("[0,1,2]"));});
 
 
 	private enum IntEnum{

@@ -78,7 +78,7 @@ public readonly partial struct RpcDataPrimitive{
 					output.WriteString(key);
 					value.Write(output,already);
 				}
-			} else if(IsCustom(out object custom,out var write)){
+			} else if(IsCustom(out object custom,out var write,out _)){
 				write(output,custom,already);
 			} else throw new RpcDataException("Primitive can't be written: "+this);
 		}

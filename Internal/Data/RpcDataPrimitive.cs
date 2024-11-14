@@ -152,16 +152,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 		return false;
 	}
 
-	public bool IsAlready(Type type,out object value){
-		if(_already!=null)
-			foreach(var o in _already)
-				if(type.IsInstanceOfType(o)){
-					value=o!;
-					return true;
-				}
-		value=default!;
-		return false;
-	}
+	public bool IsAlready(Type type,out object value)=>(_already?.FirstOrDefault(type.IsInstanceOfType)).NotNull(out value!);
 
 	public T AddAlready<T>(T value){
 		_already?.Add(value);
@@ -211,27 +202,36 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	#endregion
 
 	#region Custom
-	public RpcDataPrimitive(object custom,RpcData.WriteFunc write,Action? dispose){
-		_data=(custom,write,dispose);
-	}
+	public RpcDataPrimitive(object custom,RpcData.WriteFunc write,Action? dispose,Func<string>? toString)
+		=>_data=new CustomData(custom,write,dispose,toString);
 
-	public bool IsCustom<T>(out T value)=>IsCustom(out value,out _);
+	public bool IsCustom<T>(out T value)=>IsCustom(out value,out _,out _);
 
-	public bool IsCustom<T>(out T value,out RpcData.WriteFunc write){
-		if(_data is ValueTuple<object,RpcData.WriteFunc,Action?>{Item1: T found} tuple){
+	public bool IsCustom<T>(out T value,out RpcData.WriteFunc write,out Func<string>? toString){
+		if(_data is CustomData{Value: T found} tuple){
 			value=found;
-			write=tuple.Item2;
+			write=tuple.Write;
+			toString=tuple.ToStringInstance;
 			return true;
 		}
 		value=default!;
 		write=default!;
+		toString=default!;
 		return false;
 	}
 
 	public bool IsDisposable(out Action a)
-		=>_data is ValueTuple<object,RpcData.WriteFunc,Action?> tuple
-			  ?tuple.Item3.NotNull(out a!)
+		=>_data is CustomData tuple
+			  ?tuple.Dispose.NotNull(out a!)
 			  :FunctionUtils.TryGetNever(out a!);
+
+	private readonly struct CustomData(object value,RpcData.WriteFunc write,Action? dispose,Func<string>? toStringInstance){
+		public readonly object Value=value;
+		public readonly RpcData.WriteFunc Write=write;
+		public readonly Action? Dispose=dispose;
+		public readonly Func<string>? ToStringInstance=toStringInstance;
+
+	}
 	#endregion
 
 }
