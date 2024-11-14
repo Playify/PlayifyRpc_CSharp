@@ -50,4 +50,9 @@ public sealed class StringMap:InsertionOrderDictionary<string,RpcDataPrimitive>,
 		=>props.All(tuple=>this.TryAdd(tuple.key,tuple.value));
 
 	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(Dictionary<object,RpcDataPrimitive> already)=>this.ToTuples();
+
+	public void Add(string key,object? value,Dictionary<object,RpcDataPrimitive>? already=null)=>base.Add(key,RpcDataPrimitive.From(value,already));
+	public new void Add(string key,RpcDataPrimitive value)=>base.Add(key,value);//This needs to be overridden, so that primitives use this instead of the object based method
+
+	public void Set(string key,object? value,Dictionary<object,RpcDataPrimitive>? already=null)=>base[key]=RpcDataPrimitive.From(value,already);
 }

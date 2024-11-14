@@ -28,9 +28,9 @@ internal static class ListenAllCalls{
 			var (b,off,len)=clone.GetBufferOffsetAndLength();
 			var argsBytes=new byte[len];
 			Array.Copy(b,off,argsBytes,0,len);
-			
-			
-			var msg=new StringMap<object?>{
+
+
+			var msg=new StringMap{
 				{"name",respondTo.Name},
 				{"id",respondTo.Id},
 				{"prettyName",respondTo.PrettyName},
@@ -40,9 +40,9 @@ internal static class ListenAllCalls{
 			};
 
 			try{
-				msg["args"]=RpcDataPrimitive.ReadArray(clone);
+				msg.Add("args",RpcDataPrimitive.ReadArray(clone));
 			} catch(Exception e){
-				msg["argsError"]=e;
+				msg.Add("argsError",e);
 			}
 
 
@@ -83,7 +83,7 @@ internal static class ListenAllCalls{
 	}
 
 	private static void Broadcast(string? type,string? method,byte[]? args){
-		var msg=new StringMap<object?>{
+		var msg=new StringMap{
 			{"name",Rpc.Name},
 			{"id",Rpc.Id},
 			{"prettyName",Rpc.PrettyName},

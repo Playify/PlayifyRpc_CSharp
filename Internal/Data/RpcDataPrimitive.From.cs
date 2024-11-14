@@ -12,9 +12,7 @@ public readonly partial struct RpcDataPrimitive{
 		return values.Select(v=>v is RpcDataPrimitive p?p:From(v,already??=new Dictionary<object,RpcDataPrimitive>())).ToArray();
 	}
 
-	public static RpcDataPrimitive From(object? value)=>value is RpcDataPrimitive p?p:From(value,new Dictionary<object,RpcDataPrimitive>());
-
-	public static RpcDataPrimitive From(object? value,Dictionary<object,RpcDataPrimitive> already){
+	public static RpcDataPrimitive From(object? value,Dictionary<object,RpcDataPrimitive>? already=null){
 		if(value switch{
 			   null=>new RpcDataPrimitive(),
 			   true=>new RpcDataPrimitive(true),
@@ -39,8 +37,10 @@ public readonly partial struct RpcDataPrimitive{
 		   } is{} simple) return simple;
 		if(value==null) return new RpcDataPrimitive();//C# doesn't recognize the nullcheck from before
 
-		if(already.TryGetValue(value,out var alreadyFound)) return alreadyFound;
-		
+		if(already?.TryGetValue(value,out var alreadyFound)??false) return alreadyFound;
+
+		already??=new Dictionary<object,RpcDataPrimitive>();
+
 		var type=value.GetType();
 		if(RpcData.GetForInput(FromDictionary,type) is{} fromDict)
 			return fromDict(value,already);

@@ -131,7 +131,7 @@ public class Casting{
 
 	[Test]
 	public void Errors()=>Assert.Multiple(()=>{
-		var obj=new StringMap<object>{
+		var obj=new StringMap{
 			{
 				"a",new object[]{
 					new Regex("TEST"),//Not supported by json
