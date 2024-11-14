@@ -61,7 +61,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 			already.Pop();
 			return s;
 		}
-		if(IsCustom(out object custom)) return $"{custom}";
+		if(IsCustom(out object custom,out _,out var customToString)) return customToString!=null?customToString():$"{custom}";
 
 		return $"<<Invalid: {_data} of type {RpcTypeStringifier.FromType(_data?.GetType()??typeof(object))}>>";
 	}

@@ -5,7 +5,7 @@ using PlayifyUtility.Utils.Extensions;
 namespace Tests;
 
 public static class Web{
-	private static readonly HttpClient HttpClient=new();
+	private static readonly HttpClient HttpClient=new(new HttpClientHandler{UseProxy=false});
 	private static string _endPoint=null!;
 
 	[SetUp]

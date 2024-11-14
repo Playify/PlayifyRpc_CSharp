@@ -6,6 +6,7 @@ using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Utils;
+using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Jsons;
 using PlayifyUtility.Utils.Extensions;
 
@@ -81,7 +82,10 @@ public class Casting{
 	});
 
 	[Test]
-	public void ToStringOfPrimitives()=>Assert.Multiple(()=>{Assert.That(RpcDataPrimitive.From(new byte[]{0,1,2}).ToString(false),Is.EqualTo("[0,1,2]"));});
+	public void ToStringOfPrimitives()=>Assert.Multiple(()=>{
+		Assert.That(RpcDataPrimitive.From(new VoidType()).ToString(false),Is.EqualTo("null"));
+		Assert.That(RpcDataPrimitive.From(new byte[]{0,1,2}).ToString(false),Is.EqualTo("[0,1,2]"));
+	});
 
 
 	private enum IntEnum{
