@@ -29,6 +29,7 @@ public static class Web{
 		Assert.That(await Request("/rpc/Rpc.Return()","[1]"),Is.EqualTo("[1]"));
 		Assert.That(await Request("/rpc/Rpc.ReturnArguments(1)","2,3"),Is.EqualTo("[1,2,3]"));
 		Assert.That(await Request("/rpc/Rpc.Return()/pretty","[1]"),Is.EqualTo("[\n\t1\n]"));
+		Assert.That(await Request("/rpc/Rpc.Return/pretty","[[1]]"),Is.EqualTo("[\n\t1\n]"));
 		Assert.That(await Request("/rpc","Rpc.Return([1])"),Is.EqualTo("[1]"));
 		Assert.That(await Request("/rpc/pretty","Rpc.Return([1])"),Is.EqualTo("[\n\t1\n]"));
 		Assert.That(await Request("/rpc","[\"Rpc\",\"Return\",[1]]"),Is.EqualTo("[1]"));
