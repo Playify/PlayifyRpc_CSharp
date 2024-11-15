@@ -114,7 +114,7 @@ public readonly partial struct RpcDataPrimitive{
 				}
 				case 3:{
 					var properties=new List<RpcDataPrimitive>();
-					var obj=already[index]=new RpcDataPrimitive(()=>(properties,properties.Count));
+					var obj=already[index]=new RpcDataPrimitive(properties);
 					for(var i=0;i<objectId/4;i++)
 						properties.Add(Read(input,already));
 					return obj;

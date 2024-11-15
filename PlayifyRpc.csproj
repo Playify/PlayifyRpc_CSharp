@@ -96,6 +96,9 @@
 		<Compile Update="Internal\Data\RpcData.Register.cs">
 			<DependentUpon>RpcData.cs</DependentUpon>
 		</Compile>
+		<Compile Update="Internal\Data\RpcDataPrimitive.Parse.cs">
+			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
