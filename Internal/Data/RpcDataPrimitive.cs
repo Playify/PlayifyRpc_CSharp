@@ -26,7 +26,7 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	public bool Equals(RpcDataPrimitive other)=>this==other;
 	#endregion
 
-	#region Parse & ToString
+	#region ToString
 	public override string ToString()=>ToString(true);
 
 	public string ToString(bool pretty)=>ToString(pretty,null);
@@ -64,21 +64,6 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 		if(IsCustom(out object custom,out _,out var customToString)) return customToString!=null?customToString():$"{custom}";
 
 		return $"<<Invalid: {_data} of type {RpcTypeStringifier.FromType(_data?.GetType()??typeof(object))}>>";
-	}
-
-	public static RpcDataPrimitive? Parse(string s){
-		switch(s){
-			case "":return null;
-			case "null":return new RpcDataPrimitive();
-			case "true":return new RpcDataPrimitive(true);
-			case "false":return new RpcDataPrimitive(false);
-		}
-		if(int.TryParse(s,out var i)) return new RpcDataPrimitive(i);
-		if(double.TryParse(s,out var d)) return new RpcDataPrimitive(d);
-		if(BigInteger.TryParse(s,out var big)) return new RpcDataPrimitive(big);
-		if(s[0]=='"'&&JsonString.TryUnescape(s,out var asString)) return new RpcDataPrimitive(asString);
-		if(Json.ParseOrNull(s) is{} json) return From(json);
-		return null;
 	}
 	#endregion
 
@@ -166,6 +151,8 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	#endregion
 
 	#region Array
+	public RpcDataPrimitive(IList<RpcDataPrimitive> list):this(()=>(list,list.Count)){}
+
 	public RpcDataPrimitive(Func<(IEnumerable<RpcDataPrimitive> elements,int count)> array){
 		_data=array;
 		_already=[];
