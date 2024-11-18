@@ -20,7 +20,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	internal static Task WaitUntilConnectedOnce=>_connectionAttemptOnce?.Task??Task.FromException(new RpcConnectionException("Not yet started to connect"));
 	internal static Task WaitUntilConnectedLooping=>(_connectionAttempt??=new TaskCompletionSource()).Task;
 
-	
+
 	protected static bool IsConnecting()=>_connectionAttemptOnce!=null;
 	protected static void StartConnect()=>_connectionAttemptOnce=new TaskCompletionSource();
 
@@ -173,7 +173,8 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				FunctionCallContext? ctx;
 				lock(_currentlyExecuting)
 					if(!_currentlyExecuting.TryGetValue(callId,out ctx)){
-						Logger.Warning($"Invalid State: No CurrentlyExecuting[{callId}] ({packetType})");
+						//Already finished executing => no longer in list. Would mean additional overhead to prevent this warning, so just not warning here should be fine
+						//Logger.Warning($"Invalid State: No CurrentlyExecuting[{callId}] ({packetType})");
 						break;
 					}
 				ctx.CancelSelf();
