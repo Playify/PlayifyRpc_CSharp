@@ -2,7 +2,6 @@ using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
-using PlayifyRpc.Types.Functions;
 using PlayifyUtility.HelperClasses;
 
 namespace PlayifyRpc.Utils;
@@ -11,11 +10,11 @@ namespace PlayifyRpc.Utils;
 public static class RpcHelpers{
 
 	#region AutoRecall
-	public static void AutoRecall(MessageFunc onMessage,string type,string method,params object?[] args)=>AutoRecall(onMessage,null,type,method,args);
-	public static void AutoRecall(MessageFunc onMessage,TimeSpan retryDelay,string type,string method,params object?[] args)=>AutoRecall(onMessage,null,retryDelay,type,method,args);
-	public static void AutoRecall(MessageFunc onMessage,Action<RpcException?>? onError,string type,string method,params object?[] args)=>AutoRecall(onMessage,onError,TimeSpan.FromSeconds(1),type,method,args);
+	public static void AutoRecall(Delegate onMessage,string type,string method,params object?[] args)=>AutoRecall(onMessage,null,type,method,args);
+	public static void AutoRecall(Delegate onMessage,TimeSpan retryDelay,string type,string method,params object?[] args)=>AutoRecall(onMessage,null,retryDelay,type,method,args);
+	public static void AutoRecall(Delegate onMessage,Action<RpcException?>? onError,string type,string method,params object?[] args)=>AutoRecall(onMessage,onError,TimeSpan.FromSeconds(1),type,method,args);
 
-	public static async void AutoRecall(MessageFunc onMessage,Action<RpcException?>? onError,TimeSpan retryDelay,string type,string method,params object?[] args){
+	public static async void AutoRecall(Delegate onMessage,Action<RpcException?>? onError,TimeSpan retryDelay,string type,string method,params object?[] args){
 		while(true){
 			RpcException? ex;
 			try{
@@ -30,18 +29,38 @@ public static class RpcHelpers{
 			await Task.Delay(retryDelay);
 		}
 	}
+
+	public static void AutoRecallRawMsg(Action<RpcDataPrimitive[]> onMessage,string type,string method,params object?[] args)=>AutoRecall(onMessage,null,type,method,args);
+	public static void AutoRecallRawMsg(Action<RpcDataPrimitive[]> onMessage,TimeSpan retryDelay,string type,string method,params object?[] args)=>AutoRecall(onMessage,null,retryDelay,type,method,args);
+	public static void AutoRecallRawMsg(Action<RpcDataPrimitive[]> onMessage,Action<RpcException?>? onError,string type,string method,params object?[] args)=>AutoRecall(onMessage,onError,TimeSpan.FromSeconds(1),type,method,args);
+
+	public static async void AutoRecallRawMsg(Action<RpcDataPrimitive[]> onMessage,Action<RpcException?>? onError,TimeSpan retryDelay,string type,string method,params object?[] args){
+		while(true){
+			RpcException? ex;
+			try{
+				var call=Rpc.CallFunction(type,method,args);
+				_=call.AddMessageListenerRaw(onMessage);
+				await call;
+				ex=null;
+			} catch(RpcException e){
+				ex=e;
+			}
+			onError?.Invoke(ex);
+			await Task.Delay(retryDelay);
+		}
+	}
 	#endregion
 
 	#region ListenValue
 	public static ReferenceTo<T> ListenValue<T>(string type,string method,params object?[] args){
 		var r=new ReferenceTo<T>();
-		AutoRecall(msg=>r.Value=msg[0].To<T>()!,type,method,args);
+		AutoRecall((T msg)=>r.Value=msg,type,method,args);
 		return r;
 	}
 
 	public static ReferenceTo<T> ListenValue<T>(T @default,string type,string method,params object?[] args){
 		var r=new ReferenceTo<T>(@default);
-		AutoRecall(msg=>r.Value=msg[0].To<T>()!,_=>r.Value=@default,type,method,args);
+		AutoRecall((T msg)=>r.Value=msg,_=>r.Value=@default,type,method,args);
 		return r;
 	}
 	#endregion
@@ -49,25 +68,22 @@ public static class RpcHelpers{
 	#region ListenOnChange
 	public static ReferenceTo<T> ListenOnChange<T>(Action<T> onChange,string type,string method,params object?[] args){
 		var r=new ReferenceTo<T>();
-		AutoRecall(msg=>{
-			var newValue=msg[0].To<T>();
+		AutoRecall((T newValue)=>{
 			if(!EqualityComparer<T?>.Default.Equals(r.Value,newValue))
 				onChange(r.Value=newValue!);
 		},type,method,args);
 		return r;
 	}
 
-	public static ReferenceTo<T> ListenOnChange<T>(Action<T> onChange,T @default,string type,string method,params object?[] args){
+	public static ReferenceTo<T> ListenOnChange<T>(Action<T> onChange,T disconnectValue,string type,string method,params object?[] args){
 		var r=new ReferenceTo<T>();
-		AutoRecall(
-			msg=>{
-				var newValue=msg[0].To<T>();
+		AutoRecall((T newValue)=>{
 				if(!EqualityComparer<T?>.Default.Equals(r.Value,newValue))
 					onChange(r.Value=newValue!);
 			},
 			_=>{
-				if(!EqualityComparer<T>.Default.Equals(r.Value,@default))
-					onChange(r.Value=@default);
+				if(!EqualityComparer<T>.Default.Equals(r.Value,disconnectValue))
+					onChange(r.Value=disconnectValue);
 			},
 			type,method,args);
 		return r;
@@ -83,4 +99,5 @@ public static class RpcHelpers{
 		return instance;
 	}
 	#endregion
+
 }
