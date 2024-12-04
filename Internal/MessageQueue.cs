@@ -1,9 +1,10 @@
 using System.Threading.Tasks.Dataflow;
 using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types.Exceptions;
 
 namespace PlayifyRpc.Internal;
 
-internal class MessageQueue(Task task):IAsyncEnumerable<RpcDataPrimitive[]>{
+internal class MessageQueue(Task task,string? type,string? method,RpcDataPrimitive[]? args,Func<Task<string>> getCaller):IAsyncEnumerable<RpcDataPrimitive[]>{
 	private readonly HashSet<Action<RpcDataPrimitive[]>> _receivers=[];
 	private List<RpcDataPrimitive[]>? _initialPending=[];
 
@@ -17,7 +18,9 @@ internal class MessageQueue(Task task):IAsyncEnumerable<RpcDataPrimitive[]>{
 					try{
 						a(objects);
 					} catch(Exception e){
-						Rpc.Logger.Warning("Error while handling pending message: "+e);
+						Rpc.Logger.Warning(new RpcException(null,null,"Error while handling pending message","",e)
+						                   .Append(type,method,args)
+						                   .ToString());
 					}
 				_initialPending=null;
 			} else _receivers.Add(a);
@@ -37,22 +40,41 @@ internal class MessageQueue(Task task):IAsyncEnumerable<RpcDataPrimitive[]>{
 	}
 
 
-	internal void DoReceiveMessage(RpcDataPrimitive[] args){
-		if(task.IsCompleted) return;
+	internal async void DoReceiveMessage(RpcDataPrimitive[] msg){
+		try{
+			if(task.IsCompleted) return;
 
-		Action<RpcDataPrimitive[]>[] list;
-		lock(_receivers){
-			list=_receivers.ToArray();
-			if(_initialPending!=null){
-				_initialPending.Add(args);
-				return;
+			Action<RpcDataPrimitive[]>[] list;
+			lock(_receivers){
+				list=_receivers.ToArray();
+				if(_initialPending!=null){
+					_initialPending.Add(msg);
+					return;
+				}
 			}
-		}
-		foreach(var func in list)
+
+			List<Exception>? exceptions=null;
+			foreach(var func in list)
+				try{
+					func(msg);
+				} catch(Exception e){
+					(exceptions??=[]).Add(e);
+				}
+			if(exceptions==null) return;
+
+			string caller;
 			try{
-				func(args);
-			} catch(Exception e){
-				Rpc.Logger.Warning("Error while receiving message: "+e);
+				caller=await getCaller();
+			} catch(Exception){
+				caller="<<Unknown>>";
 			}
+
+			Rpc.Logger.Warning(new RpcException(null,null,"Error while receiving message from "+caller,"",
+				                   exceptions.Count==1?exceptions[0]:new AggregateException(exceptions))
+			                   .Append(type,method,args)
+			                   .ToString());
+		} catch(Exception e){
+			Rpc.Logger.Critical("Error receiving message: "+e);
+		}
 	}
 }
