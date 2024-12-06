@@ -30,7 +30,7 @@ public abstract partial class Invoker{
 			}
 		}
 
-		var rawData=new PendingCallRawData();
+		var rawData=new PendingCallRawData(type,method,args);
 
 		var call=new PendingCall<RpcDataPrimitive>(rawData);
 
@@ -92,7 +92,6 @@ public abstract partial class Invoker{
 	#endregion
 
 	#region CallLocal
-	internal static PendingCall CallLocal(Action a)=>CallLocal(_=>a());
 	internal static PendingCall<RpcDataPrimitive> CallLocal(Func<object?> f)=>CallLocal(_=>f());
 
 	internal static PendingCall CallLocal(Action<FunctionCallContext> a)=>CallLocal(ctx=>{
@@ -103,10 +102,11 @@ public abstract partial class Invoker{
 	internal static PendingCall<RpcDataPrimitive> CallLocal(Func<FunctionCallContext,object?> a)=>CallLocal(a,null,null,null);
 
 	private static PendingCall<RpcDataPrimitive> CallLocal(Func<FunctionCallContext,object?> a,string? type,string? method,RpcDataPrimitive[]? args){
-		var rawData=new PendingCallRawData();
+		var rawData=new PendingCallRawData(type,method,args);
 		var context=new FunctionCallContext(type,
 			method,
-			sending=>Task.Run(()=>rawData.MessageQueue.DoReceiveMessage(sending)).Catch(e=>Rpc.Logger.Warning("Error while handling message: "+e)),
+			args,
+			sending=>Task.Run(()=>rawData.MessageQueue.DoReceiveMessage(sending)),
 			rawData.TaskCompletionSource,
 			()=>Task.FromResult(Rpc.PrettyName));
 
@@ -126,9 +126,9 @@ public abstract partial class Invoker{
 	internal static async Task<RpcDataPrimitive> RunAndAwait(Func<FunctionCallContext,object?> a,FunctionCallContext ctx,string? type,string? method,RpcDataPrimitive[]? args){
 		try{
 			//TODO remove RunWithContext completely 
-#pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning disable CS0618// Type or member is obsolete
 			var result=await Task.Run(()=>FunctionCallContext.RunWithContext(a,ctx)).ConfigureAwait(false);
-#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore CS0618// Type or member is obsolete
 			while(true)
 				if(result is VoidType or null||VoidTaskResult.IsInstanceOfType(result))
 					return new RpcDataPrimitive();

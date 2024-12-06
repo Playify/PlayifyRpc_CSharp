@@ -94,6 +94,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 
 					var context=new FunctionCallContext(type,
 						method,
+						args,
 						sending=>{
 							if(tcs.Task.IsCompleted) return;
 							var msg=new DataOutputBuff();

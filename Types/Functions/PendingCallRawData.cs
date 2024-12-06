@@ -10,8 +10,8 @@ internal class PendingCallRawData{
 	internal Action<RpcDataPrimitive[]>? SendFunc;
 	internal readonly MessageQueue MessageQueue;
 
-	public PendingCallRawData(){
-		MessageQueue=new MessageQueue(TaskCompletionSource.Task);
+	public PendingCallRawData(string? type,string? method,RpcDataPrimitive[]? args){
+		MessageQueue=new MessageQueue(TaskCompletionSource.Task,type,method,args,()=>Task.FromResult($"\"{type}\""));
 	}
 
 	public bool Finished=>TaskCompletionSource.Task.IsCompleted;
