@@ -9,12 +9,12 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Internal.Data;
 
 public static class RpcTypeStringifier{
-	public static readonly Dictionary<Type,UnknownFunc> ToStringDictionary=new();
-	public static readonly List<UnknownFunc> ToStringList=[];
+	public static readonly Dictionary<Type,TypeToStringExact> ToStringDictionary=new();
+	public static readonly List<TypeToStringExact> ToStringList=[];
 
-	public delegate string KnownFunc(bool typescript,string[] generics);
+	public delegate string TypeToString(bool typescript,string[] generics);
 
-	public delegate string? UnknownFunc(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics);
+	public delegate string? TypeToStringExact(Type type,bool typescript,bool input,Func<string?> tuplename,NullabilityInfo? nullability,string[] generics);
 
 	static RpcTypeStringifier(){
 		RpcSetupAttribute.LoadAll();

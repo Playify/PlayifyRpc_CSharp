@@ -10,8 +10,8 @@ public readonly partial struct RpcDataPrimitive{
 	public static bool TryCast(object? source,Type type,out object? obj,bool throwOnError=false)=>From(source).TryTo(type,out obj,throwOnError);
 	#endregion
 
-	internal static readonly Dictionary<Type,RpcData.ToFunc> ToDictionary=new();
-	internal static readonly List<RpcData.ToFunc> ToList=[];
+	internal static readonly Dictionary<Type,RpcData.PrimitiveToType> ToDictionary=new();
+	internal static readonly List<RpcData.PrimitiveToType> ToList=[];
 
 	public T? To<T>()=>(T?)To(typeof(T));
 

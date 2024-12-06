@@ -5,15 +5,17 @@ namespace PlayifyRpc.Internal.Data;
 public static partial class RpcData{
 
 	#region From
-	public delegate RpcDataPrimitive FromFunc(object value,Dictionary<object,RpcDataPrimitive> already);
+	public delegate RpcDataPrimitive ObjectToPrimitive(object value,Dictionary<object,RpcDataPrimitive> already);
 
-	public delegate RpcDataPrimitive FromFunc<in T>(T value,Dictionary<object,RpcDataPrimitive> already);
+	public delegate RpcDataPrimitive GenericToPrimitive<in T>(T value,Dictionary<object,RpcDataPrimitive> already);
 
-	public delegate RpcDataPrimitive? FromFuncMaybe(object value,Dictionary<object,RpcDataPrimitive> already);
+	public delegate RpcDataPrimitive? ObjectToPrimitiveOrNull(object value,Dictionary<object,RpcDataPrimitive> already);
 	#endregion
 
 	#region To
-	public delegate object? ToFunc(RpcDataPrimitive primitive,Type type,bool throwOnError);
+	public delegate object? PrimitiveToType(RpcDataPrimitive primitive,Type type,bool throwOnError);
+
+	public delegate object? PrimitiveToObject(RpcDataPrimitive primitive,bool throwOnError);
 	#endregion
 
 	#region ReadWrite

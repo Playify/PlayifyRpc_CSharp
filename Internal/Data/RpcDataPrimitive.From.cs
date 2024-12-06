@@ -4,8 +4,8 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Internal.Data;
 
 public readonly partial struct RpcDataPrimitive{
-	internal static readonly Dictionary<Type,RpcData.FromFunc> FromDictionary=new();
-	internal static readonly List<RpcData.FromFuncMaybe> FromList=[];
+	internal static readonly Dictionary<Type,RpcData.ObjectToPrimitive> FromDictionary=new();
+	internal static readonly List<RpcData.ObjectToPrimitiveOrNull> FromList=[];
 
 	public static RpcDataPrimitive[] FromArray(object?[] values){
 		Dictionary<object,RpcDataPrimitive>? already=null;
