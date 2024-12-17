@@ -27,6 +27,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">
+		<Reference Include="System.Net.Http" />
 		<Using Remove="System.Net.Http" />
 		<PackageReference Include="AsyncFriendlyStackTrace" Version="1.7.0" />
 	</ItemGroup>

@@ -70,7 +70,7 @@ internal static class Evaluate{
 		if(postArgs!=null)
 			if(argsString=="") argsString=postArgs;
 			else argsString+=","+postArgs;
-		
+
 		var argsStrings=argsString.Trim().Length==0?[]:argsString.Split(',');
 		for(var i=0;i<argsStrings.Length;){
 			var argString=argsStrings[i++];
@@ -83,11 +83,7 @@ internal static class Evaluate{
 				} else throw new RpcEvalException("Error parsing arguments");
 			args.Add(obj.Value);
 		}
-		var result=await Invoker.CallFunctionRaw(type,method,args.ToArray());
-		foreach(var primitive in args)
-			if(primitive.IsDisposable(out var action))
-				action();
-		return result;
+		return await Invoker.CallFunctionRaw(type,method,args.ToArray());
 	}
 
 	internal static async Task<string> EvalString(string expression,bool pretty)=>(await EvalObject(expression)).ToString(pretty);

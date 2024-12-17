@@ -55,7 +55,13 @@ internal class ClientConnectionWebSocket:ClientConnection{
 							query+="&type="+WebUtility.UrlEncode(type);
 
 
-				uri=new UriBuilder(uri){Query=query}.Uri;
+				uri=new UriBuilder(uri){
+					Query=query,Scheme=uri.Scheme switch{
+						"http"=>"ws",
+						"https"=>"wss",
+						var s=>s,
+					},
+				}.Uri;
 
 				await using var connection=new ClientConnectionWebSocket(await WebSocket.CreateWebSocketTo(uri,headers));
 				Rpc.Logger.Info("Connected to RPC");

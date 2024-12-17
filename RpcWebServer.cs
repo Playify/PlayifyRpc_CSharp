@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
@@ -7,6 +8,9 @@ using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
 using PlayifyUtility.Web;
 using PlayifyUtility.Web.Utils;
+#if NETFRAMEWORK
+using System.Net.Http;
+#endif
 
 namespace PlayifyRpc;
 
@@ -68,7 +72,6 @@ public class RpcWebServer:WebBase{
 
 	[PublicAPI]
 	public static async Task RunWebServer(IPEndPoint endPoint,string rpcJs,string? rpcToken){
-		if(rpcToken==null) Rpc.Logger.Warning("RPC_TOKEN is not defined, connections will not be secure");
 		var server=new RpcWebServer(rpcJs,rpcToken);
 		var task=server.RunHttp(endPoint);
 
@@ -77,37 +80,186 @@ public class RpcWebServer:WebBase{
 		await task;
 	}
 
+	private static readonly HttpClient HttpClient=new(new HttpClientHandler{UseCookies=false});
+
+	[PublicAPI]
+	public static Task<(bool success,string result)> CallDirectly(string call,bool? pretty=true)
+		=>CallDirectly(call,Environment.GetEnvironmentVariable("RPC_URL")??throw new ArgumentException("Environment variable RPC_URL is not defined"),Environment.GetEnvironmentVariable("RPC_TOKEN"),pretty);
+
+	[PublicAPI]
+	public static async Task<(bool success,string result)> CallDirectly(string call,string url,string? token,bool? pretty=true){
+		UriBuilder builder;
+		try{
+			builder=new UriBuilder(url);
+			builder.Scheme=builder.Scheme switch{
+				"ws"=>"http",
+				"wss"=>"https",
+				var s=>s,
+			};
+		} catch(UriFormatException){
+			var endPoint=url switch{
+				_ when Parsers.TryParseIpEndPoint(url,DefaultPort,out var ep)=>ep,
+				_ when int.TryParse(url,out var port)=>new IPEndPoint(IPAddress.Any,port),
+				_ when IPAddress.TryParse(url,out var address)=>new IPEndPoint(address,DefaultPort),
+				_=>throw new CloseException($"Invalid URL, IP or Port: \"{url}\""),
+			};
+			builder=new UriBuilder("http",endPoint.Address.ToString(),endPoint.Port,"/rpc");
+		}
+		if(!pretty.TryGet(out var prettyActual)) builder.Path+="/void";
+		else if(prettyActual) builder.Path+="/pretty";
+
+		var response=await HttpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post,builder.Uri){
+			Headers={
+				{"Cookie","RPC_TOKEN="+token},
+			},
+			Content=new StringContent(call,Encoding.UTF8,"text/plain"),
+		});
+		return (response.IsSuccessStatusCode,await response.Content.ReadAsStringAsync());
+	}
+
+	private const string HelpText="""
+	                              ./rpc.sh update
+	                              ./rpc.sh <flags> listen <port/ip>
+	                              ./rpc.sh <flags> call <call>
+	                              ./rpc.sh help
+
+	                              General:
+	                              --help                         | -h | Shows this help text
+	                              --token <token>                | -t | Secure connection with a token, can be specified with RPC_TOKEN environment variable
+	                              --insecure                     | -i | Insecure mode without warning
+
+	                              Call:
+	                              --url <url>                    | -u | Connection url, can be specified with RPC_URL environment variable e.g. ws://localhost:4590/rpc
+	                              --format <pretty|compact|void> | -f | Configure formatting of the result (defaults to pretty)
+	                              --call <call>                  | -c | Call remote function
+	                              -- <rest>                      | -- | Call remote function
+
+	                              Server:
+	                              --listen <port/ip>             | -l | Run as server others can connect to (Default port: 4590)
+	                              --js <path>                    | -j | rpc.js file, that is used when listening for web requests
+	                              """;
+	private const int DefaultPort=4590;
+
 	internal static async Task Main(string[] args){
-		if(args.Length!=0&&args[0]=="help"){
-			Console.WriteLine("use args: [IP:Port or Port] [rpcToken] [rpc.js path]\n"+
-			                  "default port: 4590\n"+
-			                  "rpcToken will be used from RPC_TOKEN environment variable\n"+
-			                  "rpc.js path if omitted will download when the file doesn't exist");
+		var insecure=false;
+		var url=Environment.GetEnvironmentVariable("RPC_URL");
+		var token=Environment.GetEnvironmentVariable("RPC_TOKEN");
+		var js="rpc.js";
+		var listen=new List<IPEndPoint>();
+		var calls=new List<string>();
+		bool? pretty=true;
+
+		try{
+			for(var i=0;i<args.Length;i++){
+				switch(args[i]){
+					case "-u":
+					case "--url":
+						if(i+1==args.Length) throw new CloseException("--url requires a value");
+						if(url!=null) throw new CloseException("--url already set");
+						url=args[++i];
+						break;
+					case "-t":
+					case "--token":
+						if(i+1==args.Length) throw new CloseException("--token requires a value");
+						if(token!=null) throw new CloseException("--token already set");
+						insecure=false;
+						token=args[++i];
+						break;
+					case "-i":
+					case "--insecure":
+						insecure=true;
+						token=null;
+						break;
+					case "-j":
+					case "--js":
+						if(i+1==args.Length) throw new CloseException("--js requires a value");
+						js=args[++i];
+						break;
+					case "-h":
+					case "--help":
+						throw new CloseException();
+					case "-l":
+					case "--listen":
+					case "listen":
+						if(i+1==args.Length) throw new CloseException("--listen requires a value");
+						listen.Add(args[++i] switch{
+							var s when Parsers.TryParseIpEndPoint(s,DefaultPort,out var ep)=>ep,
+							var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
+							var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,DefaultPort),
+							var s=>throw new CloseException($"Invalid IP or Port: \"{s}\""),
+						});
+						break;
+					case "-f":
+					case "--format":
+						if(i+1==args.Length) throw new CloseException("--format requires a value");
+						pretty=args[++i].ToLowerInvariant() switch{
+							"pretty"=>true,
+							"compact"=>false,
+							"void"=>null,
+							var s=>throw new CloseException($"Invalid value: {s}"),
+						};
+						break;
+					case "-c":
+					case "--call":
+						if(i+1==args.Length) throw new CloseException("--call requires a value");
+						calls.Add(args[++i]);
+						break;
+					case "--":
+					case "call":
+						if(i+1==args.Length) throw new CloseException("call requires a value");
+						i++;
+						var result=args[i++];
+						while(i!=args.Length) result+=args[i++];
+						calls.Add(result);
+						break;
+					case var unknown:
+						if(i==0&&args[0] switch{
+							   var s when Parsers.TryParseIpEndPoint(s,DefaultPort,out var ep)=>ep,
+							   var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
+							   var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,DefaultPort),
+							   _=>null,
+						   } is{} foundEndpoint){
+							listen.Add(foundEndpoint);
+							break;
+						}
+
+						throw new CloseException($"Unknown argument: {unknown}");
+				}
+			}
+
+			if(token==null&&!insecure) Rpc.Logger.Warning("RPC_TOKEN is not defined, connections will not be secure");
+
+			if(listen.Count!=0) RunConsoleThread();
+			if(calls.Count!=0&&url==null) throw new CloseException("RPC_URL is not defined, cannot call remote function"+(calls.Count==0?"":"s"));
+
+			if(listen.Count==0&&calls.Count==0) throw new CloseException();
+
+		} catch(CloseException e){
+			if(e.Message=="")
+				await Console.Out.WriteLineAsync(PlatformUtils.IsWindows()?HelpText.Replace("./rpc.sh","rpc.bat"):HelpText);
+			else await Console.Error.WriteLineAsync(e.Message);
 			return;
 		}
-		try{
-			const int defaultPort=4590;
-			var ipEndPoint=args.Length!=0
-				               ?args[0] switch{
-					               var s when Parsers.TryParseIpEndPoint(s,defaultPort,out var ep)=>ep,
-					               var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
-					               var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,defaultPort),
-					               _=>throw new ArgumentException($"Invalid IP or Port: \"{args[0]}\""),
-				               }
-				               :new IPEndPoint(IPAddress.Any,defaultPort);
 
-			var rpcToken=args.Length>1?args[1]:Environment.GetEnvironmentVariable("RPC_TOKEN")??null;
-
-			var rpcJs="rpc.js";
-			if(args.Length>2) rpcJs=args[2];
-
-			RunConsoleThread();
-			Rpc.Logger.Info("Listening on "+ipEndPoint);
-			await RunWebServer(ipEndPoint,rpcJs,rpcToken);
-		} catch(Exception e){
-			Rpc.Logger.Critical(e);
-			Environment.Exit(-1);
-		}
+		await Task.WhenAll(EnumerableUtils.Concat(
+			listen.Select(async ep=>{
+				try{
+					Rpc.Logger.Info("Listening on "+ep);
+					await RunWebServer(ep,js,token);
+				} catch(Exception e){
+					Rpc.Logger.Critical(e);
+					Environment.Exit(-1);
+				}
+			}),
+			calls.Select(async call=>{
+				try{
+					var (success,result)=await CallDirectly(call,url!,token,pretty);
+					await (success?Console.Out:Console.Error).WriteLineAsync(result);
+				} catch(Exception e){
+					await Console.Error.WriteLineAsync(e.ToString());
+				}
+			})
+		));
 	}
 
 	protected override Task HandleRequest(WebSession session)=>HandleRequest(session,_rpcJs,_rpcToken);

@@ -6,6 +6,7 @@ using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Types.Invokers;
+using PlayifyUtility.Loggers;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
@@ -106,6 +107,20 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	public static object? Return(object? o)=>o;
 	public static object?[] ReturnArguments(params object?[] o)=>o;
 	public static void Throw(string? msg=null)=>throw new Exception(msg);
+	#endregion
+
+	#region Logging
+	public static async Task LogUsingLevel(FunctionCallContext ctx,Logger.LogLevel level,params RpcDataPrimitive[] args)
+		=>Rpc.Logger.WithName(await ctx.GetCaller().Catch(_=>null!)).Log(level,args.Join(' '));
+
+	public static Task Log(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Log,args);
+	public static Task LogLog(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Log,args);
+	public static Task LogSpecial(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Special,args);
+	public static Task LogDebug(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Debug,args);
+	public static Task LogInfo(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Info,args);
+	public static Task LogWarning(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Warning,args);
+	public static Task LogError(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Error,args);
+	public static Task LogCritical(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Critical,args);
 	#endregion
 
 }
