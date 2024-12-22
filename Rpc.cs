@@ -12,7 +12,7 @@ namespace PlayifyRpc;
 public static partial class Rpc{
 	private static Logger? _logger;
 	public static Logger Logger{
-		get=>_logger??=new Logger().WithName("Rpc");
+		get=>_logger??=new Logger().WithDate().WithName("Rpc");
 		set=>_logger=value;
 	}
 

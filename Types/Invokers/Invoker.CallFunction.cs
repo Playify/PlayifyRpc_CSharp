@@ -45,14 +45,13 @@ public abstract partial class Invoker{
 			buff.WriteLength(callId);
 			buff.WriteString(type);
 			buff.WriteString(method);
-			var len=buff.GetBufferAndLength().len;
 			var already=new Dictionary<RpcDataPrimitive,int>();
 			buff.WriteArray(args,d=>d.Write(buff,already));
 			foreach(var key in already.Keys)
 				if(key.IsDisposable(out var action))
 					toFree.Add(action);
 
-			ListenAllCalls.Broadcast(type,method,buff,len);
+			//ListenAllCalls is not needed here, as it gets sent to the server, and the server already listens on calls
 		} catch(Exception e){
 			rawData.Reject(e);
 			return call;
