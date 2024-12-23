@@ -25,8 +25,8 @@ internal static class Evaluate{
 			if(!parsed.IsArray(out var enumerable,out var length)) throw new RpcEvalException("Error parsing expression array");
 			if(length<2) throw new RpcEvalException("Expression array not long enough");
 			var array=enumerable.ToArray();
-			if(!array[0].TryTo<string>(out var typeFromArray,false)) throw new RpcEvalException("Error getting type from expression array");
-			if(!array[1].TryTo<string>(out var methodFromArray,false)) throw new RpcEvalException("Error getting method from expression array");
+			if(!array[0].TryTo<string>(out var typeFromArray)) throw new RpcEvalException("Error getting type from expression array");
+			if(!array[1].TryTo<string>(out var methodFromArray)) throw new RpcEvalException("Error getting method from expression array");
 
 			if(typeFromArray==null) throw new NullReferenceException("Type is null");
 			return await Invoker.CallFunctionRaw(typeFromArray,methodFromArray,array.Skip(2).ToArray());
