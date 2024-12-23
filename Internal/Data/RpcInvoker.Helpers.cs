@@ -106,8 +106,18 @@ public static partial class RpcInvoker{
 		return depth2!=null;
 	}
 
+	/*
+	Returns true if c2 is more specific
+	Returns false if c1 is more specific
+	Returns null if ambiguous
+	 */
 	private static bool? FindMostSpecificType(Type c1,Type c2){
 		if(c1==c2) return null;
+
+		//Priorize anything that is more specific than just the primitive
+		if(c1==typeof(RpcDataPrimitive)) return true;
+		if(c2==typeof(RpcDataPrimitive)) return false;
+		
 		
 		bool c1FromC2;
 		bool c2FromC1;

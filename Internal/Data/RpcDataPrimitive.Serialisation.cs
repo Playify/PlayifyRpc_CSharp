@@ -8,6 +8,7 @@ namespace PlayifyRpc.Internal.Data;
 public readonly partial struct RpcDataPrimitive{
 
 	internal static readonly Dictionary<char,RpcData.ReadFunc> ReadByChar=new(){
+		// 0-32 handled dynamically //TODO in next update, also use this while sending
 		{'n',(_,_,_)=>new RpcDataPrimitive()},
 		{'t',(_,_,_)=>new RpcDataPrimitive(true)},
 		{'f',(_,_,_)=>new RpcDataPrimitive(false)},
@@ -125,13 +126,15 @@ public readonly partial struct RpcDataPrimitive{
 		}
 		if(objectId>=128){
 			var type=Encoding.UTF8.GetString(input.ReadFully(objectId-128));
-			if(ReadByString.TryGetValue(type,out var read))
-				return read(input,already,index);
+			if(ReadByString.TryGetValue(type,out var readString))
+				return readString(input,already,index);
 			throw new RpcDataException($"Invalid data received: objectId=\"{type}\"");
-		} else{
-			if(ReadByChar.TryGetValue((char)objectId,out var read))
-				return read(input,already,index);
-			throw new RpcDataException($"Invalid data received: objectId='{(objectId is <32 or 127?$"\\x{objectId:xx}":(char)objectId)}'");
 		}
+		if(objectId<32)
+			return new RpcDataPrimitive(Encoding.UTF8.GetString(input.ReadFully(objectId)));
+
+		if(ReadByChar.TryGetValue((char)objectId,out var readChar))
+			return readChar(input,already,index);
+		throw new RpcDataException($"Invalid data received: objectId='{(objectId is <32 or 127?$"\\x{objectId:xx}":(char)objectId)}'");
 	}
 }

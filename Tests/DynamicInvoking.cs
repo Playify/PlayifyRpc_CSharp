@@ -1,4 +1,5 @@
 using PlayifyRpc;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
@@ -11,6 +12,10 @@ public static class DynamicInvoking{
 		public static bool ObjectAutoCast(object i)=>i is int;
 		public static int[] Defaults(int a,int b=1,params int[] c)=>[a,b,..c];
 		public static bool Fcc(FunctionCallContext? ctx)=>ctx!=null;
+
+		public static bool Specific(string s)=>true;
+
+		public static bool Specific(RpcDataPrimitive s)=>false;
 	}
 
 	[SetUp]
@@ -28,6 +33,7 @@ public static class DynamicInvoking{
 		CollectionAssert.AreEquivalent(await Rpc.CallFunction<int[]>("TestClass",nameof(TestClass.Defaults),4,2,9),(int[])[4,2,9]);
 		CollectionAssert.AreEquivalent(await Rpc.CallFunction<int[]>("TestClass",nameof(TestClass.Defaults),4,2,4,5),(int[])[4,2,4,5]);
 		Assert.That(await Rpc.CallFunction<bool>("TestClass",nameof(TestClass.Fcc)),Is.True,nameof(FunctionCallContext)+" arguments should be auto filled in");
+		Assert.That(await Rpc.CallFunction<bool>("TestClass",nameof(TestClass.Specific),""),Is.True,"specific types should be prefered over RpcDataPrimitive arguments");
 
 		dynamic obj=Rpc.CreateObject("TestClass");
 		var func=obj.Func;

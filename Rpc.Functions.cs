@@ -3,7 +3,6 @@ using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Types.Invokers;
-using PlayifyUtility.HelperClasses;
 
 namespace PlayifyRpc;
 
@@ -41,16 +40,4 @@ public static partial class Rpc{
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
 	public static Task<RpcDataPrimitive> EvalObject(string expression)=>Evaluate.EvalObject(expression);
 	public static async Task<T?> EvalObject<T>(string expression)=>(await Evaluate.EvalObject(expression)).To<T>();
-
-	[Obsolete("Use FunctionCallContext as Method parameter instead")]
-	public static FunctionCallContext GetContext()=>FunctionCallContext.GetContext();
-
-	[Obsolete("Use FunctionCallContext as Method parameter instead")]
-	public static void RunWithContext(Action func,FunctionCallContext context)=>FunctionCallContext.RunWithContext(_=>{
-		func();
-		return default(VoidType);
-	},context);
-
-	[Obsolete("Use FunctionCallContext as Method parameter instead")]
-	public static T RunWithContext<T>(Func<T> func,FunctionCallContext context)=>FunctionCallContext.RunWithContext(_=>func(),context);
 }

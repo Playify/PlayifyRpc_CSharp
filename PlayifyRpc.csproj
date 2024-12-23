@@ -76,9 +76,6 @@
 		<Compile Update="Types\Functions\PendingCall.Casted.cs">
 			<DependentUpon>PendingCall.cs</DependentUpon>
 		</Compile>
-		<Compile Update="Types\Functions\FunctionCallContext.Static.cs">
-			<DependentUpon>FunctionCallContext.cs</DependentUpon>
-		</Compile>
 		<Compile Update="Types\Data\Objects\RpcDataObject.Reflection.cs">
 			<DependentUpon>RpcDataObject.cs</DependentUpon>
 		</Compile>

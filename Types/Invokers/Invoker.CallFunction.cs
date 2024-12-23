@@ -124,10 +124,7 @@ public abstract partial class Invoker{
 
 	internal static async Task<RpcDataPrimitive> RunAndAwait(Func<FunctionCallContext,object?> a,FunctionCallContext ctx,string? type,string? method,RpcDataPrimitive[]? args){
 		try{
-			//TODO remove RunWithContext completely 
-#pragma warning disable CS0618// Type or member is obsolete
-			var result=await Task.Run(()=>FunctionCallContext.RunWithContext(a,ctx)).ConfigureAwait(false);
-#pragma warning restore CS0618// Type or member is obsolete
+			var result=await Task.Run(()=>a(ctx)).ConfigureAwait(false);
 			while(true)
 				if(result is VoidType or null||VoidTaskResult.IsInstanceOfType(result))
 					return new RpcDataPrimitive();
