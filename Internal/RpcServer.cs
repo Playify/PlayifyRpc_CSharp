@@ -6,6 +6,7 @@ using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Types.Invokers;
+using PlayifyRpc.Utils;
 using PlayifyUtility.Loggers;
 using PlayifyUtility.Utils.Extensions;
 
@@ -110,8 +111,28 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	#endregion
 
 	#region Logging
-	public static async Task LogUsingLevel(FunctionCallContext ctx,Logger.LogLevel level,params RpcDataPrimitive[] args)
-		=>Rpc.Logger.WithName(await ctx.GetCaller().Catch(_=>null!)).Log(level,args.Join(' '));
+	private static RpcListenerSet _logListeners=[];
+
+	public static async Task LogUsingLevel(FunctionCallContext ctx,Logger.LogLevel level,params RpcDataPrimitive[] args){
+		var caller=await ctx.GetCaller().Catch(_=>null!);
+
+		var msg=args.All(a=>a.IsString(out _))
+			        ?args.Select(a=>a.IsString(out var s)?s:"").Join(" ")
+			        :args.Join(' ');
+		Rpc.Logger.WithName(caller).Log(level,msg);
+
+		_logListeners.SendAll(new StringMap{
+			{"caller",caller},
+			{"level",level},
+			{"msg",msg},
+			{"args",args},
+		});
+	}
+
+	public static async Task ListenLogs(FunctionCallContext ctx){
+		using var _=_logListeners.Add(ctx);
+		await ctx.TaskRaw;
+	}
 
 	public static Task Log(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Log,args);
 	public static Task LogLog(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Log,args);
