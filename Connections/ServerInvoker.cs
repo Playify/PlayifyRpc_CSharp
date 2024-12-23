@@ -1,9 +1,13 @@
+using JetBrains.Annotations;
 using PlayifyRpc.Internal;
+using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
 using PlayifyRpc.Types.Invokers;
+using PlayifyUtility.Loggers;
 
 namespace PlayifyRpc.Connections;
 
+[UsedImplicitly(ImplicitUseTargetFlags.Members)]
 internal class ServerInvoker(ServerConnection connection):TypeInvoker{
 
 	[RpcNamed("N")]//Rpc.SetName
@@ -35,4 +39,7 @@ internal class ServerInvoker(ServerConnection connection):TypeInvoker{
 
 	[RpcNamed("c")]//FunctionCallContext.GetCaller
 	public string GetCaller(int callId)=>connection.GetCaller(callId);
+
+	[RpcNamed("L")]//ServerLogger.LogLevel
+	public void LogLevel(Logger.LogLevel level,params RpcDataPrimitive[] args)=>connection.Logger.Log(level,RpcLogger.ReceiveLog(connection.PrettyName,level,args));
 }

@@ -6,7 +6,6 @@ using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Types.Invokers;
-using PlayifyRpc.Utils;
 using PlayifyUtility.Loggers;
 using PlayifyUtility.Utils.Extensions;
 
@@ -111,37 +110,24 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	#endregion
 
 	#region Logging
-	private static RpcListenerSet _logListeners=[];
-
-	public static async Task LogUsingLevel(FunctionCallContext ctx,Logger.LogLevel level,params RpcDataPrimitive[] args){
+	public static async Task LogLevel(FunctionCallContext ctx,Logger.LogLevel level,params RpcDataPrimitive[] args){
 		var caller=await ctx.GetCaller().Catch(_=>null!);
-
-		var msg=args.All(a=>a.IsString(out _))
-			        ?args.Select(a=>a.IsString(out var s)?s:"").Join(" ")
-			        :args.Join(' ');
-		Rpc.Logger.WithName(caller).Log(level,msg);
-
-		_logListeners.SendAll(new StringMap{
-			{"caller",caller},
-			{"level",level},
-			{"msg",msg},
-			{"args",args},
-		});
+		Rpc.Logger.WithName(caller).Log(level,RpcLogger.ReceiveLog(caller,level,args));
 	}
 
 	public static async Task ListenLogs(FunctionCallContext ctx){
-		using var _=_logListeners.Add(ctx);
+		using var _=RpcLogger.LocalListeners.Add(ctx);
 		await ctx.TaskRaw;
 	}
 
-	public static Task Log(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Log,args);
-	public static Task LogLog(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Log,args);
-	public static Task LogSpecial(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Special,args);
-	public static Task LogDebug(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Debug,args);
-	public static Task LogInfo(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Info,args);
-	public static Task LogWarning(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Warning,args);
-	public static Task LogError(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Error,args);
-	public static Task LogCritical(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogUsingLevel(ctx,Logger.LogLevel.Critical,args);
+	public static Task Log(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogLevel(ctx,Logger.LogLevel.Log,args);
+	public static Task LogLog(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogLevel(ctx,Logger.LogLevel.Log,args);
+	public static Task LogSpecial(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogLevel(ctx,Logger.LogLevel.Special,args);
+	public static Task LogDebug(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogLevel(ctx,Logger.LogLevel.Debug,args);
+	public static Task LogInfo(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogLevel(ctx,Logger.LogLevel.Info,args);
+	public static Task LogWarning(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogLevel(ctx,Logger.LogLevel.Warning,args);
+	public static Task LogError(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogLevel(ctx,Logger.LogLevel.Error,args);
+	public static Task LogCritical(FunctionCallContext ctx,params RpcDataPrimitive[] args)=>LogLevel(ctx,Logger.LogLevel.Critical,args);
 	#endregion
 
 }

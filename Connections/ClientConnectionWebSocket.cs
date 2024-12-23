@@ -24,7 +24,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 
 	private async Task ReceiveLoop(){
 		await foreach(var (s,b) in _webSocket)
-			if(s!=null) Rpc.Logger.Log("WebSocket Message: "+s);
+			if(s!=null) Logger.Log("WebSocket Message: "+s);
 			else Receive(new DataInputBuff(b)).Background(e=>Logger.Warning("Error receiving Packet: "+e));
 	}
 
