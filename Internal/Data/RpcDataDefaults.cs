@@ -193,9 +193,12 @@ internal static class RpcDataDefaults{
 			},
 			(_,_)=>nameof(RpcFunction));
 		Register<Delegate>(
-			(func,already)=>already[func]=new RpcDataPrimitive(
-				                RpcFunction.RegisterFunction(func),rpcFunctionWriter,
-				                ()=>RpcFunction.UnregisterFunction(func),null),
+			(func,already)=>{
+				already.OnDispose+=()=>RpcFunction.UnregisterFunction(func);
+				return already[func]=new RpcDataPrimitive(
+					       RpcFunction.RegisterFunction(func),rpcFunctionWriter,
+					       null);
+			},
 			null,
 			(_,_)=>nameof(RpcFunction)
 		);

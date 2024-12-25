@@ -75,7 +75,6 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 				var callId=data.ReadLength();
 
 
-				var toFree=new List<Action>();
 				var tcs=new TaskCompletionSource<RpcDataPrimitive>();
 				try{
 					var type=data.ReadString();
@@ -102,11 +101,6 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 							msg.WriteLength(callId);
 							var already=new Dictionary<RpcDataPrimitive,int>();
 							msg.WriteArray(sending,d=>d.Write(msg,already));
-							lock(toFree)
-								foreach(var key in already.Keys)
-									if(key.IsDisposable(out var action))
-										toFree.Add(action);
-
 							SendRaw(msg);
 						},
 						tcs,
@@ -132,8 +126,6 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 					var e=new RpcDataException($"Error reading binary stream ({packetType})",cause);
 					tcs.TrySetException(e);
 					await Reject(callId,e);
-				} finally{
-					toFree.ForEach(a=>a());
 				}
 
 				break;

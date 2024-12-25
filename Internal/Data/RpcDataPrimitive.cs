@@ -3,7 +3,6 @@ using System.Numerics;
 using JetBrains.Annotations;
 using PlayifyRpc.Types;
 using PlayifyUtility.Jsons;
-using PlayifyUtility.Utils;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
@@ -189,8 +188,9 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 	#endregion
 
 	#region Custom
-	public RpcDataPrimitive(object custom,RpcData.WriteFunc write,Action? dispose,Func<string>? toString)
-		=>_data=new CustomData(custom,write,dispose,toString);
+	public RpcDataPrimitive(object custom,RpcData.WriteFunc write,Func<string>? toString){
+		_data=new CustomData(custom,write,toString);
+	}
 
 	public bool IsCustom<T>(out T value)=>IsCustom(out value,out _,out _);
 
@@ -207,15 +207,9 @@ public readonly partial struct RpcDataPrimitive:IEquatable<RpcDataPrimitive>{
 		return false;
 	}
 
-	public bool IsDisposable(out Action a)
-		=>_data is CustomData tuple
-			  ?tuple.Dispose.NotNull(out a!)
-			  :FunctionUtils.TryGetNever(out a!);
-
-	private readonly struct CustomData(object value,RpcData.WriteFunc write,Action? dispose,Func<string>? toStringInstance){
+	private readonly struct CustomData(object value,RpcData.WriteFunc write,Func<string>? toStringInstance){
 		public readonly object Value=value;
 		public readonly RpcData.WriteFunc Write=write;
-		public readonly Action? Dispose=dispose;
 		public readonly Func<string>? ToStringInstance=toStringInstance;
 
 	}

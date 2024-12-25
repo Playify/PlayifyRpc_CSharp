@@ -4,7 +4,6 @@ using PlayifyRpc.Types.Data.Objects;
 using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Utils;
 using PlayifyUtility.Streams.Data;
-using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
@@ -43,30 +42,25 @@ internal static class ListenAllCalls{
 		return msg;
 	});
 
-	internal static Action? Broadcast(string? type,string? method,RpcDataPrimitive[] args){
-		List<Action>? toFree=null;
-		Listening.SendLazySingle(()=>{
-			var buff=new DataOutputBuff();
+	internal static void Broadcast(string? type,string? method,RpcDataPrimitive[] args)=>Listening.SendLazySingle(()=>{
+		var buff=new DataOutputBuff();
 
-			var msg=new StringMap{
-				{"name",Rpc.Name},
-				{"id",Rpc.Id},
-				{"prettyName",Rpc.PrettyName},
-				{"type",type},
-				{"method",method},
-				{"args",args},
-			};
+		var msg=new StringMap{
+			{"name",Rpc.Name},
+			{"id",Rpc.Id},
+			{"prettyName",Rpc.PrettyName},
+			{"type",type},
+			{"method",method},
+			{"args",args},
+		};
 
-			try{
-				var already=new Dictionary<RpcDataPrimitive,int>();
-				buff.WriteArray(args,d=>d.Write(buff,already));
-				toFree=already.Keys.TryGetAll((RpcDataPrimitive k,out Action action)=>k.IsDisposable(out action)).ToList();
-				msg.Add("argsBytes",buff.ToByteArray());
-			} catch(Exception e){
-				msg.Add("argsError",e);
-			}
-			return msg;
-		});
-		return toFree==null?null:()=>toFree.ForEach(a=>a());
-	}
+		try{
+			var already=new Dictionary<RpcDataPrimitive,int>();
+			buff.WriteArray(args,d=>d.Write(buff,already));
+			msg.Add("argsBytes",buff.ToByteArray());
+		} catch(Exception e){
+			msg.Add("argsError",e);
+		}
+		return msg;
+	});
 }

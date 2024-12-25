@@ -36,7 +36,16 @@ public sealed class FunctionCallContext{
 	public bool Finished=>_tcs.Task.IsCompleted;
 	public Task<RpcDataPrimitive> TaskRaw=>_tcs.Task;
 
-	public FunctionCallContext SendMessage(params object?[] args)=>SendMessageRaw(RpcDataPrimitive.FromArray(args));
+
+	public FunctionCallContext HandleDispose(RpcDataPrimitive.Already already){
+		if(already.NeedsDispose) TaskRaw.ContinueWith(_=>already.Dispose(),default(CancellationToken));
+		return this;
+	}
+
+	public FunctionCallContext SendMessage(params object?[] args){
+		var already=new RpcDataPrimitive.Already();
+		return SendMessageRaw(RpcDataPrimitive.FromArray(args,already)).HandleDispose(already);
+	}
 
 	public FunctionCallContext SendMessageRaw(RpcDataPrimitive[] args){
 		_send(args);

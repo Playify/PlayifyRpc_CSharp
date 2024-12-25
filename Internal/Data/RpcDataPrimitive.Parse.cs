@@ -161,7 +161,7 @@ public readonly partial struct RpcDataPrimitive{
 				if(
 					!RegexOptionsMap.TryGetValue(peek,out var newFlag)
 					||(options&newFlag)!=0//Already added that
-				) return From(new Regex(pattern,options));
+				) return From(new Regex(pattern,options),null);
 				options|=newFlag;
 				r.Read();
 			}

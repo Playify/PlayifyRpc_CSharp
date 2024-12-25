@@ -94,7 +94,8 @@ public static class RpcHelpers{
 	//Deep clones an IRpcDataObject
 	public static T Clone<T>(this T t) where T : IRpcDataObject{
 		var instance=Activator.CreateInstance<T>();
-		if(!instance.TrySetProps(t.GetProps(new Dictionary<object,RpcDataPrimitive>()),true,new RpcDataPrimitive()))
+		using var already=new RpcDataPrimitive.Already();
+		if(!instance.TrySetProps(t.GetProps(already),true,new RpcDataPrimitive()))
 			throw new RpcDataException("Error cloning "+t);
 		return instance;
 	}

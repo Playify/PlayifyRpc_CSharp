@@ -10,5 +10,5 @@ public abstract class RpcDataObjectExtraProps:RpcDataObject{
 	[RpcHidden]public readonly InsertionOrderDictionary<string,RpcDataPrimitive> ExtraProps=new();
 
 	protected override bool TrySetExtraProp(string s,RpcDataPrimitive primitive,bool throwOnError)=>ExtraProps.TryAdd(s,primitive);
-	protected override IEnumerable<(string key,RpcDataPrimitive value)> GetExtraProps(Dictionary<object,RpcDataPrimitive> already)=>ExtraProps.ToTuples();
+	protected override IEnumerable<(string key,RpcDataPrimitive value)> GetExtraProps(RpcDataPrimitive.Already already)=>ExtraProps.ToTuples();
 }

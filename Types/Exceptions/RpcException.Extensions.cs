@@ -88,7 +88,7 @@ public partial class RpcException{
 		             (args==null
 			              ?"<<"+nameof(Rpc.CallLocal)+">>"
 			              :(type??"<<null>>")+"."+(method??"<<null>>")+"("+
-			               args.Select(r=>RpcDataPrimitive.Stringify(r,false)).Join(",")+")");
+			               args.Select(r=>r.ToString(false)).Join(",")+")");
 		return this;
 	}
 }

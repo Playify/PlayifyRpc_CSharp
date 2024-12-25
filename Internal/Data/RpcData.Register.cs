@@ -28,10 +28,14 @@ public static partial class RpcData{
 	}
 
 	#region Custom
-	private static ReadFunc RegisterCustomBase<T>(ReadFunc<T> read,WriteFunc writer,RpcTypeStringifier.TypeToString toStringType,Func<T,string>? toStringInstance,Action<T>? dispose) where T : notnull{
+	private static ReadFunc RegisterCustomBase<T>(ReadFunc<T> read,WriteFunc writer,
+		RpcTypeStringifier.TypeToString toStringType,Func<T,string>? toStringInstance,Action<T>? dispose) where T : notnull{
 
 		Register<T>(
-			(p,a)=>a[p]=Create(p),
+			(p,a)=>{
+				if(dispose!=null) a.OnDispose+=()=>dispose(p);
+				return a[p]=Create(p);
+			},
 			(p,_)=>{
 				if(p.IsNull()&&CanBeNull(typeof(T))) return null;
 				if(p.IsAlready(out T already)) return already;
@@ -43,7 +47,9 @@ public static partial class RpcData{
 
 		return (data,already,index)=>read(data,t=>already[index]=Create(t));
 
-		RpcDataPrimitive Create(T t)=>new(t,writer,dispose==null?null:()=>dispose(t),toStringInstance==null?null:()=>toStringInstance(t));
+		RpcDataPrimitive Create(T t){
+			return new RpcDataPrimitive(t,writer,toStringInstance==null?null:()=>toStringInstance(t));
+		}
 	}
 
 	internal static WriteFunc RegisterCustom<T>(char dataId,ReadFunc<T> read,WriteFunc<T> write,

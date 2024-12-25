@@ -61,10 +61,10 @@ public partial class RpcDataObject{
 				return Cached.TryGetValue(type,out var already)?already:Cached[type]=new Reflection(type);
 		}
 
-		public static IEnumerable<(string key,RpcDataPrimitive value)> GetProps(object thiz,Dictionary<object,RpcDataPrimitive> already)
+		public static IEnumerable<(string key,RpcDataPrimitive value)> GetProps(object thiz,RpcDataPrimitive.Already already)
 			=>Get(thiz.GetType())._getters.Select(t=>(t.key,RpcDataPrimitive.From(t.getValue(thiz),already)));
 
-		public static IEnumerable<(string key,RpcDataPrimitive value)> GetProps(object thiz,Dictionary<object,RpcDataPrimitive> already,GetExtraPropsFunc extraProps)
+		public static IEnumerable<(string key,RpcDataPrimitive value)> GetProps(object thiz,RpcDataPrimitive.Already already,GetExtraPropsFunc extraProps)
 			=>GetProps(thiz,already).Concat(extraProps(already));
 
 		[PublicAPI]
@@ -123,7 +123,7 @@ public partial class RpcDataObject{
 		}
 	}
 
-	public delegate IEnumerable<(string key,RpcDataPrimitive value)> GetExtraPropsFunc(Dictionary<object,RpcDataPrimitive> already);
+	public delegate IEnumerable<(string key,RpcDataPrimitive value)> GetExtraPropsFunc(RpcDataPrimitive.Already already);
 
-	public delegate bool SetExtraPropFunc(Dictionary<object,RpcDataPrimitive> already);
+	public delegate bool SetExtraPropFunc(RpcDataPrimitive.Already already);
 }

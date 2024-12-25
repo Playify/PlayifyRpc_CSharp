@@ -1,18 +1,28 @@
 using System.Numerics;
-using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
 
 public readonly partial struct RpcDataPrimitive{
+	public class Already:Dictionary<object,RpcDataPrimitive>,IDisposable{
+		private readonly List<Action> _disposeList=[];
+
+		public event Action OnDispose{
+			add=>_disposeList.Add(value);
+			remove=>_disposeList.Remove(value);
+		}
+
+		public bool NeedsDispose=>_disposeList.Count!=0;
+		public void Dispose()=>_disposeList.ForEach(a=>a());
+	}
+
+
 	internal static readonly Dictionary<Type,RpcData.ObjectToPrimitive> FromDictionary=new();
 	internal static readonly List<RpcData.ObjectToPrimitiveOrNull> FromList=[];
 
-	public static RpcDataPrimitive[] FromArray(object?[] values){
-		Dictionary<object,RpcDataPrimitive>? already=null;
-		return values.Select(v=>v is RpcDataPrimitive p?p:From(v,already??=new Dictionary<object,RpcDataPrimitive>())).ToArray();
-	}
+	public static RpcDataPrimitive[] FromArray(object?[] values,Already already)
+		=>values.Select(v=>v is RpcDataPrimitive p?p:From(v,already)).ToArray();
 
-	public static RpcDataPrimitive From(object? value,Dictionary<object,RpcDataPrimitive>? already=null){
+	public static RpcDataPrimitive From(object? value,Already? already){
 		if(value switch{
 			   null=>new RpcDataPrimitive(),
 			   true=>new RpcDataPrimitive(true),
@@ -39,13 +49,13 @@ public readonly partial struct RpcDataPrimitive{
 
 		if(already?.TryGetValue(value,out var alreadyFound)??false) return alreadyFound;
 
-		already??=new Dictionary<object,RpcDataPrimitive>();
+		already??=new Already();
 
 		var type=value.GetType();
 		if(RpcData.GetForInput(FromDictionary,type) is{} fromDict)
 			return fromDict(value,already);
 		foreach(var func in FromList)
-			if(func(value,already).TryGet(out var primitive))
+			if(func(value,already) is{} primitive)
 				return primitive;
 		throw new InvalidCastException("Can't convert "+value+" of type "+RpcTypeStringifier.FromType(type)+" to primitive");
 	}

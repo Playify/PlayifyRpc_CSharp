@@ -9,6 +9,14 @@ namespace PlayifyRpc.Utils;
 [PublicAPI]
 public class RpcListenerSet:IEnumerable<FunctionCallContext>{
 	private readonly HashSet<FunctionCallContext> _set=[];
+	private List<Action>? _dispose;
+
+	private void HandleDispose(RpcDataPrimitive.Already already){
+		if(!already.NeedsDispose) return;
+		//too complex: _set.Select(ctx=>ctx.TaskRaw).WhenAll()
+		already.Clear();//Clear normal objects, only leave disposedata open
+		lock(this) (_dispose??=[]).Add(already.Dispose);
+	}
 
 
 	public void SendAll(params object?[] args){
@@ -23,8 +31,20 @@ public class RpcListenerSet:IEnumerable<FunctionCallContext>{
 				ctx.SendMessageRaw(args);
 	}
 
-	public void SendLazySingle(Func<object?> generate)=>SendLazyRaw(()=>[RpcDataPrimitive.From(generate())]);
-	public void SendLazy(Func<object?[]> generate)=>SendLazyRaw(()=>RpcDataPrimitive.FromArray(generate()));
+	public void SendLazySingle(Func<object?> generate)=>SendLazyRaw(()=>{
+		var already=new RpcDataPrimitive.Already();
+		var result=RpcDataPrimitive.From(generate(),already);
+		HandleDispose(already);
+		return[result];
+	});
+
+	public void SendLazy(Func<object?[]> generate)=>SendLazyRaw(()=>{
+		var already=new RpcDataPrimitive.Already();
+		var result=RpcDataPrimitive.FromArray(generate(),already);
+		HandleDispose(already);
+		return result;
+	});
+
 	public void SendLazyRaw(Func<RpcDataPrimitive> generate)=>SendLazyRaw(()=>[generate()]);
 
 	public void SendLazyRaw(Func<RpcDataPrimitive[]> generate){
@@ -51,6 +71,11 @@ public class RpcListenerSet:IEnumerable<FunctionCallContext>{
 
 	public void Remove(FunctionCallContext ctx){
 		lock(_set) _set.Remove(ctx);
+		lock(this){
+			if(_set.Count!=0||_dispose==null) return;
+			foreach(var action in _dispose) action();
+			_dispose=null;
+		}
 	}
 
 	public bool Contains(FunctionCallContext ctx){
@@ -59,6 +84,11 @@ public class RpcListenerSet:IEnumerable<FunctionCallContext>{
 
 	public void Clear(){
 		lock(_set) _set.Clear();
+		lock(this){
+			if(_dispose==null) return;
+			foreach(var action in _dispose) action();
+			_dispose=null;
+		}
 	}
 
 	public int Count{

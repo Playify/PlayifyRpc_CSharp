@@ -22,7 +22,17 @@ public class PendingCall:IAsyncEnumerable<RpcDataPrimitive[]>{
 
 	public bool Finished=>RawData.Finished;
 	public Task<RpcDataPrimitive> TaskRaw=>RawData.TaskRaw;
-	public PendingCall SendMessage(params object?[] args)=>SendMessageRaw(RpcDataPrimitive.FromArray(args));
+
+
+	public PendingCall HandleDispose(RpcDataPrimitive.Already already){
+		if(already.NeedsDispose) Finally(already.Dispose);
+		return this;
+	}
+
+	public PendingCall SendMessage(params object?[] args){
+		var already=new RpcDataPrimitive.Already();
+		return SendMessageRaw(RpcDataPrimitive.FromArray(args,already)).HandleDispose(already);
+	}
 
 	public PendingCall SendMessageRaw(RpcDataPrimitive[] args){
 		RawData.SendFunc?.Invoke(args);

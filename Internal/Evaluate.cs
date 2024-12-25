@@ -35,19 +35,19 @@ internal static class Evaluate{
 		var bracket=expression.IndexOf('(');
 		if(bracket==-1){
 			if(expression.Length==0)//postArgs already handled
-				return RpcDataPrimitive.From(await Rpc.GetAllTypes());
+				return RpcDataPrimitive.From(await Rpc.GetAllTypes(),null);
 			if(expression[expression.Length-1]=='.')
 				if(postArgs!=null) throw new RpcEvalException("Can't use POST data for this");
-				else return RpcDataPrimitive.From(await Rpc.CreateObject(expression.Substring(0,expression.Length-1)).GetMethods());
+				else return RpcDataPrimitive.From(await Rpc.CreateObject(expression.Substring(0,expression.Length-1)).GetMethods(),null);
 			if(expression[expression.Length-1]=='?')
 				if(postArgs!=null) throw new RpcEvalException("Can't use POST data for this");
-				else return RpcDataPrimitive.From(await Rpc.CreateObject(expression.Substring(0,expression.Length-1)).Exists());
+				else return RpcDataPrimitive.From(await Rpc.CreateObject(expression.Substring(0,expression.Length-1)).Exists(),null);
 
 			var dotPos=expression.LastIndexOf('.');
 			if(dotPos==-1) throw new RpcEvalException("No opening bracket");
 
 			if(postArgs==null)
-				return RpcDataPrimitive.From(await Rpc.CreateFunction(expression.Substring(0,dotPos),expression.Substring(dotPos+1)).GetMethodSignatures());
+				return RpcDataPrimitive.From(await Rpc.CreateFunction(expression.Substring(0,dotPos),expression.Substring(dotPos+1)).GetMethodSignatures(),null);
 
 			postArgs=postArgs.Trim();
 			if(postArgs.Length==0||postArgs[0]!='['||postArgs[postArgs.Length-1]!=']')
