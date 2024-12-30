@@ -94,7 +94,7 @@ public static class RpcHelpers{
 	//Deep clones an IRpcDataObject
 	public static T Clone<T>(this T t) where T : IRpcDataObject{
 		var instance=Activator.CreateInstance<T>();
-		using var already=new RpcDataPrimitive.Already();
+		var already=new RpcDataPrimitive.Already(a=>a());//Should never be needed to dispose, but just in case, don't leave any waste behind
 		if(!instance.TrySetProps(t.GetProps(already),true,new RpcDataPrimitive()))
 			throw new RpcDataException("Error cloning "+t);
 		return instance;

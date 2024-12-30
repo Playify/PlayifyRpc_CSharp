@@ -3,16 +3,8 @@ using System.Numerics;
 namespace PlayifyRpc.Internal.Data;
 
 public readonly partial struct RpcDataPrimitive{
-	public class Already:Dictionary<object,RpcDataPrimitive>,IDisposable{
-		private readonly List<Action> _disposeList=[];
-
-		public event Action OnDispose{
-			add=>_disposeList.Add(value);
-			remove=>_disposeList.Remove(value);
-		}
-
-		public bool NeedsDispose=>_disposeList.Count!=0;
-		public void Dispose()=>_disposeList.ForEach(a=>a());
+	public class Already(Action<Action> onDispose):Dictionary<object,RpcDataPrimitive>{
+		public void OnDispose(Action value)=>onDispose(value);
 	}
 
 
@@ -49,7 +41,7 @@ public readonly partial struct RpcDataPrimitive{
 
 		if(already?.TryGetValue(value,out var alreadyFound)??false) return alreadyFound;
 
-		already??=new Already();
+		already??=new Already(_=>{});//Will not be disposed, if passed in null as already
 
 		var type=value.GetType();
 		if(RpcData.GetForInput(FromDictionary,type) is{} fromDict)

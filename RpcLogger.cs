@@ -33,13 +33,17 @@ public static class RpcLogger{
 	];
 
 	public static async void LogLevel(Logger.LogLevel level,params object?[] msg){
-		using var already=new RpcDataPrimitive.Already();
+
+		List<Action>? list=null;
+		var already=new RpcDataPrimitive.Already(a=>(list??=[]).Add(a));
 		var args=RpcDataPrimitive.FromArray(msg,already);
 		try{
 			await Invoker.CallFunctionRaw(null,"L",[RpcDataPrimitive.From(level,already),..args]);
 		} catch(Exception e){
 			Rpc.Logger.WithName("RpcLogger(Fallback)").Log(level,MessageFromArray(args));
 			System.Diagnostics.Debug.Print("RpcLogger failed to send due to "+e);
+		} finally{
+			list?.ForEach(a=>a());
 		}
 	}
 

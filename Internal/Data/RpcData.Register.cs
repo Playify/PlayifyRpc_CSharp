@@ -33,7 +33,7 @@ public static partial class RpcData{
 
 		Register<T>(
 			(p,a)=>{
-				if(dispose!=null) a.OnDispose+=()=>dispose(p);
+				if(dispose!=null) a.OnDispose(()=>dispose(p));
 				return a[p]=Create(p);
 			},
 			(p,_)=>{

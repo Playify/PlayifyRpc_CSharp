@@ -11,39 +11,25 @@ public class RpcListenerSet:IEnumerable<FunctionCallContext>{
 	private readonly HashSet<FunctionCallContext> _set=[];
 	private List<Action>? _dispose;
 
-	private void HandleDispose(RpcDataPrimitive.Already already){
-		if(!already.NeedsDispose) return;
-		//too complex: _set.Select(ctx=>ctx.TaskRaw).WhenAll()
-		already.Clear();//Clear normal objects, only leave disposedata open
-		lock(this) (_dispose??=[]).Add(already.Dispose);
-	}
+	private RpcDataPrimitive.Already Already=>new(a=>{
+		lock(this) (_dispose??=[]).Add(a);
+	});
 
+	public RpcDataPrimitive[]? LastMessage{get;private set;}
 
-	public void SendAll(params object?[] args){
-		lock(_set)
-			foreach(var ctx in _set)
-				ctx.SendMessage(args);
-	}
 
 	public void SendAllRaw(params RpcDataPrimitive[] args){
+		LastMessage=args;
 		lock(_set)
 			foreach(var ctx in _set)
 				ctx.SendMessageRaw(args);
 	}
 
-	public void SendLazySingle(Func<object?> generate)=>SendLazyRaw(()=>{
-		var already=new RpcDataPrimitive.Already();
-		var result=RpcDataPrimitive.From(generate(),already);
-		HandleDispose(already);
-		return[result];
-	});
+	public void SendAll(params object?[] args)=>SendAllRaw(RpcDataPrimitive.FromArray(args,Already));
 
-	public void SendLazy(Func<object?[]> generate)=>SendLazyRaw(()=>{
-		var already=new RpcDataPrimitive.Already();
-		var result=RpcDataPrimitive.FromArray(generate(),already);
-		HandleDispose(already);
-		return result;
-	});
+	public void SendLazySingle(Func<object?> generate)=>SendLazyRaw(()=>[RpcDataPrimitive.From(generate(),Already)]);
+
+	public void SendLazy(Func<object?[]> generate)=>SendLazyRaw(()=>RpcDataPrimitive.FromArray(generate(),Already));
 
 	public void SendLazyRaw(Func<RpcDataPrimitive> generate)=>SendLazyRaw(()=>[generate()]);
 
@@ -52,15 +38,7 @@ public class RpcListenerSet:IEnumerable<FunctionCallContext>{
 			if(_set.Count==0)
 				return;
 		var args=generate();
-		lock(_set)
-			foreach(var ctx in _set)
-				ctx.SendMessageRaw(args);
-	}
-
-	public void SendIfAnyRaw(params RpcDataPrimitive[] args){
-		lock(_set)
-			foreach(var ctx in _set)
-				ctx.SendMessageRaw(args);
+		SendAllRaw(args);
 	}
 
 
