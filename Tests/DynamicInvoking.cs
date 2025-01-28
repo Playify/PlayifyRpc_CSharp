@@ -4,6 +4,8 @@ using PlayifyRpc.Types;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 
+// ReSharper disable UnusedParameter.Local
+
 namespace Tests;
 
 public static class DynamicInvoking{
@@ -44,7 +46,5 @@ public static class DynamicInvoking{
 	});
 
 	[Test]
-	public static void Exceptions()=>Assert.Multiple(()=>{
-		StringAssert.DoesNotContain("Invoker.",Assert.ThrowsAsync<RpcException>(()=>Rpc.CallLocal(()=>throw new Exception()).ToTask())!.StackTrace);
-	});
+	public static void Exceptions()=>Assert.Multiple(()=>{StringAssert.DoesNotContain("Invoker.",Assert.ThrowsAsync<RpcException>(()=>Rpc.CallLocal(()=>throw new Exception()).ToTask())!.StackTrace);});
 }

@@ -139,7 +139,7 @@ internal static class RpcDataDefaults{
 					return array;
 				}
 				if(p.IsObject(out var obj)){
-					var expando=(IDictionary<string,object?>)p.AddAlready(new ExpandoObject());
+					IDictionary<string,object?> expando=p.AddAlready(new ExpandoObject());
 					foreach(var (key,primitive) in obj) expando.Add(key,primitive.To<object?>());
 					return expando;
 				}
@@ -209,7 +209,7 @@ internal static class RpcDataDefaults{
 				if(p.IsNull()) return null;
 				if(p.IsAlready(out ExpandoObject already)) return already;
 				if(!p.IsObject(out var props)) return ContinueWithNext;
-				var expando=(IDictionary<string,object?>)p.AddAlready(new ExpandoObject());
+				IDictionary<string,object?> expando=p.AddAlready(new ExpandoObject());
 				foreach(var (key,child) in props)
 					try{
 						if(child.TryTo(out object? o,throwOnError)) expando.Add(key,o);

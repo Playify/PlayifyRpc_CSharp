@@ -1,10 +1,12 @@
 using System.Reflection;
+using JetBrains.Annotations;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
 
+[PublicAPI]
 public static partial class RpcInvoker{
 
 	public static object? InvokeMethod(Delegate func,string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)
@@ -13,7 +15,7 @@ public static partial class RpcInvoker{
 	public static object? InvokeMethod(object? instance,IList<MethodInfo> overloads,string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)
 		=>InvokeThrow(instance,overloads,args,msg=>new RpcMethodNotFoundException(type,method,msg),ctx);
 
-	public static object? InvokeMeta(Delegate func,string? type,string meta,RpcDataPrimitive[] args,FunctionCallContext ctx)
+	internal static object? InvokeMeta(Delegate func,string? type,string meta,RpcDataPrimitive[] args,FunctionCallContext ctx)
 		=>InvokeThrow(func.Target,[func.Method],args,msg=>new RpcMetaMethodNotFoundException(type,meta,msg),ctx);
 
 	public static object? InvokeThrow(Delegate func,RpcDataPrimitive[] args)=>InvokeThrow(func.Target,[func.Method],args,msg=>new RpcException(null,null,msg,""),null);

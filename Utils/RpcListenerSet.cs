@@ -42,6 +42,7 @@ public class RpcListenerSet:IEnumerable<FunctionCallContext>{
 	}
 
 
+	[MustDisposeResource]
 	public IDisposable Add(FunctionCallContext ctx){
 		lock(_set) _set.Add(ctx);
 		return new CallbackAsDisposable(()=>Remove(ctx));

@@ -28,22 +28,21 @@ internal abstract class ServerConnection:AnyConnection,IAsyncDisposable{
 
 		_invoker=new ServerInvoker(this);
 
-		if(id!=null){
-			ServerConnection[] toKick;
-			lock(Connections){
-				toKick=Connections.Where(c=>c.Id==id).ToArray();
-				Connections.Add(this);
-			}
+		if(id==null) return;
+		ServerConnection[] toKick;
+		lock(Connections){
+			toKick=Connections.Where(c=>c.Id==id).ToArray();
+			Connections.Add(this);
+		}
 
-			TaskUtils.WhenAll(toKick.Select(k=>{
-				k.Logger.Warning("Kicked, new client with same id joined.");
-				return k.DisposeAsync();
-			})).AsTask().Background();
+		TaskUtils.WhenAll(toKick.Select(k=>{
+			k.Logger.Warning("Kicked, new client with same id joined.");
+			return k.DisposeAsync();
+		})).AsTask().Background();
 
-			lock(RpcServer.Types){
-				RpcServer.Types["$"+id]=this;
-				Types.Add("$"+id);
-			}
+		lock(RpcServer.Types){
+			RpcServer.Types["$"+id]=this;
+			Types.Add("$"+id);
 		}
 	}
 

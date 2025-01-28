@@ -118,34 +118,24 @@ public class RpcWebServer:WebBase{
 	}
 
 	private const string HelpText="""
-	                              ./rpc.sh update
-	                              ./rpc.sh <flags> listen <port/ip>
-	                              ./rpc.sh <flags> call <call>
-	                              ./rpc.sh help
-
-	                              General:
-	                              -h | --help
-	                                  Shows this help text
-	                              -t | --token <token>
-	                                  Secure connection with a token, can be specified with RPC_TOKEN environment variable
-	                              -i | --insecure
-	                                  Insecure mode without warning
-
-	                              Call:
-	                              -u | --url <url>
-	                                  Connection url, can be specified with RPC_URL environment variable e.g. ws://localhost:4590/rpc
-	                              -f | --format <pretty|compact|void>
-	                                  Configure formatting of the result (defaults to pretty)
-	                              -c | --call <call>
-	                                  Call remote function
-	                              -- <rest...>
-	                                  Call remote function
-
-	                              Server:
-	                              -l | --listen <port/ip>
-	                                  Run as server others can connect to (Default port: 4590)
-	                              -j | --js <path>
-	                                  rpc.js file, that is used when listening for web requests
+	                              Commands:
+	                                ./rpc.sh update
+	                                ./rpc.sh <flags> listen <port/ip>
+	                                ./rpc.sh <flags> call <call>
+	                                ./rpc.sh help
+	                              Flags:
+	                                General:
+	                                  -h | --help                           | Shows this help text
+	                                  -s | --secure <token>   env:RPC_TOKEN | Secure connection with a token
+	                                  -i | --insecure                       | Insecure mode without warning
+	                                Listen:
+	                                  -l | --listen <port/ip>               | Run as server others can connect to (default: 4590)
+	                                  -j | --js <path>                      | rpc.js file, that is used when listening for web requests
+	                                Call:
+	                                  -u | --url <url>          env:RPC_URL | Connection url, e.g. ws://localhost:4590/rpc
+	                                  -f | --format <pretty|compact|void>   | Configure formatting of the result (default: pretty)
+	                                  -c | --call <call>                    | Call remote function
+	                                  -- | call <rest...>                   | Call remote function (joins all remaining arguments)
 	                              """;
 	private const int DefaultPort=4590;
 
@@ -167,16 +157,16 @@ public class RpcWebServer:WebBase{
 						if(url!=null) throw new CloseException("--url already set");
 						url=args[++i];
 						break;
-					case "-t":
-					case "--token":
-						if(i+1==args.Length) throw new CloseException("--token requires a value");
-						if(setToken) throw new CloseException(token!=null?"--token already set":"--token is incompatible with --insecure");
+					case "-s":
+					case "--secure":
+						if(i+1==args.Length) throw new CloseException("--secure requires a value");
+						if(setToken) throw new CloseException(token!=null?"--secure already set":"--secure is incompatible with --insecure");
 						setToken=true;
 						token=args[++i];
 						break;
 					case "-i":
 					case "--insecure":
-						if(setToken) throw new CloseException(token!=null?"--insecure is incompatible with --token":"--insecure already set");
+						if(setToken) throw new CloseException(token!=null?"--insecure is incompatible with --secure":"--insecure already set");
 						setToken=true;
 						token=null;
 						break;
@@ -187,17 +177,22 @@ public class RpcWebServer:WebBase{
 						break;
 					case "-h":
 					case "--help":
+					case "help":
 						throw new CloseException("");
 					case "-l":
 					case "--listen":
 					case "listen":
-						if(i+1==args.Length) throw new CloseException("--listen requires a value");
-						listen.Add(args[++i] switch{
-							var s when Parsers.TryParseIpEndPoint(s,DefaultPort,out var ep)=>ep,
-							var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
-							var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,DefaultPort),
-							var s=>throw new CloseException($"Invalid IP or Port: \"{s}\""),
-						});
+						if(i+1==args.Length)
+							listen.Add(new IPEndPoint(IPAddress.Any,DefaultPort));/*
+							if(args[i]=="listen") listen.Add(new IPEndPoint(IPAddress.Any,DefaultPort));
+							else throw new CloseException("--listen requires a value");*/
+						else
+							listen.Add(args[++i] switch{
+								var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
+								var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,DefaultPort),
+								var s when Parsers.TryParseIpEndPoint(s,DefaultPort,out var ep)=>ep,
+								var s=>throw new CloseException($"Invalid IP or Port: \"{s}\""),
+							});
 						break;
 					case "-f":
 					case "--format":
@@ -225,9 +220,9 @@ public class RpcWebServer:WebBase{
 						break;
 					case var unknown:
 						if(args.Length==1&&args[0] switch{
-							   var s when Parsers.TryParseIpEndPoint(s,DefaultPort,out var ep)=>ep,
 							   var s when int.TryParse(s,out var port)=>new IPEndPoint(IPAddress.Any,port),
 							   var s when IPAddress.TryParse(s,out var address)=>new IPEndPoint(address,DefaultPort),
+							   var s when Parsers.TryParseIpEndPoint(s,DefaultPort,out var ep)=>ep,
 							   _=>null,
 						   } is{} foundEndpoint){
 							listen.Add(foundEndpoint);
@@ -247,7 +242,7 @@ public class RpcWebServer:WebBase{
 
 		} catch(CloseException e){
 			if(e.Message=="")
-				await Console.Out.WriteLineAsync(PlatformUtils.IsWindows()?HelpText.Replace("./rpc.sh","rpc.bat"):HelpText);
+				await Console.Out.WriteLineAsync(PlatformUtils.IsWindows()?HelpText.Replace("./rpc.sh","rpc"):HelpText);
 			else await Console.Error.WriteLineAsync(e.Message);
 			return;
 		}
