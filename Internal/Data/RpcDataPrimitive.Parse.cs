@@ -29,7 +29,7 @@ public readonly partial struct RpcDataPrimitive{
 				'f'=>ParseLiteral(r,"false")?new RpcDataPrimitive(false):null,
 				'N'=>ParseLiteral(r,"NaN")?new RpcDataPrimitive(double.NaN):null,
 				'I'=>ParseLiteral(r,"Infinity")?new RpcDataPrimitive(double.PositiveInfinity):null,
-				(>='0' and <='9') or '+' or '-' or '.'=>ParseNumber(r),
+				>='0' and <='9' or '+' or '-' or '.'=>ParseNumber(r),
 				'/'=>ParseRegex(r),
 				_=>null,
 			};
@@ -94,7 +94,7 @@ public readonly partial struct RpcDataPrimitive{
 
 		private static RpcDataPrimitive? ParseNumber(TextReader r){
 			var c=r.Read();
-			if(c is not ((>='0' and <='9') or '+' or '-' or '.')) return null;
+			if(c is not (>='0' and <='9' or '+' or '-' or '.')) return null;
 
 			var builder=new StringBuilder();
 			builder.Append((char)c);

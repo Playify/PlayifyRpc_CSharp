@@ -100,6 +100,8 @@ public readonly partial struct RpcDataPrimitive{
 					index-=objectId/4;
 					if(already.TryGetValue(index,out var found))
 						return found;
+
+					if(objectId<4) throw new RpcDataException("Invalid data stream, trying to read recursively on same position");
 					//as fallback, try reading the value again
 					var (b,off,len)=input.GetBufferOffsetAndLength();
 					var temp=new DataInputBuff(b,index,len+off-index);

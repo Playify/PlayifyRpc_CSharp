@@ -31,9 +31,8 @@ public partial class RpcException:Exception{
 
 	public RpcException(string message):this(null,null,message,null,null){}
 	public RpcException(string message,Exception cause):this(null,null,message,null,cause){}
-	public RpcException(string? type,string? from,string? message,string? stackTrace):this(type,from,message,stackTrace,null){}
 
-	public RpcException(string? type,string? from,string? message,string? stackTrace,Exception? cause):base(message,cause){
+	public RpcException(string? type,string? from,string? message,string? stackTrace,Exception? cause=null):base(message,cause){
 		Type=type??GetType().Name;
 		if((GetType().GetCustomAttribute<RpcCustomExceptionAttribute>()?.TypeTag).NotNull(out var typeTag)) Data["$type"]=typeTag;
 		From=from??Rpc.PrettyName;
