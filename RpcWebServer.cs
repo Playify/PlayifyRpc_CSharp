@@ -147,7 +147,8 @@ public partial class RpcWebServer:WebBase{
 				       .Cache(false)
 				       .Header("Content-Disposition",$"{(responseType.download?"attachment":"inline")}; filename=\"{responseType.name.Replace("\"","\\\"")}\";");
 
-				var mimeType=WebUtils.MimeType(Path.GetExtension(responseType.name));
+				//var mimeType=WebUtils.MimeType(Path.GetExtension(responseType.name));
+				var mimeType=MimeMapping.GetValueOrDefault(Path.GetExtension(responseType.name),"application/octet-stream");
 
 				if(result.TryTo(out byte[]? bytes))
 					await session.Send.Data(bytes!,mimeType);
