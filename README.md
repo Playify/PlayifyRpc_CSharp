@@ -19,6 +19,9 @@ Using `http://127.0.0.1:4590/rpc/EXPRESSION/pretty` you can get a prettified JSO
 Using `http://127.0.0.1:4590/rpc/EXPRESSION/void` you don't get any response
 back ([HTTP Status Code 204](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204)).
 
+Using `http://127.0.0.1:4590/rpc/EXPRESSION/download=test.txt` you get the response as file download<br/>
+Using `http://127.0.0.1:4590/rpc/EXPRESSION/file=test.html` you open the response directly in the browser
+
 # Server
 
 The RPC Server is only available for C#, clients are available in other languages as well. The server should run on a

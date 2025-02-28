@@ -85,6 +85,7 @@ public class Casting{
 	public void ToStringOfPrimitives()=>Assert.Multiple(()=>{
 		Assert.That(RpcDataPrimitive.From(new VoidType(),null).ToString(false),Is.EqualTo("null"));
 		Assert.That(RpcDataPrimitive.From(new byte[]{0,1,2},null).ToString(false),Is.EqualTo("[0,1,2]"));
+		Assert.That(RpcDataPrimitive.From(IntEnum.Big,null).ToString(),Is.EqualTo("500"));
 	});
 
 

@@ -1,5 +1,6 @@
 using System.Net;
 using PlayifyRpc;
+using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Utils.Extensions;
 
 namespace Tests;
@@ -12,7 +13,7 @@ public static class Web{
 	public static void Setup(){
 		var endPoint=new IPEndPoint(new IPAddress([127,2,4,8]),4591);
 		_endPoint="http://"+endPoint;
-		RpcWebServer.RunWebServer(endPoint,"rpc.js",null).Background();
+		RpcWebServer.RunWebServer(endPoint).Background();
 	}
 
 	private static async Task<string> Request(string uri,string? postArgs)
@@ -23,18 +24,27 @@ public static class Web{
 
 	[Test]
 	public static void WebRequests()=>Assert.Multiple(async ()=>{
-		Assert.That(await Request("/rpc/Rpc.Return([1])",null),Is.EqualTo("[1]"));
+		foreach(var task in new[]{
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([1])",null),Is.EqualTo("[1]")),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([1])",null),Is.EqualTo("[1]")),
 
-		Assert.That(await Request("/rpc/Rpc.Return","[1]"),Is.EqualTo("1"));
-		Assert.That(await Request("/rpc/Rpc.Return()","[1]"),Is.EqualTo("[1]"));
-		Assert.That(await Request("/rpc/Rpc.ReturnArguments(1)","2,3"),Is.EqualTo("[1,2,3]"));
-		Assert.That(await Request("/rpc/Rpc.Return()/pretty","[1]"),Is.EqualTo("[\n\t1\n]"));
-		Assert.That(await Request("/rpc/Rpc.Return/pretty","[[1]]"),Is.EqualTo("[\n\t1\n]"));
-		Assert.That(await Request("/rpc","Rpc.Return([1])"),Is.EqualTo("[1]"));
-		Assert.That(await Request("/rpc/pretty","Rpc.Return([1])"),Is.EqualTo("[\n\t1\n]"));
-		Assert.That(await Request("/rpc","[\"Rpc\",\"Return\",[1]]"),Is.EqualTo("[1]"));
-		Assert.That(await Request("/rpc/pretty","[\"Rpc\",\"Return\",[1]]"),Is.EqualTo("[\n\t1\n]"));
-		Assert.That(await Request("/rpc/void","Rpc.Return([1])"),Is.EqualTo(""));
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return","[1]"),Is.EqualTo("1")),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return()","[1]"),Is.EqualTo("[1]")),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.ReturnArguments(1)","2,3"),Is.EqualTo("[1,2,3]")),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return()/pretty","[1]"),Is.EqualTo("[\n\t1\n]")),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return/pretty","[[1]]"),Is.EqualTo("[\n\t1\n]")),
+			        async ()=>Assert.That(await Request("/rpc","Rpc.Return([1])"),Is.EqualTo("[1]")),
+			        async ()=>Assert.That(await Request("/rpc/pretty","Rpc.Return([1])"),Is.EqualTo("[\n\t1\n]")),
+			        async ()=>Assert.That(await Request("/rpc","[\"Rpc\",\"Return\",[1]]"),Is.EqualTo("[1]")),
+			        async ()=>Assert.That(await Request("/rpc/pretty","[\"Rpc\",\"Return\",[1]]"),Is.EqualTo("[\n\t1\n]")),
+			        async ()=>Assert.That(await Request("/rpc/void","Rpc.Return([1])"),Is.EqualTo("")),
+
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([1])/file=test",null),Is.EqualTo("[1]"),"/file should work"),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([\"/file=test\"])/pretty",null),Is.EqualTo("[\n\t\"/file=test\"\n]"),"/file within arguments should work"),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([\"/file=test/pretty\"])",null),Is.EqualTo("[\"/file=test/pretty\"]"),"/pretty within arguments should not trip into pretty mode"),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return(\"/file=test\")/download=test2",null),Is.EqualTo("/file=test"),"/download must work with /file as argument"),
+			        async ()=>StringAssert.DoesNotStartWith(nameof(RpcDataException),await Request("/rpc/Rpc./file=test",null),"/file should also work without explicit brackets for full function calls"),
+		        }.Select(func=>func()).ToArray()) await task;
 	});
 
 

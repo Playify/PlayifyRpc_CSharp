@@ -97,6 +97,12 @@
 		<Compile Update="Internal\Data\RpcDataPrimitive.Parse.cs">
 			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
 		</Compile>
+		<Compile Update="RpcWebServer.MimeTypes.cs">
+			<DependentUpon>RpcWebServer.cs</DependentUpon>
+		</Compile>
+		<Compile Update="RpcWebServer.Console.cs">
+			<DependentUpon>RpcWebServer.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

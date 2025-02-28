@@ -38,6 +38,6 @@ public static partial class Rpc{
 	public static PendingCall<RpcDataPrimitive> CallFunctionRaw(string type,string method,RpcDataPrimitive[] args)=>Invoker.CallFunctionRaw(type,method,args);
 
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
-	public static Task<RpcDataPrimitive> EvalObject(string expression)=>Evaluate.EvalObject(expression);
+	public static async Task<RpcDataPrimitive> EvalObject(string expression)=>await Evaluate.EvalObject(expression);
 	public static async Task<T?> EvalObject<T>(string expression)=>(await Evaluate.EvalObject(expression)).To<T>();
 }

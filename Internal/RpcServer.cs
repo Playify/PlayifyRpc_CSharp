@@ -91,7 +91,7 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	}
 
 	public static Task<string> EvalString(string expression,bool pretty=true)=>Evaluate.EvalString(expression,pretty);
-	public static Task<RpcDataPrimitive> EvalObject(string expression)=>Evaluate.EvalObject(expression);
+	public static async Task<RpcDataPrimitive> EvalObject(string expression)=>await Evaluate.EvalObject(expression);
 	public static Task ListenCalls(FunctionCallContext ctx)=>ListenAllCalls.Listen(ctx);
 	#endregion
 
