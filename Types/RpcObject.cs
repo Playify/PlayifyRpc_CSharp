@@ -1,6 +1,7 @@
 using System.Dynamic;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
+using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Functions;
 using PlayifyRpc.Types.Invokers;
@@ -9,7 +10,7 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Types;
 
 [PublicAPI]
-public readonly struct RpcObject(string type):IDynamicMetaObjectProvider{
+public readonly struct RpcObject(string type):IDynamicMetaObjectProvider,IEquatable<RpcObject>{
 	public readonly string Type=type;
 
 	public RpcFunction GetFunction(string name)=>new(Type,name);
@@ -22,7 +23,18 @@ public readonly struct RpcObject(string type):IDynamicMetaObjectProvider{
 	public Task<string> GetRpcVersion()=>Invoker.CallFunction<string>(Type,null,"V");
 	public Task<bool> Exists()=>Invoker.CallFunction<bool>(null,"E",Type);
 
+	public bool RegisteredLocally=>RegisteredTypes.Registered.ContainsKey(Type);
 
+
+	#region Equality
+	public bool Equals(RpcObject other)=>Type==other.Type;
+	public override bool Equals(object? obj)=>obj is RpcObject other&&Equals(other);
+	public override int GetHashCode()=>Type.GetHashCode();
+	public static bool operator ==(RpcObject left,RpcObject right)=>left.Equals(right);
+	public static bool operator !=(RpcObject left,RpcObject right)=>!(left==right);
+	#endregion
+
+	#region MetaObject
 	DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)=>new MetaObject(parameter,Type);
 
 	private class MetaObject(Expression expression,string type):DynamicMetaObject(expression,BindingRestrictions.Empty,new RpcObject(type)){
@@ -52,4 +64,6 @@ public readonly struct RpcObject(string type):IDynamicMetaObjectProvider{
 			return new DynamicMetaObject(callExpression,restrictions);
 		}
 	}
+	#endregion
+
 }

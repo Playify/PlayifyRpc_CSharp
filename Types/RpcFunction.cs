@@ -7,9 +7,11 @@ using PlayifyRpc.Types.Invokers;
 namespace PlayifyRpc.Types;
 
 [PublicAPI]
-public readonly struct RpcFunction(string type,string method){
+public readonly struct RpcFunction(string type,string method):IEquatable<RpcFunction>{
 	public readonly string Type=type;
 	public readonly string Method=method;
+
+	public RpcObject RpcObject=>new(Type);
 
 	[PublicAPI]
 	public PendingCall Call(params object?[] args)=>Rpc.CallFunction(Type,Method,args);
@@ -54,4 +56,20 @@ public readonly struct RpcFunction(string type,string method){
 	private static readonly string RegisteredTypeName="$"+Rpc.Id;
 
 	static RpcFunction()=>RegisteredTypes.Register(RegisteredTypeName,new DictionaryInvoker(StringToFunc)).ConfigureAwait(false);
+
+
+	#region Equality
+	public bool Equals(RpcFunction other)=>Type==other.Type&&Method==other.Method;
+	public override bool Equals(object? obj)=>obj is RpcObject other&&Equals(other);
+
+	public override int GetHashCode(){
+		unchecked{
+			return Type.GetHashCode()*397^Method.GetHashCode();
+		}
+	}
+
+	public static bool operator ==(RpcFunction left,RpcFunction right)=>left.Equals(right);
+	public static bool operator !=(RpcFunction left,RpcFunction right)=>!(left==right);
+	#endregion
+
 }

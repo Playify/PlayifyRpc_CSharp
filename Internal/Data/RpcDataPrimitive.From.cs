@@ -14,7 +14,7 @@ public readonly partial struct RpcDataPrimitive{
 	public static RpcDataPrimitive[] FromArray(object?[] values,Already already)
 		=>values.Select(v=>v is RpcDataPrimitive p?p:From(v,already)).ToArray();
 
-	public static RpcDataPrimitive From(object? value,Already? already){
+	public static RpcDataPrimitive From(object? value,Already? already=null){
 		if(value switch{
 			   null=>new RpcDataPrimitive(),
 			   true=>new RpcDataPrimitive(true),
