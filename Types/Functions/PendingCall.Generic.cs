@@ -24,4 +24,6 @@ public class PendingCall<T>:PendingCall{
 
 	public Task Then(Action<T> a)=>ToTask().Then(a);
 	public Task<TReturn> Then<TReturn>(Func<T,TReturn> a)=>ToTask().Then(a);
+	public Task<T> Catch(Func<Exception,T> a)=>ToTask().Catch(a);
+	public new Task<T> Finally(Action a)=>ToTask().Finally(a);
 }
