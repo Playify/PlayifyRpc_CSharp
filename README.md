@@ -1,7 +1,7 @@
 This library allows calling functions across different devices. It works for:
 
 * [C# Applications](https://www.nuget.org/packages/PlayifyRpc/)
-* [Web Applications (and NodeJs)](https://www.npmjs.com/package/playify-rpc)
+* [Web Applications (and Node.js)](https://www.npmjs.com/package/playify-rpc)
 * [Microcontrollers (ESP8266 and ESP32)](https://registry.platformio.org/libraries/playify/playify-rpc)
 
 # Web Interface

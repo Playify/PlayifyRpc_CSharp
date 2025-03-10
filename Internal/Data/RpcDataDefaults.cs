@@ -323,6 +323,16 @@ internal static class RpcDataDefaults{
 				return instance;
 			},
 			(_,generics)=>generics.Single()+"[]");
+
+		Register(
+			typeof(ArraySegment<>),
+			(list,already)=>already[list]=new RpcDataPrimitive(()=>(
+				                                                       ((IEnumerable)list).Cast<object>().Select(o=>From(o,already))
+				                                                       ,((IList)list).Count)),
+			(p,type,throwOnError)=>p.TryTo(type.GetGenericArguments()[0].MakeArrayType(),out var array,throwOnError)
+				                       ?Activator.CreateInstance(type,array)
+				                       :ContinueWithNext,
+			(_,generics)=>generics.Single()+"[]");
 	}
 
 	private static class Jsons{
