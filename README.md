@@ -22,6 +22,21 @@ back ([HTTP Status Code 204](https://developer.mozilla.org/en-US/docs/Web/HTTP/S
 Using `http://127.0.0.1:4590/rpc/EXPRESSION/download=test.txt` you get the response as file download<br/>
 Using `http://127.0.0.1:4590/rpc/EXPRESSION/file=test.html` you open the response directly in the browser
 
+Using `http://127.0.0.1:4590/rpc/EXPRESSION/http` you can get a customizable http response.
+The Expression should result in an object with optional keys
+
+* status:
+	* number ⇒ represents the HTTP status code
+* headers:
+	* string ⇒ containing one or more lines with the format of "Key: Value"
+	* strign[] ⇒ each a single line with the format of "Key: Value"
+	* object ⇒ each key value pair represents a single header
+* body:
+	* string ⇒ Response will be a text (utf-8 encoding)
+	* byte[] (Uint8Array in JavaScript) ⇒ Response will have binary content
+	* any ⇒ Response will be in a json representation
+	* _missing_ ⇒ Response will be empty
+
 # Server
 
 The RPC Server is only available for C#, clients are available in other languages as well. The server should run on a

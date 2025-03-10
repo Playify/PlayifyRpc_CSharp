@@ -39,6 +39,8 @@ public static class Web{
 			        async ()=>Assert.That(await Request("/rpc/pretty","[\"Rpc\",\"Return\",[1]]"),Is.EqualTo("[\n\t1\n]")),
 			        async ()=>Assert.That(await Request("/rpc/void","Rpc.Return([1])"),Is.EqualTo("")),
 
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return()/http","{\"body\":123}"),Is.EqualTo("123")),
+
 			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([1])/file=test",null),Is.EqualTo("[1]"),"/file should work"),
 			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([\"/file=test\"])/pretty",null),Is.EqualTo("[\n\t\"/file=test\"\n]"),"/file within arguments should work"),
 			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([\"/file=test/pretty\"])",null),Is.EqualTo("[\"/file=test/pretty\"]"),"/pretty within arguments should not trip into pretty mode"),
