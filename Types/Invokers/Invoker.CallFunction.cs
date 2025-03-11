@@ -139,7 +139,7 @@ public abstract partial class Invoker{
 					result=task.GetType().GetProperty(nameof(Task<object>.Result))?.GetValue(result);
 				} else if(result.GetType().Push(out var t).IsGenericType&&t.GetGenericTypeDefinition()==typeof(ValueTask<>))
 					result=t.GetMethod(nameof(ValueTask<object>.AsTask))?.Invoke(result,[]);
-				else return RpcDataPrimitive.From(result,null);
+				else return RpcDataPrimitive.From(result);
 		} catch(Exception e){
 			throw RpcException.WrapAndFreeze(e).Append(type,method,args);
 		}

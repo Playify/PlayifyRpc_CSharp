@@ -85,9 +85,6 @@
 		<Compile Update="Types\Invokers\Invoker.CallFunction.cs">
 		  <DependentUpon>Invoker.cs</DependentUpon>
 		</Compile>
-		<Compile Update="Internal\Data\RpcDataDefaults.cs">
-			<DependentUpon>RpcData.cs</DependentUpon>
-		</Compile>
 		<Compile Update="Internal\Data\RpcData.Delegates.cs">
 			<DependentUpon>RpcData.cs</DependentUpon>
 		</Compile>

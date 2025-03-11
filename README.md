@@ -25,6 +25,9 @@ Using `http://127.0.0.1:4590/rpc/EXPRESSION/file=test.html` you open the respons
 Using `http://127.0.0.1:4590/rpc/EXPRESSION/http` you can get a customizable http response.
 The Expression should result in an object with optional keys
 
+Using `http://127.0.0.1:4590/rpc/EXPRESSION/headers` and `http://127.0.0.1:4590/rpc/EXPRESSION/cookies` an object will
+be appended to the argument list, that contains the requested special data.
+
 * status:
 	* number ⇒ represents the HTTP status code
 * headers:
