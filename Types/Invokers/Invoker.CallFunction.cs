@@ -16,6 +16,12 @@ public abstract partial class Invoker{
 	internal static PendingCall<T> CallFunction<T>(string? type,string? method,params object?[] args)=>CallFunction(type,method,args).Cast<T>();
 
 	internal static PendingCall CallFunction(string? type,string? method,params object?[] args){
+		if(args.Any(o=>o is FunctionCallContext)){
+			var call=CallFunction(type,method,args.Where(o=>o is not FunctionCallContext).ToArray());
+			foreach(var context in args.OfType<FunctionCallContext>()) call.AsForwarded(context);
+			return call;
+		}
+		
 		List<Action>? list=null;
 		var already=new RpcDataPrimitive.Already(a=>(list??=[]).Add(a));
 		var pendingCall=CallFunctionRaw(type,method,RpcDataPrimitive.FromArray(args,already));

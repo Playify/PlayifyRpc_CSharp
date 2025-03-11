@@ -14,6 +14,7 @@ public class PendingCall<T>:PendingCall{
 	public new PendingCall<T> SendMessageRaw(RpcDataPrimitive[] args)=>(PendingCall<T>)base.SendMessageRaw(args);
 	public new PendingCall<T> AddMessageListener(Delegate a)=>(PendingCall<T>)base.AddMessageListener(a);
 	public new PendingCall<T> AddMessageListenerRaw(Action<RpcDataPrimitive[]> a)=>(PendingCall<T>)base.AddMessageListenerRaw(a);
+	public new PendingCall<T> AsForwarded(FunctionCallContext ctx)=>(PendingCall<T>)base.AsForwarded(ctx);
 
 	public PendingCall Void()=>new(RawData);
 
