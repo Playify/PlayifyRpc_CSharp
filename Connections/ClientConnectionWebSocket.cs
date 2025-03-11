@@ -70,13 +70,13 @@ internal class ClientConnectionWebSocket:ClientConnection{
 				await DoConnect(connection,reportedName,reportedTypes);
 
 				await loop;
+				Logger.Info("Reconnecting to RPC");
 
 				StartConnect();
 			} catch(Exception e){
 				FailConnect(e);
 
 				await Task.Delay(1000);
-				Logger.Info("Reconnecting to RPC");
 			}
 		// ReSharper disable once FunctionNeverReturns
 	}

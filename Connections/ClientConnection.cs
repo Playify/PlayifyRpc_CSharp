@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Sockets;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
@@ -46,7 +47,7 @@ internal abstract class ClientConnection:AnyConnection,IAsyncDisposable{
 	protected static void FailConnect(Exception e){
 		Instance=null;
 		Rpc.IsConnected=false;
-		Logger.Error("Error connecting to RPC: "+e);
+		Logger.Error("Error connecting to RPC: "+(e is SocketException?e.ToString().GetBefore('\n')?.Trim()??e.ToString():e));
 		var tcs=_connectionAttemptOnce;
 		_connectionAttemptOnce=new TaskCompletionSource();
 		tcs?.TrySetException(e);

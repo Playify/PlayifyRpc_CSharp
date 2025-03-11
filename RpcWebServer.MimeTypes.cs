@@ -1,6 +1,44 @@
+using System.Net;
+using PlayifyUtility.Jsons;
+
 namespace PlayifyRpc;
 
 public partial class RpcWebServer{
+	public static JsonObject ParseQueryString(string value){
+		if(value.Length>0&&value[0]=='?') value=value.Substring(1);
+		var collection=new JsonObject();
+
+		var num1=value.Length;
+		for(var index=0;index<num1;++index){
+			var startIndex=index;
+			var num2=-1;
+			for(;index<num1;++index)
+				switch(value[index]){
+					case '&':goto label_7;
+					case '=':
+						if(num2<0){
+							num2=index;
+						}
+						break;
+				}
+			label_7:
+			string? str1;
+			string str2;
+			if(num2>=0){
+				str1=value.Substring(startIndex,num2-startIndex);
+				str2=value.Substring(num2+1,index-num2-1);
+			} else{
+				str1=null;
+				str2=value.Substring(startIndex,index-startIndex);
+			}
+			collection.Add(WebUtility.UrlDecode(str1)??"",WebUtility.UrlDecode(str2));
+			if(index==num1-1&&value[index]=='&') collection.Add("",string.Empty);
+		}
+
+		return collection;
+	}
+
+
 	//https://github.com/samuelneff/MimeTypeMap/blob/master/MimeTypeMap.cs
 	private static readonly Dictionary<string,string> MimeMapping=new(){
 		{".323","text/h323"},

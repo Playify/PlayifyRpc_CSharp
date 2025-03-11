@@ -154,14 +154,6 @@ internal static class RpcDataDefaults{
 			(input,create)=>create(DateTimeOffset.FromUnixTimeMilliseconds(input.ReadLong()).LocalDateTime),
 			(output,value,_)=>output.WriteLong(new DateTimeOffset(value).ToUnixTimeMilliseconds()),
 			(typescript,_)=>typescript?"Date":"DateTime");
-		RegisterCustom<byte[]>('b',
-			(input,create)=>create(input.ReadFully(input.ReadLength())),
-			(output,value,_)=>{
-				output.WriteLength(value.Length);
-				output.Write(value);
-			},
-			(typescript,_)=>typescript?"Uint8Array":"byte[]",
-			bytes=>$"[{bytes.Join(',')}]");
 		RegisterCustom<Exception>('E',
 			(input,create)=>create(RpcException.Read(input)),
 			(output,value,_)=>RpcException.WrapAndFreeze(value).Write(output),
@@ -324,11 +316,23 @@ internal static class RpcDataDefaults{
 			},
 			(_,generics)=>generics.Single()+"[]");
 
+
+		var writeBytes=RegisterCustom<byte[]>('b',
+			(input,create)=>create(input.ReadFully(input.ReadLength())),
+			(output,value,_)=>{
+				output.WriteLength(value.Length);
+				output.Write(value);
+			},
+			(typescript,_)=>typescript?"Uint8Array":"byte[]",
+			bytes=>$"[{bytes.Join(',')}]");
 		Register(
 			typeof(ArraySegment<>),
-			(list,already)=>already[list]=new RpcDataPrimitive(()=>(
-				                                                       ((IEnumerable)list).Cast<object>().Select(o=>From(o,already))
-				                                                       ,((IList)list).Count)),
+			(list,already)=>already[list]=
+				                list is ArraySegment<byte> bytes
+					                ?new RpcDataPrimitive(bytes.ToArray(),writeBytes,()=>$"[{bytes.Join(',')}]")
+					                :new RpcDataPrimitive(()=>(
+						                                          ((IEnumerable)list).Cast<object>().Select(o=>From(o,already))
+						                                          ,((IList)list).Count)),
 			(p,type,throwOnError)=>p.TryTo(type.GetGenericArguments()[0].MakeArrayType(),out var array,throwOnError)
 				                       ?Activator.CreateInstance(type,array)
 				                       :ContinueWithNext,

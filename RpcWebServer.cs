@@ -86,7 +86,16 @@ public partial class RpcWebServer:WebBase{
 
 	private static async Task HandleWebCall(WebSession session,string s){
 		string? postArgs=null;
-		Func<Task<string>>? postArgsProvider=session.Type is RequestType.Post or RequestType.Put?async ()=>postArgs??=await session.ReadStringAsync():null;
+		Func<Task<string>>? postArgsProvider=session.Type is RequestType.Post or RequestType.Put
+			                                     ?async ()=>{//TODO test if working
+				                                     if(postArgs!=null) return postArgs;
+				                                     postArgs=await session.ReadStringAsync();
+				                                     if(session.Headers.TryGetValue("Content-Type",out var contentType)
+				                                        &&contentType.Contains("application/x-www-form-urlencoded"))
+					                                     postArgs=ParseQueryString(postArgs).ToString();
+				                                     return postArgs;
+			                                     }
+			                                     :null;
 
 
 		Task<RpcDataPrimitive>? pendingCall=null;
