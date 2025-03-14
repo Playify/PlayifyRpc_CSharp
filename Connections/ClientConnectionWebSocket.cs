@@ -5,6 +5,7 @@ using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
 using PlayifyUtility.Web;
+using PlayifyUtility.Web.Utils;
 
 namespace PlayifyRpc.Connections;
 
@@ -25,7 +26,7 @@ internal class ClientConnectionWebSocket:ClientConnection{
 	private async Task ReceiveLoop(){
 		await foreach(var (s,b) in _webSocket)
 			if(s!=null) Logger.Log("WebSocket Message: "+s);
-			else Receive(new DataInputBuff(b)).Background(e=>Logger.Warning("Error receiving Packet: "+e));
+			else Receive(new DataInputBuff(b)).Catch<CloseException>(_=>{}).Background(e=>Logger.Warning("Error receiving Packet: "+e));
 	}
 
 	public override async ValueTask DisposeAsync(){
