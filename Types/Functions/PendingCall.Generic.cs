@@ -20,6 +20,7 @@ public class PendingCall<T>:PendingCall{
 
 	public new Task<T> ToTask()=>ToTask<T>()!;
 	public static implicit operator Task<T>(PendingCall<T> call)=>call.ToTask();
+	public static implicit operator ValueTask<T>(PendingCall<T> call)=>new(call.ToTask());
 	public new TaskAwaiter<T> GetAwaiter()=>ToTask().GetAwaiter();
 
 

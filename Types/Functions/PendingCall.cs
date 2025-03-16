@@ -60,6 +60,7 @@ public class PendingCall:IAsyncEnumerable<RpcDataPrimitive[]>{
 	public async Task<object?> ToTask(Type type)=>(await TaskRaw).To(type);
 
 	public static implicit operator Task(PendingCall call)=>call.TaskRaw;
+	public static implicit operator ValueTask(PendingCall call)=>new(call.TaskRaw);
 	public TaskAwaiter GetAwaiter()=>ToTask().GetAwaiter();
 
 	public IAsyncEnumerator<RpcDataPrimitive[]> GetAsyncEnumerator(CancellationToken cancel=default)=>RawData.MessageQueue.GetAsyncEnumerator(cancel);

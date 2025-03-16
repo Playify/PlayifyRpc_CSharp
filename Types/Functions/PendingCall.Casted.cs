@@ -24,6 +24,7 @@ public class PendingCallCasted:PendingCall{
 
 	public new Task<object?> ToTask()=>ToTask(_type);
 	public static implicit operator Task<object?>(PendingCallCasted call)=>call.ToTask();
+	public static implicit operator ValueTask<object?>(PendingCallCasted call)=>new(call.TaskRaw);
 	public new TaskAwaiter<object?> GetAwaiter()=>ToTask().GetAwaiter();
 
 	public Task Then(Action<object?> a)=>ToTask().Then(a);
