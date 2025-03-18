@@ -16,6 +16,12 @@ public abstract partial class Invoker{
 	internal static PendingCall<T> CallFunction<T>(string? type,string? method,params object?[] args)=>CallFunction(type,method,args).Cast<T>();
 
 	internal static PendingCall CallFunction(string? type,string? method,params object?[] args){
+		if(args.Any(o=>o is FunctionCallContext)){
+			var call=CallFunction(type,method,args.Where(o=>o is not FunctionCallContext).ToArray());
+			foreach(var context in args.OfType<FunctionCallContext>()) call.AsForwarded(context);
+			return call;
+		}
+		
 		List<Action>? list=null;
 		var already=new RpcDataPrimitive.Already(a=>(list??=[]).Add(a));
 		var pendingCall=CallFunctionRaw(type,method,RpcDataPrimitive.FromArray(args,already));
@@ -133,7 +139,7 @@ public abstract partial class Invoker{
 					result=task.GetType().GetProperty(nameof(Task<object>.Result))?.GetValue(result);
 				} else if(result.GetType().Push(out var t).IsGenericType&&t.GetGenericTypeDefinition()==typeof(ValueTask<>))
 					result=t.GetMethod(nameof(ValueTask<object>.AsTask))?.Invoke(result,[]);
-				else return RpcDataPrimitive.From(result,null);
+				else return RpcDataPrimitive.From(result);
 		} catch(Exception e){
 			throw RpcException.WrapAndFreeze(e).Append(type,method,args);
 		}

@@ -18,11 +18,13 @@ public class PendingCallCasted:PendingCall{
 	public new PendingCallCasted SendMessageRaw(RpcDataPrimitive[] args)=>(PendingCallCasted)base.SendMessageRaw(args);
 	public new PendingCallCasted AddMessageListener(Delegate a)=>(PendingCallCasted)base.AddMessageListener(a);
 	public new PendingCallCasted AddMessageListenerRaw(Action<RpcDataPrimitive[]> a)=>(PendingCallCasted)base.AddMessageListenerRaw(a);
+	public new PendingCallCasted AsForwarded(FunctionCallContext ctx)=>(PendingCallCasted)base.AsForwarded(ctx);
 
 	public PendingCall Void()=>new(RawData);
 
 	public new Task<object?> ToTask()=>ToTask(_type);
 	public static implicit operator Task<object?>(PendingCallCasted call)=>call.ToTask();
+	public static implicit operator ValueTask<object?>(PendingCallCasted call)=>new(call.TaskRaw);
 	public new TaskAwaiter<object?> GetAwaiter()=>ToTask().GetAwaiter();
 
 	public Task Then(Action<object?> a)=>ToTask().Then(a);

@@ -14,11 +14,13 @@ public class PendingCall<T>:PendingCall{
 	public new PendingCall<T> SendMessageRaw(RpcDataPrimitive[] args)=>(PendingCall<T>)base.SendMessageRaw(args);
 	public new PendingCall<T> AddMessageListener(Delegate a)=>(PendingCall<T>)base.AddMessageListener(a);
 	public new PendingCall<T> AddMessageListenerRaw(Action<RpcDataPrimitive[]> a)=>(PendingCall<T>)base.AddMessageListenerRaw(a);
+	public new PendingCall<T> AsForwarded(FunctionCallContext ctx)=>(PendingCall<T>)base.AsForwarded(ctx);
 
 	public PendingCall Void()=>new(RawData);
 
 	public new Task<T> ToTask()=>ToTask<T>()!;
 	public static implicit operator Task<T>(PendingCall<T> call)=>call.ToTask();
+	public static implicit operator ValueTask<T>(PendingCall<T> call)=>new(call.ToTask());
 	public new TaskAwaiter<T> GetAwaiter()=>ToTask().GetAwaiter();
 
 

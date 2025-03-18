@@ -2,10 +2,10 @@ namespace PlayifyRpc.Internal.Data;
 
 public readonly partial struct RpcDataPrimitive{
 	#region Cast
-	public static T Cast<T>(object? source)=>From(source,null).To<T>()!;
-	public static object? Cast(object? source,Type type)=>From(source,null).To(type);
-	public static bool TryCast<T>(object? source,out T t,bool throwOnError=false)=>From(source,null).TryTo(out t!,throwOnError);
-	public static bool TryCast(object? source,Type type,out object? obj,bool throwOnError=false)=>From(source,null).TryTo(type,out obj,throwOnError);
+	public static T Cast<T>(object? source)=>From(source).To<T>()!;
+	public static object? Cast(object? source,Type type)=>From(source).To(type);
+	public static bool TryCast<T>(object? source,out T t,bool throwOnError=false)=>From(source).TryTo(out t!,throwOnError);
+	public static bool TryCast(object? source,Type type,out object? obj,bool throwOnError=false)=>From(source).TryTo(type,out obj,throwOnError);
 	#endregion
 
 	internal static readonly Dictionary<Type,RpcData.PrimitiveToType> ToDictionary=new();

@@ -45,6 +45,13 @@ public class PendingCall:IAsyncEnumerable<RpcDataPrimitive[]>{
 		return this;
 	}
 
+	public PendingCall AsForwarded(FunctionCallContext ctx){
+		WithCancellation(ctx.CancellationToken);
+		_=AddMessageListenerRaw(msg=>ctx.SendMessageRaw(msg));
+		_=ctx.AddMessageListenerRaw(msg=>SendMessageRaw(msg));
+		return this;
+	}
+	
 	public PendingCall<TNew> Cast<TNew>()=>new(RawData);
 	public PendingCallCasted Cast(Type type)=>new(RawData,type);
 
@@ -53,6 +60,7 @@ public class PendingCall:IAsyncEnumerable<RpcDataPrimitive[]>{
 	public async Task<object?> ToTask(Type type)=>(await TaskRaw).To(type);
 
 	public static implicit operator Task(PendingCall call)=>call.TaskRaw;
+	public static implicit operator ValueTask(PendingCall call)=>new(call.TaskRaw);
 	public TaskAwaiter GetAwaiter()=>ToTask().GetAwaiter();
 
 	public IAsyncEnumerator<RpcDataPrimitive[]> GetAsyncEnumerator(CancellationToken cancel=default)=>RawData.MessageQueue.GetAsyncEnumerator(cancel);

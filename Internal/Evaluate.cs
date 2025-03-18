@@ -17,7 +17,8 @@ namespace PlayifyRpc.Internal;
  * arguments should be Json
  */
 internal static class Evaluate{
-	internal static async Task<Task<RpcDataPrimitive>> Eval(string expression,Func<Task<string>>? postArgsProvider,bool isFromRequest){
+	internal static async Task<Task<RpcDataPrimitive>> Eval(string expression,Func<Task<string>>? postArgsProvider=null,bool isFromRequest=false,IEnumerable<RpcDataPrimitive>? appendArgs=null){
+		appendArgs??=[];
 		//Try to use postArgs if expression is not available
 		if(expression==""&&postArgsProvider!=null){
 			expression=await postArgsProvider();
@@ -40,7 +41,7 @@ internal static class Evaluate{
 			if(!array[1].TryTo<string>(out var methodFromArray)) throw new RpcEvalException("Error getting method from expression array");
 
 			if(typeFromArray==null) throw new NullReferenceException("Type is null");
-			return Invoker.CallFunctionRaw(typeFromArray,methodFromArray,array.Skip(2).ToArray());
+			return Invoker.CallFunctionRaw(typeFromArray,methodFromArray,array.Skip(2).Concat(appendArgs).ToArray());
 		}
 
 		var bracket=expression.IndexOf('(');
@@ -48,24 +49,24 @@ internal static class Evaluate{
 			if(isFromRequest&&expression.Contains('/')) throw new RpcEvalException("Type or name should not contain a '/', as it would interfere with URL parameters like /void or /pretty");
 
 			if(expression.Length==0)//postArgs already handled
-				return Rpc.GetAllTypes().Then(x=>RpcDataPrimitive.From(x,null));
+				return Rpc.GetAllTypes().Then(x=>RpcDataPrimitive.From(x));
 			if(expression[expression.Length-1]=='.')
 				if(postArgsProvider!=null) throw new RpcEvalException("Can't use POST data for this");
 				else
 					return Rpc.CreateObject(expression.Substring(0,expression.Length-1)).GetMethods()
-					          .Then(x=>RpcDataPrimitive.From(x,null));
+					          .Then(x=>RpcDataPrimitive.From(x));
 			if(expression[expression.Length-1]=='?')
 				if(postArgsProvider!=null) throw new RpcEvalException("Can't use POST data for this");
 				else
 					return Rpc.CreateObject(expression.Substring(0,expression.Length-1)).Exists()
-					          .Then(x=>RpcDataPrimitive.From(x,null));
+					          .Then(x=>RpcDataPrimitive.From(x));
 
 			var dotPos=expression.LastIndexOf('.');
 			if(dotPos==-1) throw new RpcEvalException("No opening bracket");
 
 			if(postArgsProvider==null)
 				return Rpc.CreateFunction(expression.Substring(0,dotPos),expression.Substring(dotPos+1)).GetMethodSignatures()
-				          .Then(x=>RpcDataPrimitive.From(x,null));
+				          .Then(x=>RpcDataPrimitive.From(x));
 
 			var postArgs=(await postArgsProvider()).Trim();
 			if(postArgs.Length==0||postArgs[0]!='['||postArgs[postArgs.Length-1]!=']')
@@ -103,9 +104,9 @@ internal static class Evaluate{
 				} else throw new RpcEvalException("Error parsing arguments");
 			args.Add(obj.Value);
 		}
-		return Invoker.CallFunctionRaw(type,method,args.ToArray());
+		return Invoker.CallFunctionRaw(type,method,args.Concat(appendArgs).ToArray());
 	}
 
-	internal static async Task<RpcDataPrimitive> EvalObject(string expression)=>await await Eval(expression,null,false);
-	internal static async Task<string> EvalString(string expression,bool pretty)=>(await await Eval(expression,null,false)).ToString(pretty);
+	internal static async Task<RpcDataPrimitive> EvalObject(string expression)=>await await Eval(expression);
+	internal static async Task<string> EvalString(string expression,bool pretty)=>(await await Eval(expression)).ToString(pretty);
 }

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Specialized;
 using System.Dynamic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -211,6 +212,25 @@ internal static class RpcDataDefaults{
 						throw new InvalidCastException("Error converting primitive "+p+" to ExpandoObject, due to property "+JsonString.Escape(key),e);
 					}
 				return expando;
+			},
+			(_,_)=>"object");
+		Register<NameValueCollection>(
+			(nvc,already)=>already[nvc]=new RpcDataPrimitive(()=>nvc.Keys.Cast<string>().Select(k=>(k??"",From(nvc.Get(k),already)))),
+			(p,throwOnError)=>{
+				if(p.IsNull()) return null;
+				if(p.IsAlready(out NameValueCollection already)) return already;
+				if(!p.IsObject(out var props)) return ContinueWithNext;
+				var nvc=p.AddAlready(new NameValueCollection());
+				foreach(var (key,child) in props)
+					try{
+						if(child.IsString(out var s)) nvc.Add(key,s);
+						else if(throwOnError) throw new InvalidCastException("Error converting "+child+" to string");
+						else return p.RemoveAlready(nvc);
+					} catch(Exception e){
+						p.RemoveAlready(nvc);
+						throw new InvalidCastException("Error converting primitive "+p+" to ExpandoObject, due to property "+JsonString.Escape(key),e);
+					}
+				return nvc;
 			},
 			(_,_)=>"object");
 	}

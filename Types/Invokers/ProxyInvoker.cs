@@ -21,12 +21,7 @@ public class ProxyInvoker:Invoker{
 
 	private async Task<object?> InvokeAsync(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx){
 		try{
-			var o=await _object();
-			var call=o.CallFunctionRaw(method,args).WithCancellation(ctx.CancellationToken);
-			_=call.AddMessageListenerRaw(msg=>ctx.SendMessageRaw(msg));
-			_=ctx.AddMessageListenerRaw(msg=>call.SendMessageRaw(msg));
-
-			return await call;
+			return await (await _object()).CallFunctionRaw(method,args).AsForwarded(ctx);
 		} catch(Exception e){
 			throw RpcException.WrapAndFreeze(e).Remove(((Delegate)InvokeAsync).Method);
 		}

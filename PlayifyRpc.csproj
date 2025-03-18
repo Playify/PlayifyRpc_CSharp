@@ -15,7 +15,7 @@
 		<RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
 		<RepositoryType>GitHub</RepositoryType>
 		<Authors>Playify</Authors>
-		<Version>1.9.0</Version>
+		<Version>1.9.1</Version>
 
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -37,6 +37,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Remove="Tests\**" />
+		<None Remove="Tests\**" />
+		<Compile Remove="SourceGenerator\**" />
+		<None Remove="SourceGenerator\**" />
+		<Compile Include="SourceGenerator\IRpcConsumer.cs" />
+
+		<Compile Include="SourceGenerator\RpcConsumerAttribute.cs" />
+		<None Include="README.md" Pack="true" PackagePath="\" />
+
 		<Compile Update="Rpc.Connection.cs">
 			<DependentUpon>Rpc.cs</DependentUpon>
 		</Compile>
@@ -46,9 +55,6 @@
 		<Compile Update="Rpc.Types.cs">
 			<DependentUpon>Rpc.cs</DependentUpon>
 		</Compile>
-		<None Include="README.md" Pack="true" PackagePath="\" />
-		<Compile Remove="Tests\**" />
-		<None Remove="Tests\**" />
 		<Compile Update="Internal\Data\RpcDataPrimitive.From.cs">
 			<DependentUpon>RpcDataPrimitive.cs</DependentUpon>
 		</Compile>
@@ -83,10 +89,7 @@
 			<DependentUpon>RpcInvoker.cs</DependentUpon>
 		</Compile>
 		<Compile Update="Types\Invokers\Invoker.CallFunction.cs">
-		  <DependentUpon>Invoker.cs</DependentUpon>
-		</Compile>
-		<Compile Update="Internal\Data\RpcDataDefaults.cs">
-			<DependentUpon>RpcData.cs</DependentUpon>
+			<DependentUpon>Invoker.cs</DependentUpon>
 		</Compile>
 		<Compile Update="Internal\Data\RpcData.Delegates.cs">
 			<DependentUpon>RpcData.cs</DependentUpon>
@@ -107,5 +110,13 @@
 
 	<ItemGroup>
 		<EmbeddedResource Remove="Tests\**" />
+		<EmbeddedResource Remove="SourceGenerator\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!--<ProjectReference Include="PlayifyRpc.SourceGenerator\PlayifyRpc.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />-->
+		<Analyzer Include="SourceGenerator\SourceGenerator.dll" Pack="true" />
+
+		<None Include="SourceGenerator\SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" />
 	</ItemGroup>
 </Project>

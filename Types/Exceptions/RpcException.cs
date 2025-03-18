@@ -29,7 +29,7 @@ public partial class RpcException:Exception{
 	private string? _stackTrace;
 	private readonly string _causes="";
 
-	public RpcException(string message):this(null,null,message,null,null){}
+	public RpcException(string message):this(null,null,message,null){}
 	public RpcException(string message,Exception cause):this(null,null,message,null,cause){}
 
 	public RpcException(string? type,string? from,string? message,string? stackTrace,Exception? cause=null):base(message,cause){

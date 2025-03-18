@@ -87,12 +87,12 @@ public partial class RpcWebServer:WebBase{
 	private static async Task HandleWebCall(WebSession session,string s){
 		string? postArgs=null;
 		Func<Task<string>>? postArgsProvider=session.Type is RequestType.Post or RequestType.Put
-			                                     ?async ()=>{//TODO test if working
+			                                     ?async ()=>{
 				                                     if(postArgs!=null) return postArgs;
 				                                     postArgs=await session.ReadStringAsync();
 				                                     if(session.Headers.TryGetValue("Content-Type",out var contentType)
 				                                        &&contentType.Contains("application/x-www-form-urlencoded"))
-					                                     postArgs=ParseQueryString(postArgs).ToString();
+					                                     postArgs=RpcDataPrimitive.From(WebUtils.ParseQueryString(postArgs)).ToString();
 				                                     return postArgs;
 			                                     }
 			                                     :null;
@@ -104,6 +104,9 @@ public partial class RpcWebServer:WebBase{
 		var prettyResponse=false;
 		(ResponseType type,string? name) responseType=(ResponseType.Default,null);
 		Exception? lastError=null;
+		List<RpcDataPrimitive> appendArgs=[];
+		RpcDataPrimitive? headersPrimitive=null;
+		RpcDataPrimitive? cookiesPrimitive=null;
 
 
 		s="/"+s.TrimStart('/');
@@ -113,6 +116,7 @@ public partial class RpcWebServer:WebBase{
 			//Reset options to original values
 			prettyResponse=false;
 			responseType=(ResponseType.Default,null);
+			appendArgs.Clear();
 
 			if(slashPos!=s.Length){
 				var optionsSuccessful=true;
@@ -120,6 +124,8 @@ public partial class RpcWebServer:WebBase{
 					if(option==""){
 					} else if(option=="void") responseType=(ResponseType.Void,null);
 					else if(option=="pretty") prettyResponse=true;
+					else if(option=="headers") appendArgs.Add(headersPrimitive??=RpcDataPrimitive.From(session.Headers));
+					else if(option=="cookies") appendArgs.Add(cookiesPrimitive??=RpcDataPrimitive.From(session.Cookies));
 					else if(option=="http") responseType=(ResponseType.Http,null);
 					else if(option.TryRemoveFromStartOf("file=",out var rest)) responseType=(ResponseType.File,rest);
 					else if(option.TryRemoveFromStartOf("download=",out rest)) responseType=(ResponseType.Download,rest);
@@ -132,7 +138,7 @@ public partial class RpcWebServer:WebBase{
 
 
 			try{
-				pendingCall=await Evaluate.Eval(expression,postArgsProvider,true);
+				pendingCall=await Evaluate.Eval(expression,postArgsProvider,true,appendArgs);
 				break;
 			} catch(Exception e){
 				lastError=e;
@@ -144,7 +150,7 @@ public partial class RpcWebServer:WebBase{
 				             .Cache(false)
 				             .Text(lastError.ToString(),500);
 				return;
-			} else pendingCall=await Evaluate.Eval(s.TrimStart('/'),postArgsProvider,true);
+			} else pendingCall=await Evaluate.Eval(s.TrimStart('/'),postArgsProvider,true,appendArgs);
 
 		RpcDataPrimitive result;
 		try{
@@ -203,15 +209,15 @@ public partial class RpcWebServer:WebBase{
 							            :500
 						           :200;
 
-					if(response.TryGetValue("headers",out var headersPrimitive))
-						if(headersPrimitive.IsObject(out var headersObject)){
+					if(response.TryGetValue("headers",out var responseHeaders))
+						if(responseHeaders.IsObject(out var headersObject)){
 							foreach(var (key,value) in headersObject)
 								session.Send.Header(key,value.IsString(out var headerValue)?headerValue:value.ToString());
-						} else if(headersPrimitive.IsString(out var headersString)){
+						} else if(responseHeaders.IsString(out var headersString)){
 							foreach(var headerLine in headersString.Split('\r','\n'))
 								if(headerLine.SliceAt(':') is{} tuple)//Check valid header
 									session.Send.Header(tuple.left,tuple.right);
-						} else if(headersPrimitive.IsArray(out var headersArray)){
+						} else if(responseHeaders.IsArray(out var headersArray)){
 							foreach(var headerLinePrimitive in headersArray)
 								if(headerLinePrimitive.IsString(out var headerLine)
 								   &&headerLine.SliceAt(':') is{} tuple)//Check valid header
@@ -219,14 +225,14 @@ public partial class RpcWebServer:WebBase{
 						}//else, invalid header => ignore
 
 
-					if(!response.TryGetValue("body",out var body))
+					if(!response.TryGetValue("body",out var responseBody))
 						await session.Send.Data([],null,status);
-					else if(body.TryTo(out byte[]? bytes))
+					else if(responseBody.TryTo(out byte[]? bytes))
 						await session.Send.Data(bytes!,null,status);
-					else if(body.IsString(out var str))
+					else if(responseBody.IsString(out var str))
 						await session.Send.Text(str,null,status);
 					else
-						await session.Send.Text(body.ToString(prettyResponse),null,status);
+						await session.Send.Text(responseBody.ToString(prettyResponse),null,status);
 
 				} else if(result.TryTo(out byte[]? bytes))
 					await session.Send.Data(bytes!,null);

@@ -78,14 +78,14 @@ public class Casting{
 		var list=new object[1];
 		list[0]=list;
 
-		Assert.That(RpcDataPrimitive.From(list,null).ToString(false),Is.EqualTo("[<<Cyclic Reference>>]"));
+		Assert.That(RpcDataPrimitive.From(list).ToString(false),Is.EqualTo("[<<Cyclic Reference>>]"));
 	});
 
 	[Test]
 	public void ToStringOfPrimitives()=>Assert.Multiple(()=>{
-		Assert.That(RpcDataPrimitive.From(new VoidType(),null).ToString(false),Is.EqualTo("null"));
-		Assert.That(RpcDataPrimitive.From(new byte[]{0,1,2},null).ToString(false),Is.EqualTo("[0,1,2]"));
-		Assert.That(RpcDataPrimitive.From(IntEnum.Big,null).ToString(),Is.EqualTo("500"));
+		Assert.That(RpcDataPrimitive.From(new VoidType()).ToString(false),Is.EqualTo("null"));
+		Assert.That(RpcDataPrimitive.From(new byte[]{0,1,2}).ToString(false),Is.EqualTo("[0,1,2]"));
+		Assert.That(RpcDataPrimitive.From(IntEnum.Big).ToString(),Is.EqualTo("500"));
 	});
 
 
@@ -102,7 +102,7 @@ public class Casting{
 	public void Enums()=>Assert.Multiple(()=>{
 		Assert.That(RpcDataPrimitive.Cast<ByteEnum>(IntEnum.Small),Is.EqualTo(ByteEnum.Small));
 		Assert.That(RpcDataPrimitive.Cast<IntEnum>(ByteEnum.Small),Is.EqualTo(IntEnum.Small));
-		Assert.That(RpcDataPrimitive.From(new StringEnum<ByteEnum>(ByteEnum.Small),null),Is.EqualTo(new RpcDataPrimitive(nameof(ByteEnum.Small))));
+		Assert.That(RpcDataPrimitive.From(new StringEnum<ByteEnum>(ByteEnum.Small)),Is.EqualTo(new RpcDataPrimitive(nameof(ByteEnum.Small))));
 		Assert.That(RpcDataPrimitive.Cast<int>(IntEnum.Big),Is.EqualTo(500));
 
 		Assert.That(()=>RpcDataPrimitive.Cast<ByteEnum>(IntEnum.Big),Throws.TypeOf<InvalidCastException>());
