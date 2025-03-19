@@ -80,10 +80,10 @@ public class RpcListenerSet:IEnumerable<FunctionCallContext>{
 
 
 	[MustDisposeResource]
-	IEnumerator<FunctionCallContext> IEnumerable<FunctionCallContext>.GetEnumerator(){
+	public IEnumerator<FunctionCallContext> GetEnumerator(){
 		lock(_set) return _set.ToList().GetEnumerator();
 	}
 
 	[MustDisposeResource]
-	public IEnumerator GetEnumerator()=>((IEnumerable<FunctionCallContext>)this).GetEnumerator();
+	IEnumerator IEnumerable.GetEnumerator()=>((IEnumerable<FunctionCallContext>)this).GetEnumerator();
 }

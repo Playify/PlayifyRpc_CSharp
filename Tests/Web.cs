@@ -27,6 +27,8 @@ public static class Web{
 		foreach(var task in new[]{
 			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([1])",null),Is.EqualTo("[1]")),
 			        async ()=>Assert.That(await Request("/rpc/Rpc.Return([1])",null),Is.EqualTo("[1]")),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return(\"%5Cn\")",null),Is.EqualTo("\"\\n\"")),
+			        async ()=>Assert.That(await Request("/rpc/Rpc.Return(\"%5C%5Cn\")",null),Is.EqualTo("\"\\\\n\"")),
 
 			        async ()=>Assert.That(await Request("/rpc/Rpc.Return","[1]"),Is.EqualTo("1")),
 			        async ()=>Assert.That(await Request("/rpc/Rpc.Return()","[1]"),Is.EqualTo("[1]")),

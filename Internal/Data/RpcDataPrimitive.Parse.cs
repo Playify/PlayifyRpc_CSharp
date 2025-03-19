@@ -188,7 +188,7 @@ public readonly partial struct RpcDataPrimitive{
 							str.Append(quoteType);
 							break;
 						case var c when quoteType=='/':
-							str.Append('\\').Append(c);//Regex has no escape sequences except /
+							str.Append('\\').Append((char)c);//Regex has no escape sequences except /
 							break;
 						case 'b':
 							str.Append('\b');
@@ -224,7 +224,7 @@ public readonly partial struct RpcDataPrimitive{
 								           :char.ConvertFromUtf32(cp));
 							break;
 						case var c://Defaults to just using the char as it is
-							str.Append(c);
+							str.Append((char)c);
 							break;
 					}
 					escape=false;

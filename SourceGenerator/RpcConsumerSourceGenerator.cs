@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace PlayifyRpc.SourceGenerator;
 
 [Generator]
-public class ImplementMeSourceGenerator:IIncrementalGenerator{//TODO check if working when using nuget
+public class RpcConsumerSourceGenerator:IIncrementalGenerator{//TODO check if working when using nuget
 	private const string RpcNamedAttribute="PlayifyRpc.Types.RpcNamedAttribute";
 	private const string RpcConsumerAttribute="PlayifyRpc.SourceGenerator.RpcConsumerAttribute";
 	private const string IRpcConsumer="PlayifyRpc.SourceGenerator.IRpcConsumer";
