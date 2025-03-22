@@ -59,3 +59,20 @@ public class RpcSetupAttribute:Attribute{
 		}
 	}
 }
+
+/**
+ * Used to register a static class simmilar to Rpc.RegisterType(name,typeof(MyClass))
+ * if type name is not provided, then the class name is used.
+ */
+[AttributeUsage(AttributeTargets.Class|AttributeTargets.Struct)]
+public sealed class RpcConsumerAttribute(string? type=null):Attribute{
+	private readonly string? _type=type;
+
+	/*
+	Interface does nothing when applied manually. It will be automatically added when RpcConsumerAttribute is used
+	RpcConsumerAttribute automatically implements RpcType, except if you already implement RpcType yourself.
+	*/
+	public interface IRpcConsumer{
+		string RpcType{get;}
+	}
+}

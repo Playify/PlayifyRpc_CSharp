@@ -8,7 +8,7 @@
 		<Nullable>enable</Nullable>
 
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-		<OutputPath>.</OutputPath>
+		<OutputPath>..</OutputPath>
 		<RootNamespace>PlayifyRpc.SourceGenerator</RootNamespace>
 	</PropertyGroup>
 
@@ -18,13 +18,5 @@
 
 	<ItemGroup>
 		<CompilerVisibleItem Include="RpcConsumerSourceGenerator.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Compile Remove="RpcConsumerAttribute.cs" />
-		<Compile Remove="IRpcConsumer.cs" />
-		<None Remove="SourceGenerator.deps.json" />
-		<None Remove="SourceGenerator.dll" />
-		<None Remove="SourceGenerator.pdb" />
 	</ItemGroup>
 </Project>

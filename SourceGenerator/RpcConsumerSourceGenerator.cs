@@ -11,8 +11,9 @@ namespace PlayifyRpc.SourceGenerator;
 [Generator]
 public class RpcConsumerSourceGenerator:IIncrementalGenerator{//TODO check if working when using nuget
 	private const string RpcNamedAttribute="PlayifyRpc.Types.RpcNamedAttribute";
-	private const string RpcConsumerAttribute="PlayifyRpc.SourceGenerator.RpcConsumerAttribute";
-	private const string IRpcConsumer="PlayifyRpc.SourceGenerator.IRpcConsumer";
+	private const string RpcConsumerAttribute="PlayifyRpc.Types.RpcConsumerAttribute";
+	// ReSharper disable once InconsistentNaming
+	private const string IRpcConsumer=RpcConsumerAttribute+".IRpcConsumer";
 	private const string RpcType="RpcType";
 
 	public void Initialize(IncrementalGeneratorInitializationContext context){
@@ -60,7 +61,7 @@ public class RpcConsumerSourceGenerator:IIncrementalGenerator{//TODO check if wo
 		builder.Append(GenerateAccessibility(classSymbol.DeclaredAccessibility));
 		if(classSymbol.IsStatic) builder.Append("static ");
 		builder.Append("partial class ").Append(classSymbol.Name);
-		if(!classSymbol.IsStatic) builder.Append(":PlayifyRpc.SourceGenerator.IRpcConsumer");
+		if(!classSymbol.IsStatic) builder.Append(":").Append(IRpcConsumer);
 		builder.Append("{\r\n");
 
 

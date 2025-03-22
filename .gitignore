@@ -8,6 +8,6 @@ rpc.js.map
 /Tests/bin
 .idea
 *.user
-/SourceGenerator/SourceGenerator.deps.json
-/SourceGenerator/SourceGenerator.dll
-/SourceGenerator/SourceGenerator.pdb
+/SourceGenerator.deps.json
+/SourceGenerator.dll
+/SourceGenerator.pdb

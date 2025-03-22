@@ -14,21 +14,23 @@ namespace Tests;
 
 public class Casting{
 	[SuppressMessage("ReSharper","InconsistentNaming")]
+	[SuppressMessage("ReSharper","RedundantDefaultMemberInitializer")]
 	private class ExampleObjectType:RpcDataObject{
-		public string? a;
-		public string? A;
+		public string? a=null;
+		public string? A=null;
 	}
 
 	[SuppressMessage("ReSharper","InconsistentNaming")]
+	[SuppressMessage("ReSharper","RedundantDefaultMemberInitializer")]
 	private class ReducedObjectType:RpcDataObject{
-		public string? a;
+		public string? a=null;
 	}
 
 	[SuppressMessage("ReSharper","InconsistentNaming")]
 	[UsedImplicitly(ImplicitUseTargetFlags.Members)]
-	private struct ExampleStructType:IRpcDataObject{
-		public readonly string? a;
-		public readonly string? A;
+	private struct ExampleStructType():IRpcDataObject{
+		public readonly string? a=null;
+		public readonly string? A=null;
 
 		public bool TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataPrimitive original)
 			=>RpcDataObject.Reflection.SetProps(ref this,props,throwOnError,original);

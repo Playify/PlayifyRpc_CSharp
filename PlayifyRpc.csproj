@@ -39,11 +39,12 @@
 	<ItemGroup>
 		<Compile Remove="Tests\**" />
 		<None Remove="Tests\**" />
+		<EmbeddedResource Remove="Tests\**" />
+
 		<Compile Remove="SourceGenerator\**" />
 		<None Remove="SourceGenerator\**" />
-		<Compile Include="SourceGenerator\IRpcConsumer.cs" />
+		<EmbeddedResource Remove="SourceGenerator\**" />
 
-		<Compile Include="SourceGenerator\RpcConsumerAttribute.cs" />
 		<None Include="README.md" Pack="true" PackagePath="\" />
 
 		<Compile Update="Rpc.Connection.cs">
@@ -106,17 +107,14 @@
 		<Compile Update="RpcWebServer.Console.cs">
 			<DependentUpon>RpcWebServer.cs</DependentUpon>
 		</Compile>
-	</ItemGroup>
-
-	<ItemGroup>
-		<EmbeddedResource Remove="Tests\**" />
-		<EmbeddedResource Remove="SourceGenerator\**" />
+		<None Remove="SourceGenerator.pdb" />
+		<None Remove="SourceGenerator.deps.json" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<!--<ProjectReference Include="PlayifyRpc.SourceGenerator\PlayifyRpc.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />-->
-		<Analyzer Include="SourceGenerator\SourceGenerator.dll" Pack="true" />
+		<Analyzer Include="SourceGenerator.dll" Pack="true" />
 
-		<None Include="SourceGenerator\SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" />
+		<None Include="SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" />
 	</ItemGroup>
 </Project>
