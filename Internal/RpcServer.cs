@@ -98,7 +98,16 @@ public static class RpcServer{//Class is registered as "Rpc" from Server
 	#region Extension Methods (otherwise only available in eval using specialized syntax)
 	public static bool Exists(string type)=>CheckType(type);
 	public static Task<string[]> GetMethods(string type)=>new RpcObject(type).GetMethods();
-	public static Task<(string[] parameters,string returns)[]> GetMethodSignatures(string type,string method,bool typescript=false)=>new RpcFunction(type,method).GetMethodSignatures(typescript);
+	public static Task<RpcFunction[]> GetFunctions(string type)=>new RpcObject(type).GetFunctions();
+	public static Task<(string[] parameters,string returns)[]> GetMethodSignatures(string type,string method,bool typescript=false)=>new RpcFunction(type,method).GetSignatures(typescript);
+
+	public static Task<string> GenerateCode(string language,string type){
+		return language switch{
+			"csharp" or "cs" or "c#"=>CodeGenerator.GenerateCSharp(type),
+			//TODO add js and ts, maybe make it an enum and support it in getmethodsignatures
+			_=>Task.FromResult("Unknown language: "+language),
+		};
+	}
 	#endregion
 
 	#region Test functions

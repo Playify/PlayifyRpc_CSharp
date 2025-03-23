@@ -22,7 +22,7 @@ public readonly struct RpcFunction(string type,string method):IEquatable<RpcFunc
 	[PublicAPI]
 	public PendingCall<RpcDataPrimitive> CallRaw(RpcDataPrimitive[] args)=>Rpc.CallFunctionRaw(Type,Method,args);
 
-	public async Task<(string[] parameters,string returns)[]> GetMethodSignatures(bool typeScript=false)=>
+	public async Task<(string[] parameters,string returns)[]> GetSignatures(bool typeScript=false)=>
 		await Invoker.CallFunction<(string[] parameters,string returns)[]>(Type,null,"S",Method,typeScript);
 
 

@@ -65,7 +65,7 @@ internal static class Evaluate{
 			if(dotPos==-1) throw new RpcEvalException("No opening bracket");
 
 			if(postArgsProvider==null)
-				return Rpc.CreateFunction(expression.Substring(0,dotPos),expression.Substring(dotPos+1)).GetMethodSignatures()
+				return Rpc.CreateFunction(expression.Substring(0,dotPos),expression.Substring(dotPos+1)).GetSignatures()
 				          .Then(x=>RpcDataPrimitive.From(x));
 
 			var postArgs=(await postArgsProvider()).Trim();

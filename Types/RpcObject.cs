@@ -19,11 +19,16 @@ public readonly struct RpcObject(string type):IDynamicMetaObjectProvider,IEquata
 	public PendingCall<RpcDataPrimitive> CallFunctionRaw(string name,RpcDataPrimitive[] args)=>Rpc.CallFunctionRaw(Type,name,args);
 
 	public Task<string[]> GetMethods()=>Invoker.CallFunction<string[]>(Type,null,"M");
-	public Task<(string[] parameters,string returns)[]> GetMethodSignatures(string method,bool typeScript=false)=>GetFunction(method).GetMethodSignatures(typeScript);
+	public async Task<RpcFunction[]> GetFunctions()=>(await GetMethods()).Select(GetFunction).ToArray();
 	public Task<string> GetRpcVersion()=>Invoker.CallFunction<string>(Type,null,"V");
 	public Task<bool> Exists()=>Invoker.CallFunction<bool>(null,"E",Type);
 
-	public bool RegisteredLocally=>RegisteredTypes.Registered.ContainsKey(Type);
+	public bool RegisteredLocally{
+		get{
+			lock(RegisteredTypes.Registered)
+				return RegisteredTypes.Registered.ContainsKey(Type);
+		}
+	}
 
 
 	#region Equality
