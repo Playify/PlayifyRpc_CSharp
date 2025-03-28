@@ -46,7 +46,11 @@ internal static class RpcDataDefaults{
 					:p.TryTo(type.GetGenericArguments()[0],out var result,throwOnError)
 						?result
 						:ContinueWithNext,
-			(ts,generics)=>generics[0]+(ts?"|null":"?")//should already be handled in RpcTypeStringifer
+			(ts,generics)=>{
+				if(ts&&generics[0]=="any") return "any";
+				return generics[0]+(ts?"|null":"?");
+			}
+			//should already be handled in RpcTypeStringifer
 		);
 
 

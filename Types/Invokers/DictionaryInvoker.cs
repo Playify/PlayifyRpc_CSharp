@@ -31,9 +31,9 @@ public class DictionaryInvoker(Dictionary<string,Delegate> dictionary):Invoker,I
 
 	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());
 
-	protected override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts)
+	protected override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,ProgrammingLanguage lang)
 		=>Dictionary.TryGetValue(method,out var d)
-			  ?new ValueTask<(string[] parameters,string returns)[]>([..RpcTypeStringifier.MethodSignatures(d,ts)])
+			  ?new ValueTask<(string[] parameters,string returns)[]>([..RpcTypeStringifier.MethodSignatures(d,lang)])
 			  :new ValueTask<(string[] parameters,string returns)[]>(Task.FromException<(string[] parameters,string returns)[]>(new RpcMethodNotFoundException(type,method)));
 
 

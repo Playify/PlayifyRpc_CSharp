@@ -109,6 +109,12 @@
 		</Compile>
 		<None Remove="SourceGenerator.pdb" />
 		<None Remove="SourceGenerator.deps.json" />
+		<Compile Update="Internal\Data\RpcTypeStringifier.CodeGen.cs">
+			<DependentUpon>RpcTypeStringifier.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Internal\Data\ProgrammingLanguage.cs">
+			<DependentUpon>RpcTypeStringifier.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

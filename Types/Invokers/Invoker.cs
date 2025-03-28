@@ -26,12 +26,12 @@ public abstract partial class Invoker{
 		return RpcInvoker.InvokeMeta(@delegate,type,meta,args.Skip(1).ToArray(),ctx);
 	}
 
-	protected ValueTask<(string[] arguments,string returns)[]> GetMethodSignaturesBase(string? method,bool ts=false){
-		if(method!=null) return GetMethodSignatures(MetaCallType.Value,method,ts);
+	protected ValueTask<(string[] arguments,string returns)[]> GetMethodSignaturesBase(string? method,ProgrammingLanguage lang=ProgrammingLanguage.CSharp){
+		if(method!=null) return GetMethodSignatures(MetaCallType.Value,method,lang);
 		return new ValueTask<(string[] arguments,string returns)[]>([
-			..RpcTypeStringifier.MethodSignatures(GetMethods,ts,"M"),
-			..RpcTypeStringifier.MethodSignatures(GetMethodSignaturesBase,ts,"S"),
-			..RpcTypeStringifier.MethodSignatures(GetRpcVersion,ts,"V"),
+			..RpcTypeStringifier.MethodSignatures(GetMethods,lang,"M"),
+			..RpcTypeStringifier.MethodSignatures(GetMethodSignaturesBase,lang,"S"),
+			..RpcTypeStringifier.MethodSignatures(GetRpcVersion,lang,"V"),
 		]);
 	}
 
@@ -44,5 +44,5 @@ public abstract partial class Invoker{
 		return new ValueTask<string>((version?.ToString(version.Revision==0?3:4)??"Unknown")+" C#");
 	}
 
-	protected abstract ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts);
+	protected abstract ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,ProgrammingLanguage lang);
 }

@@ -28,5 +28,5 @@ public class ProxyInvoker:Invoker{
 	}
 
 	protected override async ValueTask<string[]> GetMethods()=>await (await _object()).GetMethods();
-	protected override async ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts)=>await (await _object()).GetMethodSignatures(method,ts);
+	protected override async ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,ProgrammingLanguage lang)=>await (await _object()).GetFunction(method).GetSignatures(lang);
 }

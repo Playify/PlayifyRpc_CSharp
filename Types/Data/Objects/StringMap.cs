@@ -7,11 +7,11 @@ using PlayifyUtility.Utils.Extensions;
 namespace PlayifyRpc.Types.Data.Objects;
 
 /**
-This has to be used instead of using Dictionary&lt;string,?&gt; directly,
-as Dictionary would better assembles a JavaScript Map, instead of a JavaScript Object
-
-This is similar to an ExpandoObject, but with a predefined value type
-*/
+ * This has to be used instead of using Dictionary&lt;string,?&gt; directly,
+ * as Dictionary would better assembles a JavaScript Map, instead of a JavaScript Object
+ *
+ * This is similar to an ExpandoObject, but with a predefined value type
+ */
 [PublicAPI]
 public sealed class StringMap<T>:InsertionOrderDictionary<string,T>,IRpcDataObject{
 	public StringMap(){
@@ -45,7 +45,13 @@ public sealed class StringMap<T>:InsertionOrderDictionary<string,T>,IRpcDataObje
 }
 
 [PublicAPI]
+[RpcSetup]
 public sealed class StringMap:InsertionOrderDictionary<string,RpcDataPrimitive>,IRpcDataObject{
+	static StringMap(){
+		RpcData.Register(typeof(StringMap<>),null,null,(typescript,generics)=>typescript?$"Record<string,{generics[0]}>":$"{nameof(StringMap)}<{generics[0]}>");
+		RpcData.Register(typeof(StringMap),null,null,(typescript,_)=>typescript?$"Record<string,{RpcTypeStringifier.FromType(typeof(object),true)}>":$"{nameof(StringMap)}");
+	}
+
 	bool IRpcDataObject.TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataPrimitive original)
 		=>props.All(tuple=>this.TryAdd(tuple.key,tuple.value));
 

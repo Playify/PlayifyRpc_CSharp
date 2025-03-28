@@ -8,7 +8,7 @@ using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
 
-public static class RpcTypeStringifier{
+public static partial class RpcTypeStringifier{
 	public static readonly Dictionary<Type,TypeToStringExact> ToStringDictionary=new();
 	public static readonly List<TypeToStringExact> ToStringList=[];
 
@@ -23,12 +23,12 @@ public static class RpcTypeStringifier{
 
 	public static string FromType(Type type,bool typescript=false)=>StringifySubType(type,typescript,true,()=>null,null);
 
-	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(Delegate method,bool typescript,params string[] prevParameters)
-		=>MethodSignatures(method.Method,typescript,prevParameters);
+	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(Delegate method,ProgrammingLanguage lang,params string[] prevParameters)
+		=>MethodSignatures(method.Method,lang,prevParameters);
 
-	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(MethodInfo method,bool typescript,params string[] prevParameters){
+	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(MethodInfo method,ProgrammingLanguage lang,params string[] prevParameters){
 		// ReSharper disable once RedundantSuppressNullableWarningExpression
-		var returns=ParameterType(method.ReturnParameter!,false,typescript);
+		var returns=ParameterType(method.ReturnParameter!,false,lang!=ProgrammingLanguage.CSharp);
 		var list=new List<string>(prevParameters);
 
 		var filteredFcc=false;
@@ -42,9 +42,15 @@ public static class RpcTypeStringifier{
 				continue;//Skip this argument (once)
 			}
 
-			var @params=parameter.ParameterType.IsArray&&parameter.IsDefined(typeof(ParamArrayAttribute),true)?typescript?"...":"params ":"";
-			var parameterType=ParameterType(parameter,true,typescript);
-			list.Add(@params+CombineParameter(typescript,parameterType,parameter.Name));
+			var @params=parameter.ParameterType.IsArray&&parameter.IsDefined(typeof(ParamArrayAttribute),true);
+
+			if(lang==ProgrammingLanguage.JavaScript)
+				list.Add($"{(@params?"...":"")}{parameter.Name}");
+			else{
+				var typescript=lang!=ProgrammingLanguage.CSharp;
+				var parameterType=ParameterType(parameter,true,typescript);
+				list.Add((@params?typescript?"...":"params ":"")+CombineParameter(typescript,parameterType,parameter.Name));
+			}
 		}
 		yield return (list.ToArray(),returns);
 	}
@@ -101,7 +107,9 @@ public static class RpcTypeStringifier{
 		if(result is "null" or "void") return result;//Not nullable
 		//Don't check for literals here, they could also be nullable
 
-		if(isNullable) result+=typescript?"|null":"?";
+		if(isNullable)
+			if(!typescript) result+="?";
+			else if(result!="any") result+="|null";
 		return result;
 	}
 

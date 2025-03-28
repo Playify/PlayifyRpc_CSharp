@@ -51,10 +51,10 @@ public class TypeInvoker:Invoker{
 	protected sealed override ValueTask<string[]> GetMethods()
 		=>new(_methods.Select(g=>g.Key).ToArray());
 
-	protected sealed override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,bool ts)
+	protected sealed override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,ProgrammingLanguage lang)
 		=>_methods.TryGetValue(method,out var list)
 			  ?new ValueTask<(string[] parameters,string returns)[]>(
-				  list.SelectMany(m=>RpcTypeStringifier.MethodSignatures(m,ts)).ToArray())
+				  list.SelectMany(m=>RpcTypeStringifier.MethodSignatures(m,lang)).ToArray())
 			  :new ValueTask<(string[] parameters,string returns)[]>(
 				  Task.FromException<(string[] parameters,string returns)[]>(
 					  new RpcMethodNotFoundException(type,method)));

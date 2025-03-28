@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace PlayifyRpc.SourceGenerator;
 
 [Generator]
-public class RpcConsumerSourceGenerator:IIncrementalGenerator{//TODO check if working when using nuget
+public class RpcConsumerSourceGenerator:IIncrementalGenerator{
 	private const string RpcNamedAttribute="PlayifyRpc.Types.RpcNamedAttribute";
 	private const string RpcConsumerAttribute="PlayifyRpc.Types.RpcConsumerAttribute";
 	// ReSharper disable once InconsistentNaming

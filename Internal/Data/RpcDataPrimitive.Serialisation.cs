@@ -8,7 +8,7 @@ namespace PlayifyRpc.Internal.Data;
 public readonly partial struct RpcDataPrimitive{
 
 	internal static readonly Dictionary<char,RpcData.ReadFunc> ReadByChar=new(){
-		// 0-32 handled dynamically //TODO in next update, also use this while sending
+		// 0-31 handled dynamically
 		{'n',(_,_,_)=>new RpcDataPrimitive()},
 		{'t',(_,_,_)=>new RpcDataPrimitive(true)},
 		{'f',(_,_,_)=>new RpcDataPrimitive(false)},
@@ -58,7 +58,8 @@ public readonly partial struct RpcDataPrimitive{
 
 			if(IsString(out var s)){
 				var bytes=Encoding.UTF8.GetBytes(s);
-				output.WriteLength(-(bytes.Length*4+1));
+				if(bytes.Length<32) output.WriteLength(bytes.Length);
+				else output.WriteLength(-(bytes.Length*4+1));
 				output.Write(bytes);
 			} else if(IsArray(out var childs,out var length)){
 				output.WriteLength(-(length*4+3));
