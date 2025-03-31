@@ -109,6 +109,25 @@ public static partial class RpcTypeStringifier{
 	}
 	#endregion
 
+	/*TODO update js code to inline @type better
+		/** @type {{
+			a:()=>any,
+			c:(a:any,b:any)=>any,
+			par:(x:any,...rest:any[])=>any,
+		}}* /
+		xx=Rpc.createObject("xx",new class xx{
+			a=null;
+			c=null;
+			par=null;
+		});
+		xx2=Rpc.createObject("xx",new class xx{
+			/** @type {(a:number)=>number}* /
+			a=(a)=>{};
+			c=(a,b)=>{};
+			par=(x,...rest)=>{};
+		});
+	 */
+
 
 	#region Helpers
 	private static readonly HashSet<string> CSharpKeywords=[

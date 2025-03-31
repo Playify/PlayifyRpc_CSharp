@@ -23,10 +23,10 @@ public static partial class RpcTypeStringifier{
 
 	public static string FromType(Type type,bool typescript=false)=>StringifySubType(type,typescript,true,()=>null,null);
 
-	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(Delegate method,ProgrammingLanguage lang,params string[] prevParameters)
+	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(Delegate method,ProgrammingLanguage lang=ProgrammingLanguage.CSharp,params string[] prevParameters)
 		=>MethodSignatures(method.Method,lang,prevParameters);
 
-	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(MethodInfo method,ProgrammingLanguage lang,params string[] prevParameters){
+	public static IEnumerable<(string[] parameters,string returns)> MethodSignatures(MethodInfo method,ProgrammingLanguage lang=ProgrammingLanguage.CSharp,params string[] prevParameters){
 		// ReSharper disable once RedundantSuppressNullableWarningExpression
 		var returns=ParameterType(method.ReturnParameter!,false,lang!=ProgrammingLanguage.CSharp);
 		var list=new List<string>(prevParameters);

@@ -38,33 +38,33 @@ public static class MethodSignatures{
 	[Test]
 	public static void Signatures(){
 		Assert.Multiple(()=>{
-			AssertSignature(MethodSignatures(Power,false),"((bool,bool?)? b)=>bool");
-			AssertSignature(MethodSignatures(Power2,false),"(bool? b)=>bool");
+			AssertSignature(MethodSignatures(Power),"((bool,bool?)? b)=>bool");
+			AssertSignature(MethodSignatures(Power2),"(bool? b)=>bool");
 
-			AssertSignature(MethodSignatures(T1A,false),"(Unknown<Struct<Unknown<Struct<bool>>>> b)=>void");
-			AssertSignature(MethodSignatures(T2A,false),"(Unknown<Struct<Unknown<Class<bool>>>> b)=>void");
-			AssertSignature(MethodSignatures(T3A,false),"(Unknown<Class<Unknown<Struct<bool>>>> b)=>void");
-			AssertSignature(MethodSignatures(T4A,false),"(Unknown<Class<Unknown<Class<bool>>>> b)=>void");
+			AssertSignature(MethodSignatures(T1A),"(Unknown<Struct<Unknown<Struct<bool>>>> b)=>void");
+			AssertSignature(MethodSignatures(T2A),"(Unknown<Struct<Unknown<Class<bool>>>> b)=>void");
+			AssertSignature(MethodSignatures(T3A),"(Unknown<Class<Unknown<Struct<bool>>>> b)=>void");
+			AssertSignature(MethodSignatures(T4A),"(Unknown<Class<Unknown<Class<bool>>>> b)=>void");
 
-			AssertSignature(MethodSignatures(T1B,false),"(Unknown<Struct<Unknown<Struct<bool>>>>? b)=>void");
-			AssertSignature(MethodSignatures(T2B,false),"(Unknown<Struct<Unknown<Class<bool>>>>? b)=>void");
-			AssertSignature(MethodSignatures(T3B,false),"(Unknown<Class<Unknown<Struct<bool>>>>? b)=>void");
-			AssertSignature(MethodSignatures(T4B,false),"(Unknown<Class<Unknown<Class<bool>>>>? b)=>void");
+			AssertSignature(MethodSignatures(T1B),"(Unknown<Struct<Unknown<Struct<bool>>>>? b)=>void");
+			AssertSignature(MethodSignatures(T2B),"(Unknown<Struct<Unknown<Class<bool>>>>? b)=>void");
+			AssertSignature(MethodSignatures(T3B),"(Unknown<Class<Unknown<Struct<bool>>>>? b)=>void");
+			AssertSignature(MethodSignatures(T4B),"(Unknown<Class<Unknown<Class<bool>>>>? b)=>void");
 
-			AssertSignature(MethodSignatures(T1C,false),"(Unknown<Struct<Unknown<Struct<bool>>?>> b)=>void");
-			AssertSignature(MethodSignatures(T2C,false),"(Unknown<Struct<Unknown<Class<bool>>?>> b)=>void");
-			AssertSignature(MethodSignatures(T3C,false),"(Unknown<Class<Unknown<Struct<bool>>?>> b)=>void");
-			AssertSignature(MethodSignatures(T4C,false),"(Unknown<Class<Unknown<Class<bool>>?>> b)=>void");
+			AssertSignature(MethodSignatures(T1C),"(Unknown<Struct<Unknown<Struct<bool>>?>> b)=>void");
+			AssertSignature(MethodSignatures(T2C),"(Unknown<Struct<Unknown<Class<bool>>?>> b)=>void");
+			AssertSignature(MethodSignatures(T3C),"(Unknown<Class<Unknown<Struct<bool>>?>> b)=>void");
+			AssertSignature(MethodSignatures(T4C),"(Unknown<Class<Unknown<Class<bool>>?>> b)=>void");
 
-			AssertSignature(MethodSignatures(T1D,false),"(Unknown<Struct<Unknown<Struct<bool>>?>>? b)=>void");
-			AssertSignature(MethodSignatures(T2D,false),"(Unknown<Struct<Unknown<Class<bool>>?>>? b)=>void");
-			AssertSignature(MethodSignatures(T3D,false),"(Unknown<Class<Unknown<Struct<bool>>?>>? b)=>void");
-			AssertSignature(MethodSignatures(T4D,false),"(Unknown<Class<Unknown<Class<bool>>?>>? b)=>void");
-			AssertSignature(MethodSignatures(RealTypes,false),"(StringEnum<AnyEnum> se,bool b,dynamic any,Regex regex)=>int");
-			AssertSignature(MethodSignatures(Params,false),"(int start,params int[] rest)=>void");
-			AssertSignature(MethodSignatures(ParamsNull,false),"(params dynamic?[] rest)=>void");
-			AssertSignature(MethodSignatures(Optional,false),"(int start)=>void\n(int start,int optional)=>void");
-			AssertSignature(MethodSignatures(Fails,false),"(Unknown<Task> t)=>void");
+			AssertSignature(MethodSignatures(T1D),"(Unknown<Struct<Unknown<Struct<bool>>?>>? b)=>void");
+			AssertSignature(MethodSignatures(T2D),"(Unknown<Struct<Unknown<Class<bool>>?>>? b)=>void");
+			AssertSignature(MethodSignatures(T3D),"(Unknown<Class<Unknown<Struct<bool>>?>>? b)=>void");
+			AssertSignature(MethodSignatures(T4D),"(Unknown<Class<Unknown<Class<bool>>?>>? b)=>void");
+			AssertSignature(MethodSignatures(RealTypes),"(StringEnum<AnyEnum> se,bool b,dynamic any,Regex regex)=>int");
+			AssertSignature(MethodSignatures(Params),"(int start,params int[] rest)=>void");
+			AssertSignature(MethodSignatures(ParamsNull),"(params dynamic?[] rest)=>void");
+			AssertSignature(MethodSignatures(Optional),"(int start)=>void\n(int start,int optional)=>void");
+			AssertSignature(MethodSignatures(Fails),"(Unknown<Task> t)=>void");
 		});
 		return;
 
