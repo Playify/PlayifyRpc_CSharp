@@ -23,7 +23,7 @@ public static partial class RpcTypeStringifier{
 		return lang switch{
 			ProgrammingLanguage.CSharp=>signatures.Select(tuple=>GenerateCSharpMethod(name,tuple.returns,tuple.parameters)).Join('\n'),
 			ProgrammingLanguage.TypeScript=>GenerateTypeScriptMethod(name,signatures.ToArray()),
-			ProgrammingLanguage.JavaScript=>GenerateTypeScriptMethod(name,signatures.ToArray()),
+			ProgrammingLanguage.JavaScript=>GenerateJavaScriptMethod(name,signatures.ToArray()),
 			_=>throw new ArgumentOutOfRangeException(nameof(lang),lang,null),
 		};
 	}
@@ -48,15 +48,29 @@ public static partial class RpcTypeStringifier{
 		return str.ToString();
 	}
 
+	private static string GenerateJavaScriptMethod(string name,(string[] parameters,string returns)[] signatures){
+		var str=new StringBuilder();
+		str.Append("/** @type {").Append(GenerateTypeScriptType(signatures)).Append("}*/\n");
+		str.Append(EscapeJavaScript(name)==name?name:Quote(name));
+		if(signatures.Length!=1) str.Append("=(...params)=>{};");
+		else
+			str.Append("=(").Append(signatures[0].parameters.Select(p=>{
+				var i=p.IndexOf(':');
+				return i==-1?p:p.Substring(0,i);
+			}).Join(',')).Append(")=>{};");
+
+		return str.ToString();
+	}
+
+	private static string GenerateTypeScriptMethod(string name,(string[] parameters,string returns)[] signatures)
+		=>$"{(EscapeJavaScript(name)==name?name:Quote(name))}:{GenerateTypeScriptType(signatures)}=null!;";
+
 	private static string GenerateTypeScriptType((string[] parameters,string returns)[] signatures)
 		=>signatures.Length switch{
 			0=>"unknown",
 			1=>$"({signatures[0].parameters.Join(',')})=>{signatures[0].returns}",
 			_=>$"{{\n{signatures.Select(sig=>$"\t({sig.parameters.Join(',')}):{sig.returns},\n").ConcatString()}}}",
 		};
-
-	private static string GenerateTypeScriptMethod(string name,(string[] parameters,string returns)[] signatures)
-		=>$"{(EscapeJavaScript(name)==name?name:Quote(name))}:{GenerateTypeScriptType(signatures)}=null!;";
 	#endregion
 
 
@@ -91,16 +105,8 @@ public static partial class RpcTypeStringifier{
 			case ProgrammingLanguage.JavaScript:{
 				var str=new StringBuilder();
 				var escaped=EscapeJavaScript(name);
-
-				str.Append("/** @type {{");
-				if(methodsCombined!="") str.Append("\n\t").Append(methodsCombined.Replace("=null!;",",")).Append('\n');
-				str.Append("}}*/\n");
 				str.Append(escaped).Append("=Rpc.createObject(").Append(Quote(name)).Append(",new class ").Append(escaped).Append('{');
-				if(methodsCombined!=""){
-					foreach(var method in methods)
-						str.Append("\n\t").Append(method.Substring(0,method.IndexOf(':'))).Append("=null;");
-					str.Append('\n');
-				}
+				if(methodsCombined!="") str.Append("\n\t").Append(methodsCombined).Append('\n');
 				str.Append("});");
 				return str.ToString();
 			}
@@ -108,25 +114,6 @@ public static partial class RpcTypeStringifier{
 		}
 	}
 	#endregion
-
-	/*TODO update js code to inline @type better
-		/** @type {{
-			a:()=>any,
-			c:(a:any,b:any)=>any,
-			par:(x:any,...rest:any[])=>any,
-		}}* /
-		xx=Rpc.createObject("xx",new class xx{
-			a=null;
-			c=null;
-			par=null;
-		});
-		xx2=Rpc.createObject("xx",new class xx{
-			/** @type {(a:number)=>number}* /
-			a=(a)=>{};
-			c=(a,b)=>{};
-			par=(x,...rest)=>{};
-		});
-	 */
 
 
 	#region Helpers
