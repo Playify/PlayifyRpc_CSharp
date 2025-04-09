@@ -20,6 +20,7 @@ public partial class RpcException{
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalObject)}(",
 		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalString)}(",
 		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleRequest)}(",
+		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleWebCall)}(",
 	];
 
 	private static string GetOwnStackTrace(Exception e){

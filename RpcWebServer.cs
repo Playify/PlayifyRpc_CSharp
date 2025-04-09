@@ -84,7 +84,7 @@ public partial class RpcWebServer:WebBase{
 		Http,
 	}
 
-	private static async Task HandleWebCall(WebSession session,string s){
+	internal static async Task HandleWebCall(WebSession session,string s){
 		string? postArgs=null;
 		Func<Task<string>>? postArgsProvider=session.Type is RequestType.Post or RequestType.Put
 			                                     ?async ()=>{
