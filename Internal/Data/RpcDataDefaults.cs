@@ -158,7 +158,8 @@ internal static class RpcDataDefaults{
 		RegisterCustom<DateTime>('D',
 			(input,create)=>create(DateTimeOffset.FromUnixTimeMilliseconds(input.ReadLong()).LocalDateTime),
 			(output,value,_)=>output.WriteLong(new DateTimeOffset(value).ToUnixTimeMilliseconds()),
-			(typescript,_)=>typescript?"Date":"DateTime");
+			(typescript,_)=>typescript?"Date":"DateTime",
+			date=>date.ToString("s"));
 		RegisterCustom<Exception>('E',
 			(input,create)=>create(RpcException.Read(input)),
 			(output,value,_)=>RpcException.WrapAndFreeze(value).Write(output),
