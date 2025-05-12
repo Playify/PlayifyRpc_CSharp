@@ -16,9 +16,7 @@ public partial class RpcException{
 	private static readonly List<string> HiddenMethods=[
 		$"{typeof(Invoker).FullName}.",//everything from Invoker type
 		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.ToTask)}(",
-		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.Eval)}(",
-		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalObject)}(",
-		$"{typeof(Evaluate).FullName}.{nameof(Evaluate.EvalString)}(",
+		$"{typeof(Evaluate).FullName}.",//everything from Evaluate type
 		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleRequest)}(",
 	];
 

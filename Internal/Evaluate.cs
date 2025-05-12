@@ -1,7 +1,6 @@
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Invokers;
-using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
@@ -17,6 +16,8 @@ namespace PlayifyRpc.Internal;
  * arguments should be Json
  */
 internal static class Evaluate{
+	private static async Task<RpcDataPrimitive> ToPrimitiveAsync<T>(Task<T> task)=>RpcDataPrimitive.From(await task);
+
 	internal static async Task<Task<RpcDataPrimitive>> Eval(string expression,Func<Task<string>>? postArgsProvider=null,bool isFromRequest=false,IEnumerable<RpcDataPrimitive>? appendArgs=null){
 		appendArgs??=[];
 		//Try to use postArgs if expression is not available
@@ -49,24 +50,21 @@ internal static class Evaluate{
 			if(isFromRequest&&expression.Contains('/')) throw new RpcEvalException("Type or name should not contain a '/', as it would interfere with URL parameters like /void or /pretty");
 
 			if(expression.Length==0)//postArgs already handled
-				return Rpc.GetAllTypes().Then(x=>RpcDataPrimitive.From(x));
+				return ToPrimitiveAsync(Rpc.GetAllTypes());
 			if(expression[expression.Length-1]=='.')
 				if(postArgsProvider!=null) throw new RpcEvalException("Can't use POST data for this");
 				else
-					return Rpc.CreateObject(expression.Substring(0,expression.Length-1)).GetMethods()
-					          .Then(x=>RpcDataPrimitive.From(x));
+					return ToPrimitiveAsync(Rpc.CreateObject(expression.Substring(0,expression.Length-1)).GetMethods());
 			if(expression[expression.Length-1]=='?')
 				if(postArgsProvider!=null) throw new RpcEvalException("Can't use POST data for this");
 				else
-					return Rpc.CreateObject(expression.Substring(0,expression.Length-1)).Exists()
-					          .Then(x=>RpcDataPrimitive.From(x));
+					return ToPrimitiveAsync(Rpc.CreateObject(expression.Substring(0,expression.Length-1)).Exists());
 
 			var dotPos=expression.LastIndexOf('.');
 			if(dotPos==-1) throw new RpcEvalException("No opening bracket");
 
 			if(postArgsProvider==null)
-				return Rpc.CreateFunction(expression.Substring(0,dotPos),expression.Substring(dotPos+1)).GetSignatures()
-				          .Then(x=>RpcDataPrimitive.From(x));
+				return ToPrimitiveAsync(Rpc.CreateFunction(expression.Substring(0,dotPos),expression.Substring(dotPos+1)).GetSignatures());
 
 			var postArgs=(await postArgsProvider()).Trim();
 			if(postArgs.Length==0||postArgs[0]!='['||postArgs[postArgs.Length-1]!=']')
