@@ -18,6 +18,7 @@ public partial class RpcException{
 		$"{typeof(PendingCall).FullName}.{nameof(PendingCall.ToTask)}(",
 		$"{typeof(Evaluate).FullName}.",//everything from Evaluate type
 		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleRequest)}(",
+		$"{typeof(RpcWebServer).FullName}.{nameof(RpcWebServer.HandleWebCall)}(",
 	];
 
 	private static string GetOwnStackTrace(Exception e){
