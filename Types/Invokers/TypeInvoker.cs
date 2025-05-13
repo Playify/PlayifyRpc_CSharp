@@ -37,8 +37,9 @@ public class TypeInvoker:Invoker{
 			                   BindingFlags.Instance
 			                  :0);
 		_methods=type.GetMethods(bindingFlags)
-		             .Where(m=>m.DeclaringType!=typeof(object))
-		             .Where(m=>!m.IsDefined(typeof(RpcHiddenAttribute),true))
+		             .Where(m=>m.DeclaringType!=typeof(object))//Don't include ToString and GetType
+		             .Where(m=>!m.IsSpecialName)//Don't include getters and setters for properties
+		             .Where(m=>!m.IsDefined(typeof(RpcHiddenAttribute),true))//Don't include hidden methods
 		             .ToLookup(m=>m.GetCustomAttribute<RpcNamedAttribute>()?.Name??m.Name,StringComparer.OrdinalIgnoreCase)
 		             .ToDictionary(g=>g.Key,g=>g.ToList(),StringComparer.OrdinalIgnoreCase);
 	}
