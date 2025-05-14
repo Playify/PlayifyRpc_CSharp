@@ -30,6 +30,10 @@ public partial class SourceGeneratorTest2:SourceGeneratorTest{
 
 	public partial int Add2(int a,int b);
 
+
+	public partial int Add3<T>(T a,int b);
+	public partial T Add4<T>(int a,int b) where T : class;
+
 	public SourceGeneratorTest2(){
 		Add2(1,1);
 	}

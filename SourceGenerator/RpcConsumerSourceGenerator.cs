@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -108,15 +109,24 @@ public class RpcConsumerSourceGenerator:IIncrementalGenerator{
 
 		//Method signature
 		builder.Append(method.ReturnType);
-		builder.Append(" ");
+		builder.Append(' ');
 		builder.Append(method.Name);
-		builder.Append("(");
+		if(method.IsGenericMethod){
+			builder.Append('<');
+			builder.Append(string.Join(",",method.TypeParameters.Select(t=>t.Name)));
+			builder.Append('>');
+		}
+
+		builder.Append('(');
 		builder.Append(string.Join(",",method.Parameters.Select(p=>p.ToString())));
-		builder.Append(")\r\n\t\t=>PlayifyRpc.Rpc.CallFunction");
+		builder.Append(')');
+		builder.Append(GenerateTypeConstraints(method));
+		builder.Append("\r\n\t\t=>PlayifyRpc.Rpc.CallFunction");
+
 
 		//Calling function
 		if(returnType!=null) builder.Append("<").Append(returnType).Append(">");
-		builder.Append("(");
+		builder.Append('(');
 		builder.Append(method.IsStatic?staticType:instanceType).Append(",");
 		builder.Append(method.GetAttributes()
 		                     .FirstOrDefault(a=>a.AttributeClass?.ToDisplayString()==RpcNamedAttribute)
@@ -166,4 +176,38 @@ public class RpcConsumerSourceGenerator:IIncrementalGenerator{
 		unwrapped=true;
 		return namedReturnType.IsGenericType?namedReturnType.TypeArguments[0]:null;
 	}
+
+	private static string GenerateTypeConstraints(IMethodSymbol method){
+		if(!method.IsGenericMethod)
+			return string.Empty;
+
+		var constraints=new List<string>();
+
+		foreach(var tp in method.TypeParameters){
+			var parts=new List<string>();
+
+			// Value type / Reference type / Unmanaged
+			if(tp.HasValueTypeConstraint)
+				parts.Add("struct");
+			else if(tp.HasReferenceTypeConstraint)
+				parts.Add("class");
+
+			// Specific base types or interfaces
+			foreach(var constraintType in tp.ConstraintTypes){
+				parts.Add(constraintType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
+			}
+
+			// Constructor constraint
+			if(tp.HasConstructorConstraint)
+				parts.Add("new()");
+
+			if(parts.Count>0)
+				constraints.Add($"where {tp.Name} : {string.Join(", ",parts)}");
+		}
+
+		return constraints.Count>0
+			       ?"\r\n\t"+string.Join("\r\n\t",constraints)
+			       :string.Empty;
+	}
+
 }
