@@ -13,8 +13,8 @@ public static partial class RpcData{
 
 	public static void Register<T>(GenericToPrimitive<T>? from,PrimitiveToObject? to,RpcTypeStringifier.TypeToString toString)
 		=>Register(typeof(T),
-			from==null?null:(o,p)=>from((T)o,p),
-			to==null?null:(p,_,throwOnError)=>to(p,throwOnError),
+			from==null?null:(o,already,transformer)=>from((T)o,already,transformer),
+			to==null?null:(p,_,throwOnError,transformer)=>to(p,throwOnError,transformer),
 			toString);
 
 	public static void Register(Type type,ObjectToPrimitive? from,PrimitiveToType? to,RpcTypeStringifier.TypeToString toString){
@@ -32,11 +32,11 @@ public static partial class RpcData{
 		RpcTypeStringifier.TypeToString toStringType,Func<T,string>? toStringInstance,Action<T>? dispose) where T : notnull{
 
 		Register<T>(
-			(p,a)=>{
+			(p,a,_)=>{
 				if(dispose!=null) a.OnDispose(()=>dispose(p));
 				return a[p]=Create(p);
 			},
-			(p,_)=>{
+			(p,_,_)=>{
 				if(p.IsNull()&&CanBeNull(typeof(T))) return null;
 				if(p.IsAlready(out T already)) return already;
 				if(p.IsCustom(out T custom)) return p.AddAlready(custom);

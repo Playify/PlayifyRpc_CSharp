@@ -1,6 +1,8 @@
 using System.Threading.Tasks.Dataflow;
 using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
+using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal;
 
@@ -8,7 +10,19 @@ internal class MessageQueue(Task task,string? type,string? method,RpcDataPrimiti
 	private readonly HashSet<Action<RpcDataPrimitive[]>> _receivers=[];
 	private List<RpcDataPrimitive[]>? _initialPending=[];
 
-	public void AddMessageListener(Delegate a)=>AddMessageListenerRaw(msg=>RpcInvoker.InvokeThrow(a,msg));
+	public void AddMessageListener(Delegate a){
+		var candidate=RpcInvoker.MethodCandidate.Create(a.Method)??throw new MissingMethodException("ref and out parameters are not allowed");
+		candidate.ReturnTransformer??=RpcDataTransformerAttribute.RpcDataNullTransformer.Instance;
+
+		AddMessageListenerRaw(msg=>
+			RpcInvoker.InvokeThrow(a.Target,[candidate],msg,
+				          s=>new RpcException(null,null,s,""),null)
+			          .Catch(e=>{
+				          Rpc.Logger.Warning(new RpcException(null,null,"Error while handling pending message","",e)
+				                             .Append(type,method,args)
+				                             .ToString());
+			          }));
+	}
 
 	public void AddMessageListenerRaw(Action<RpcDataPrimitive[]> a){
 		lock(_receivers)

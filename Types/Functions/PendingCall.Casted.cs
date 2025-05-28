@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types.Data;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Functions;
@@ -9,7 +10,7 @@ namespace PlayifyRpc.Types.Functions;
 public class PendingCallCasted:PendingCall{
 	private readonly Type _type;
 
-	internal PendingCallCasted(PendingCallRawData rawData,Type type):base(rawData){
+	internal PendingCallCasted(PendingCallRawData rawData,Type type,RpcDataTransformerAttribute? transformer):base(rawData,transformer){
 		_type=type;
 	}
 
@@ -24,7 +25,7 @@ public class PendingCallCasted:PendingCall{
 
 	public new Task<object?> ToTask()=>ToTask(_type);
 	public static implicit operator Task<object?>(PendingCallCasted call)=>call.ToTask();
-	public static implicit operator ValueTask<object?>(PendingCallCasted call)=>new(call.TaskRaw);
+	public static implicit operator ValueTask<object?>(PendingCallCasted call)=>new(call.ToTask());
 	public new TaskAwaiter<object?> GetAwaiter()=>ToTask().GetAwaiter();
 
 	public Task Then(Action<object?> a)=>ToTask().Then(a);

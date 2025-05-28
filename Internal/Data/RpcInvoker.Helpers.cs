@@ -89,7 +89,7 @@ public static partial class RpcInvoker{
 			if(!less1&&parameters1.Length!=parameters2.Length)
 				return parameters1.Length<parameters2.Length;
 		} else return less2;
-		
+
 		//Check if methods have exact same signature
 		if(parameters1.Length!=parameters2.Length) return null;
 		for(var i=0;i<parameters1.Length;i++)
@@ -117,11 +117,11 @@ public static partial class RpcInvoker{
 		//Priorize anything that is more specific than just the primitive
 		if(c1==typeof(RpcDataPrimitive)) return true;
 		if(c2==typeof(RpcDataPrimitive)) return false;
-		
-		
+
+
 		bool c1FromC2;
 		bool c2FromC1;
-		
+
 
 		if(c1.IsPrimitive&&c2.IsPrimitive){
 			c1FromC2=CanChangePrimitive(c2,c1);
@@ -135,6 +135,72 @@ public static partial class RpcInvoker{
 		return c1FromC2;
 	}
 
+
+	/*
+	Returns true if method2 is more specific
+	Returns false if method1 is more specific
+	Returns null if ambiguous
+	 */
+	private static bool? FindMostSpecificMethod(
+		MethodCandidate method1,
+		MethodCandidate method2
+	){
+		var paramArray1=method1.ParamArrayType;
+		var paramArray2=method2.ParamArrayType;
+
+		// A method using params is always less specific than one not using params
+		if(paramArray1!=null^paramArray2!=null) return paramArray1!=null;
+
+
+		var parameters1=method1.FilteredParameters;
+		var parameters2=method2.FilteredParameters;
+
+		var less1=false;
+		var less2=false;
+		var argsLength=Math.Max(parameters1.Length,parameters2.Length);
+		for(var i=0;i<argsLength;i++){
+			var c1=method1.ParameterType(i);
+			var c2=method2.ParameterType(i);
+
+			if(c1==c2) continue;
+
+			switch(FindMostSpecificType(c1,c2)){
+				case null:
+					less1=less2=true;
+					break;
+				case false:
+					less1=true;
+					break;
+				case true:
+					less2=true;
+					break;
+			}
+			if(less1&&less2) break;
+		}
+
+		if(!less1&&!less2){//All arguments are the same
+		} else if(!less1||!less2) return less2;//Can be decided based on parameter types
+		// if we cannot tell which is a better match based on parameter types (p1Less == p2Less),
+		// let's see which one has the most matches without using the params array (the longer one wins).
+		else if(parameters1.Length!=parameters2.Length)
+			return parameters1.Length<parameters2.Length;
+
+
+		//Check if methods have exact same signature
+		if(parameters1.Length!=parameters2.Length) return null;
+		for(var i=0;i<parameters1.Length;i++)
+			if(parameters1[i].ParameterType!=parameters2[i].ParameterType)
+				return null;
+
+		var depth1=method1.MethodInfo.DeclaringType;
+		var depth2=method2.MethodInfo.DeclaringType;
+		while(depth1!=null&&depth2!=null){
+			depth1=depth1.BaseType;
+			depth2=depth2.BaseType;
+		}
+		if(depth1==depth2) return null;//Same depth
+		return depth2!=null;
+	}
 
 	#region Primitives
 	private static bool CanChangePrimitive(Type source,Type target){
@@ -188,4 +254,5 @@ public static partial class RpcInvoker{
 		String=1<<TypeCode.String,
 	}
 	#endregion
+
 }

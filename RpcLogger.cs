@@ -16,8 +16,8 @@ namespace PlayifyRpc;
 public static class RpcLogger{
 	static RpcLogger(){
 		RpcData.Register<Logger.LogLevel>(
-			(value,_)=>new RpcDataPrimitive(Array.IndexOf(LogLevels,value)),
-			(primitive,_)=>primitive.IsNumber(0,LogLevels.Length-1,out var i)?LogLevels[i]:RpcData.ContinueWithNext,
+			(value,_,_)=>new RpcDataPrimitive(Array.IndexOf(LogLevels,value)),
+			(primitive,_,_)=>primitive.IsNumber(0,LogLevels.Length-1,out var i)?LogLevels[i]:RpcData.ContinueWithNext,
 			(_,_)=>"Logger.LogLevel"
 		);
 	}

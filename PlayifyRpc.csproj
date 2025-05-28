@@ -115,6 +115,9 @@
 		<Compile Update="Internal\Data\ProgrammingLanguage.cs">
 			<DependentUpon>RpcTypeStringifier.cs</DependentUpon>
 		</Compile>
+		<Compile Update="Internal\Data\RpcInvoker.MethodCandidate.cs">
+			<DependentUpon>RpcInvoker.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

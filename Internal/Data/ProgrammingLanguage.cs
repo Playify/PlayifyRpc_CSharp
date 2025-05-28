@@ -12,8 +12,8 @@ public enum ProgrammingLanguage{
 public static class ProgrammingLanguageExtensions{
 	static ProgrammingLanguageExtensions(){
 		RpcData.Register<ProgrammingLanguage>(
-			(pl,_)=>new RpcDataPrimitive((int)pl),
-			(primitive,error)=>{
+			(pl,_,_)=>new RpcDataPrimitive((int)pl),
+			(primitive,error,transformer)=>{
 				if(primitive.IsBool(out var b)) return b?ProgrammingLanguage.TypeScript:ProgrammingLanguage.CSharp;
 				if(primitive.IsString(out var s))
 					return s.ToLowerInvariant() switch{
@@ -22,7 +22,7 @@ public static class ProgrammingLanguageExtensions{
 						"js" or "javascript" or "jsdoc"=>ProgrammingLanguage.JavaScript,
 						_=>throw new ArgumentException(primitive+" is not a valid programming language."),
 					};
-				return primitive.TryTo(typeof(ProgrammingLanguage).GetEnumUnderlyingType(),out var result,error)?result:RpcData.ContinueWithNext;
+				return primitive.TryTo(typeof(ProgrammingLanguage).GetEnumUnderlyingType(),out var result,error,transformer)?result:RpcData.ContinueWithNext;
 			},(_,_)=>nameof(ProgrammingLanguage));
 	}
 }

@@ -1,13 +1,14 @@
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types.Data;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Functions;
 
 [PublicAPI]
 public class PendingCall<T>:PendingCall{
-	internal PendingCall(PendingCallRawData rawData):base(rawData){}
+	internal PendingCall(PendingCallRawData rawData,RpcDataTransformerAttribute? transformer):base(rawData,transformer){}
 
 	public new PendingCall<T> WithCancellation(CancellationToken token)=>(PendingCall<T>)base.WithCancellation(token);
 	public new PendingCall<T> SendMessage(params object?[] args)=>(PendingCall<T>)base.SendMessage(args);

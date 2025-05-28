@@ -1,3 +1,4 @@
+using PlayifyRpc.Types.Data;
 using PlayifyUtility.Streams.Data;
 
 namespace PlayifyRpc.Internal.Data;
@@ -5,17 +6,17 @@ namespace PlayifyRpc.Internal.Data;
 public static partial class RpcData{
 
 	#region From
-	public delegate RpcDataPrimitive ObjectToPrimitive(object value,RpcDataPrimitive.Already already);
+	public delegate RpcDataPrimitive ObjectToPrimitive(object value,RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer);
 
-	public delegate RpcDataPrimitive GenericToPrimitive<in T>(T value,RpcDataPrimitive.Already already);
+	public delegate RpcDataPrimitive GenericToPrimitive<in T>(T value,RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer);
 
-	public delegate RpcDataPrimitive? ObjectToPrimitiveOrNull(object value,RpcDataPrimitive.Already already);
+	public delegate RpcDataPrimitive? ObjectToPrimitiveOrNull(object value,RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer);
 	#endregion
 
 	#region To
-	public delegate object? PrimitiveToType(RpcDataPrimitive primitive,Type type,bool throwOnError);
+	public delegate object? PrimitiveToType(RpcDataPrimitive primitive,Type type,bool throwOnError,RpcDataTransformerAttribute? transformer);
 
-	public delegate object? PrimitiveToObject(RpcDataPrimitive primitive,bool throwOnError);
+	public delegate object? PrimitiveToObject(RpcDataPrimitive primitive,bool throwOnError,RpcDataTransformerAttribute? transformer);
 	#endregion
 
 	#region ReadWrite

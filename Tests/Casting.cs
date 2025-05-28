@@ -32,11 +32,11 @@ public class Casting{
 		public readonly string? a=null;
 		public readonly string? A=null;
 
-		public bool TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataPrimitive original)
-			=>RpcDataObject.Reflection.SetProps(ref this,props,throwOnError,original);
+		public bool TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataTransformerAttribute? transformer,RpcDataPrimitive original)
+			=>RpcDataObject.Reflection.SetProps(ref this,props,throwOnError,transformer,original);
 
-		public IEnumerable<(string key,RpcDataPrimitive value)> GetProps(RpcDataPrimitive.Already already)
-			=>RpcDataObject.Reflection.GetProps(this,already);
+		public IEnumerable<(string key,RpcDataPrimitive value)> GetProps(RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer)
+			=>RpcDataObject.Reflection.GetProps(this,already,transformer);
 	}
 
 	[SetUp]

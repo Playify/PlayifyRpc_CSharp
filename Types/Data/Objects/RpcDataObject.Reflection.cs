@@ -11,8 +11,8 @@ public partial class RpcDataObject{
 	static RpcDataObject(){
 		RpcData.Register(
 			typeof(IRpcDataObject),
-			(value,already)=>already[value]=new RpcDataPrimitive(()=>((IRpcDataObject)value).GetProps(already)),
-			(p,type,throwOnError)=>{
+			(value,already,transformer)=>already[value]=new RpcDataPrimitive(()=>((IRpcDataObject)value).GetProps(already,transformer)),
+			(p,type,throwOnError,transformer)=>{
 				if(!typeof(IRpcDataObject).IsAssignableFrom(type)) return RpcData.ContinueWithNext;
 				if(type.IsAbstract) return RpcData.ContinueWithNext;
 
@@ -21,7 +21,7 @@ public partial class RpcDataObject{
 				if(!p.IsObject(out var props)) return RpcData.ContinueWithNext;
 				var obj=(IRpcDataObject)p.AddAlready(Activator.CreateInstance(type)!);
 				try{
-					return obj.TrySetProps(props,throwOnError,p)?obj:p.RemoveAlready(obj);
+					return obj.TrySetProps(props,throwOnError,transformer,p)?obj:p.RemoveAlready(obj);
 				} catch(Exception) when(FunctionUtils.RunThenReturn(()=>p.RemoveAlready(obj),false)){
 					throw;
 				}
@@ -32,9 +32,12 @@ public partial class RpcDataObject{
 
 	public class Reflection{
 		private static readonly Dictionary<Type,Reflection> Cached=new();
-		private readonly List<(string key,Func<object,object?> getValue)> _getters=[];
-		private readonly Dictionary<string,(Type type,Action<object,object?> setValue)> _setters=new();
-		private readonly Dictionary<string,(Type type,Action<object,object?> setValue)> _settersIgnoreCase=new();
+		private readonly List<(string key,Func<object,RpcDataPrimitive.Already,RpcDataTransformerAttribute?,RpcDataPrimitive> getValue)> _getters=[];
+
+		private delegate bool SetterFunc(object thiz,RpcDataPrimitive value,bool throwOnError,RpcDataTransformerAttribute? transformer);
+
+		private readonly Dictionary<string,SetterFunc> _setters=new();
+		private readonly Dictionary<string,SetterFunc> _settersIgnoreCase=new();
 
 		private Reflection(Type type){
 			var gettersLimiter=new HashSet<string>();
@@ -44,54 +47,64 @@ public partial class RpcDataObject{
 					var name=property.GetCustomAttribute<RpcNamedAttribute>()?.Name??property.Name;
 					if(property.CanWrite)
 						_settersIgnoreCase.TryAdd(name,
-							_setters[name]=(property.PropertyType,(o,v)=>property.SetValue(o,v)));
+							_setters[name]=Setter(property.PropertyType,(o,v)=>property.SetValue(o,v),
+								property.GetCustomAttribute<RpcDataTransformerAttribute>()));
 					if(property.CanRead&&gettersLimiter.Add(name))
-						_getters.Add((name,o=>property.GetValue(o)));
+						_getters.Add((name,Getter(o=>property.GetValue(o),property.GetCustomAttribute<RpcDataTransformerAttribute>())));
 				} else if(member is FieldInfo{IsSpecialName: false} field&&!field.IsDefined(typeof(RpcHiddenAttribute),true)){
 					var name=field.GetCustomAttribute<RpcNamedAttribute>()?.Name??field.Name;
 					_settersIgnoreCase.TryAdd(name,
-						_setters[name]=(field.FieldType,(o,v)=>field.SetValue(o,v)));
+						_setters[name]=Setter(field.FieldType,(o,v)=>field.SetValue(o,v),
+							field.GetCustomAttribute<RpcDataTransformerAttribute>()));
 					if(gettersLimiter.Add(name))
-						_getters.Add((name,o=>field.GetValue(o)));
+						_getters.Add((name,Getter(o=>field.GetValue(o),field.GetCustomAttribute<RpcDataTransformerAttribute>())));
 				}
 		}
+
+		private static Func<object,RpcDataPrimitive.Already,RpcDataTransformerAttribute?,RpcDataPrimitive> Getter(Func<object,object?> getter,RpcDataTransformerAttribute? transformer)
+			=>(thiz,already,fallbackTransformer)=>RpcDataPrimitive.From(getter(thiz),already,transformer??fallbackTransformer);
+
+		private static SetterFunc Setter(Type type,Action<object,object?> setter,RpcDataTransformerAttribute? transformer)
+			=>(thiz,value,throwOnError,fallbackTransformer)=>{
+				if(!value.TryTo(type,out var result,throwOnError,transformer??fallbackTransformer)) return false;
+				setter(thiz,result);
+				return true;
+			};
 
 		private static Reflection Get(Type type){
 			lock(Cached)
 				return Cached.TryGetValue(type,out var already)?already:Cached[type]=new Reflection(type);
 		}
 
-		public static IEnumerable<(string key,RpcDataPrimitive value)> GetProps(object thiz,RpcDataPrimitive.Already already)
-			=>Get(thiz.GetType())._getters.Select(t=>(t.key,RpcDataPrimitive.From(t.getValue(thiz),already)));
+		public static IEnumerable<(string key,RpcDataPrimitive value)> GetProps(object thiz,RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer)
+			=>Get(thiz.GetType())._getters.Select(t=>(t.key,t.getValue(thiz,already,transformer)));
 
-		public static IEnumerable<(string key,RpcDataPrimitive value)> GetProps(object thiz,RpcDataPrimitive.Already already,GetExtraPropsFunc extraProps)
-			=>GetProps(thiz,already).Concat(extraProps(already));
+		public static IEnumerable<(string key,RpcDataPrimitive value)> GetProps(object thiz,RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer,GetExtraPropsFunc extraProps)
+			=>GetProps(thiz,already,transformer).Concat(extraProps(already,transformer));
 
 		[PublicAPI]
-		public static bool SetProps<T>(ref T thiz,IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError,RpcDataPrimitive original) where T : struct{
+		public static bool SetProps<T>(ref T thiz,IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError,RpcDataTransformerAttribute? transformer,RpcDataPrimitive original) where T : struct{
 			object boxed=thiz;
 			try{
-				return SetProps(boxed,props,throwOnError,original);
+				return SetProps(boxed,props,throwOnError,transformer,original);
 			} finally{
 				thiz=(T)boxed;
 			}
 		}
 
 		[PublicAPI]
-		public static bool SetProps<T>(ref T thiz,IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError,
-			RpcDataPrimitive original,
-			Func<string,RpcDataPrimitive,bool,bool> extraProp) where T : struct{
+		public static bool SetProps<T>(ref T thiz,IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError,RpcDataTransformerAttribute? transformer,
+			RpcDataPrimitive original,Func<string,RpcDataPrimitive,bool,RpcDataTransformerAttribute?,bool> extraProp) where T : struct{
 			var type=thiz.GetType();
 			var typeInfo=Get(type);
 			foreach(var (key,primitive) in props)
 				try{
 					if(typeInfo._setters.TryGetValue(key,out var setter)
 					   ||typeInfo._settersIgnoreCase.TryGetValue(key,out setter)){
-						if(!primitive.TryTo(setter.type,out var result,throwOnError)) return false;
-						object boxed=thiz;//Structs need to be boxed before and unboxed afterward
-						setter.setValue(boxed,result);
+						object boxed=thiz;//Structs need to be boxed before and unboxed afterward, so that extraProp function works properly
+						if(!setter(boxed,primitive,throwOnError,transformer)) return false;
 						thiz=(T)boxed;
-					} else if(!extraProp(key,primitive,throwOnError))
+					} else if(!extraProp(key,primitive,throwOnError,transformer))
 						if(throwOnError) throw new KeyNotFoundException();
 						else return false;
 				} catch(Exception e){
@@ -102,18 +115,16 @@ public partial class RpcDataObject{
 		}
 
 		[PublicAPI]
-		public static bool SetProps<T>(T thiz,IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError,
-			RpcDataPrimitive original,
-			Func<string,RpcDataPrimitive,bool,bool>? extraProp=null) where T : class{
+		public static bool SetProps<T>(T thiz,IEnumerable<(string s,RpcDataPrimitive primitive)> props,bool throwOnError,RpcDataTransformerAttribute? transformer,
+			RpcDataPrimitive original,Func<string,RpcDataPrimitive,bool,RpcDataTransformerAttribute?,bool>? extraProp=null) where T : class{
 			var type=thiz.GetType();
 			var typeInfo=Get(type);
 			foreach(var (key,primitive) in props)
 				try{
 					if(typeInfo._setters.TryGetValue(key,out var setter)
 					   ||typeInfo._settersIgnoreCase.TryGetValue(key,out setter)){
-						if(!primitive.TryTo(setter.type,out var result,throwOnError)) return false;
-						setter.setValue(thiz,result);
-					} else if(extraProp==null||!extraProp(key,primitive,throwOnError))
+						if(!setter(thiz,primitive,throwOnError,transformer)) return false;
+					} else if(extraProp==null||!extraProp(key,primitive,throwOnError,transformer))
 						if(throwOnError) throw new KeyNotFoundException();
 						else return false;
 				} catch(Exception e){
@@ -123,7 +134,7 @@ public partial class RpcDataObject{
 		}
 	}
 
-	public delegate IEnumerable<(string key,RpcDataPrimitive value)> GetExtraPropsFunc(RpcDataPrimitive.Already already);
+	public delegate IEnumerable<(string key,RpcDataPrimitive value)> GetExtraPropsFunc(RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer);
 
-	public delegate bool SetExtraPropFunc(RpcDataPrimitive.Already already);
+	public delegate bool SetExtraPropFunc(RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer);
 }

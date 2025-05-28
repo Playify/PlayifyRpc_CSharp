@@ -1,5 +1,6 @@
 using System.Reflection;
 using JetBrains.Annotations;
+using PlayifyRpc.Types.Data;
 using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types;
@@ -74,5 +75,14 @@ public sealed class RpcConsumerAttribute(string? type=null):Attribute{
 	*/
 	public interface IRpcConsumer{
 		string RpcType{get;}
+	}
+
+
+	public static ValueTuple<object?,RpcDataTransformerAttribute?> Transform(object? value,ParameterInfo parameter)
+		=>(value,parameter.GetCustomAttribute<RpcDataTransformerAttribute>());
+
+	public static IEnumerable<object?> TransformArray<T>(T[] array,ParameterInfo parameter){
+		var transformer=parameter.GetCustomAttribute<RpcDataTransformerAttribute>();
+		return array.Select(x=>(object?)new ValueTuple<object?,RpcDataTransformerAttribute?>(x,transformer));
 	}
 }

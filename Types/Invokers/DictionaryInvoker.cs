@@ -13,6 +13,7 @@ namespace PlayifyRpc.Types.Invokers;
 [PublicAPI]
 public class DictionaryInvoker(Dictionary<string,Delegate> dictionary):Invoker,IDictionary<string,Delegate>{
 	public readonly Dictionary<string,Delegate> Dictionary=dictionary;
+	private readonly Dictionary<Delegate,RpcInvoker.MethodCandidate> _candidateCache=new();
 
 	public DictionaryInvoker():this(new Dictionary<string,Delegate>()){
 	}
@@ -21,12 +22,14 @@ public class DictionaryInvoker(Dictionary<string,Delegate> dictionary):Invoker,I
 	public IEnumerator<KeyValuePair<string,Delegate>> GetEnumerator()=>Dictionary.GetEnumerator();
 	IEnumerator IEnumerable.GetEnumerator()=>Dictionary.GetEnumerator();
 
-	protected override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx){
-		if(Dictionary.TryGetValue(method,out var @delegate)) return RpcInvoker.InvokeMethod(@delegate,type,method,args,ctx);
-
-		@delegate=Dictionary.FirstOrNull(p=>p.Key.Equals(method,StringComparison.OrdinalIgnoreCase))?.Value;
-		if(@delegate==null) throw new RpcMethodNotFoundException(type,method);
-		return RpcInvoker.InvokeMethod(@delegate,type,method,args,ctx);
+	protected override Task<RpcDataPrimitive> DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx){
+		if(!Dictionary.TryGetValue(method,out var @delegate))
+			@delegate=Dictionary.FirstOrNull(p=>p.Key.Equals(method,StringComparison.OrdinalIgnoreCase))?.Value
+			          ??throw new RpcMethodNotFoundException(type,method);
+		if(!_candidateCache.TryGetValue(@delegate,out var candidate))
+			_candidateCache[@delegate]=candidate=RpcInvoker.MethodCandidate.Create(@delegate.Method)
+			                                     ??throw new RpcMethodNotFoundException(type,method,"Method cannot be used");
+		return RpcInvoker.InvokeThrow(@delegate.Target,[candidate],args,msg=>new RpcMethodNotFoundException(type,method,msg),ctx);
 	}
 
 	protected override ValueTask<string[]> GetMethods()=>new(Dictionary.Keys.ToArray());
@@ -53,7 +56,11 @@ public class DictionaryInvoker(Dictionary<string,Delegate> dictionary):Invoker,I
 
 
 	public bool ContainsKey(string key)=>Dictionary.ContainsKey(key);
-	public bool Remove(string key)=>Dictionary.Remove(key);
+	public bool Remove(string key){
+		if(!Dictionary.Remove(key,out var val)) return false;
+		_candidateCache.Remove(val);
+		return true;
+	}
 #if NETFRAMEWORK
 	public bool TryGetValue(string key,out Delegate value)=>Dictionary.TryGetValue(key,out value);
 #else
@@ -61,15 +68,29 @@ public class DictionaryInvoker(Dictionary<string,Delegate> dictionary):Invoker,I
 #endif
 	public Delegate this[string key]{
 		get=>Dictionary[key];
-		set=>Dictionary[key]=value;
+		set{
+			if(Dictionary.TryGetValue(key,out var old)&&old!=value) _candidateCache.Remove(old);
+			Dictionary[key]=value;
+		}
 	}
 	public ICollection<string> Keys=>Dictionary.Keys;
 	public ICollection<Delegate> Values=>Dictionary.Values;
 	public void Add(KeyValuePair<string,Delegate> item)=>((IDictionary<string,Delegate>)Dictionary).Add(item);
-	public void Clear()=>Dictionary.Clear();
+
+	public void Clear(){
+		Dictionary.Clear();
+		_candidateCache.Clear();
+	}
+
 	public bool Contains(KeyValuePair<string,Delegate> item)=>((IDictionary<string,Delegate>)Dictionary).Contains(item);
 	public void CopyTo(KeyValuePair<string,Delegate>[] array,int arrayIndex)=>((IDictionary<string,Delegate>)Dictionary).CopyTo(array,arrayIndex);
-	public bool Remove(KeyValuePair<string,Delegate> item)=>((IDictionary<string,Delegate>)Dictionary).Remove(item);
+
+	public bool Remove(KeyValuePair<string,Delegate> item){
+		if(!((IDictionary<string,Delegate>)Dictionary).Remove(item)) return false;
+		_candidateCache.Remove(item.Value);
+		return true;
+	}
+
 	public int Count=>Dictionary.Count;
 	public bool IsReadOnly=>((IDictionary<string,Delegate>)Dictionary).IsReadOnly;
 }

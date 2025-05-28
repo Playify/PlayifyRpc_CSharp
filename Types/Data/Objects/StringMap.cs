@@ -31,17 +31,18 @@ public sealed class StringMap<T>:InsertionOrderDictionary<string,T>,IRpcDataObje
 	}
 
 
-	bool IRpcDataObject.TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataPrimitive original)=>props.All(tuple=>{
-		try{
-			return tuple.value.TryTo(out T? child,throwOnError)&&this!.TryAdd(tuple.key,child);
-		} catch(Exception e){
-			throw new InvalidCastException("Error converting primitive "+original+" to "+RpcTypeStringifier.FromType(GetType())+
-			                               ", due to property "+JsonString.Escape(tuple.key),e);
-		}
-	});
+	bool IRpcDataObject.TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataTransformerAttribute? transformer,RpcDataPrimitive original)
+		=>props.All(tuple=>{
+			try{
+				return tuple.value.TryTo(out T? child,throwOnError,transformer)&&this!.TryAdd(tuple.key,child);
+			} catch(Exception e){
+				throw new InvalidCastException("Error converting primitive "+original+" to "+RpcTypeStringifier.FromType(GetType())+
+				                               ", due to property "+JsonString.Escape(tuple.key),e);
+			}
+		});
 
-	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(RpcDataPrimitive.Already already)
-		=>this.Select(kv=>(kv.Key,RpcDataPrimitive.From(kv.Value,already)));
+	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer)
+		=>this.Select(kv=>(kv.Key,RpcDataPrimitive.From(kv.Value,already,transformer)));
 }
 
 [PublicAPI]
@@ -52,10 +53,10 @@ public sealed class StringMap:InsertionOrderDictionary<string,RpcDataPrimitive>,
 		RpcData.Register(typeof(StringMap),null,null,(typescript,_)=>typescript?$"Record<string,{RpcTypeStringifier.FromType(typeof(object),true)}>":$"{nameof(StringMap)}");
 	}
 
-	bool IRpcDataObject.TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataPrimitive original)
+	bool IRpcDataObject.TrySetProps(IEnumerable<(string key,RpcDataPrimitive value)> props,bool throwOnError,RpcDataTransformerAttribute? transformer,RpcDataPrimitive original)
 		=>props.All(tuple=>this.TryAdd(tuple.key,tuple.value));
 
-	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(RpcDataPrimitive.Already already)=>this.ToTuples();
+	IEnumerable<(string key,RpcDataPrimitive value)> IRpcDataObject.GetProps(RpcDataPrimitive.Already already,RpcDataTransformerAttribute? transformer)=>this.ToTuples();
 
 	public void Add(string key,object? value,RpcDataPrimitive.Already? already=null)=>base.Add(key,RpcDataPrimitive.From(value,already));
 	public new void Add(string key,RpcDataPrimitive value)=>base.Add(key,value);//This needs to be overridden, so that primitives use this instead of the object based method

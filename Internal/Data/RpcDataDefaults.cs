@@ -30,20 +30,20 @@ internal static class RpcDataDefaults{
 
 	private static void RegisterPrimitives(){
 		Register<RpcDataPrimitive>(
-			(p,_)=>p,
-			(p,_)=>p,
+			(p,_,_)=>p,
+			(p,_,_)=>p,
 			(typescript,_)=>typescript?"any":"dynamic");
 		Register<VoidType>(
-			(_,_)=>new RpcDataPrimitive(),
-			(_,_)=>default(VoidType),
+			(_,_,_)=>new RpcDataPrimitive(),
+			(_,_,_)=>default(VoidType),
 			(_,_)=>"void");
 		Register(
 			typeof(Nullable<>),
 			null,//c# does this under the hood already
-			(p,type,throwOnError)=>
+			(p,type,throwOnError,transformer)=>
 				p.IsNull()
 					?null
-					:p.TryTo(type.GetGenericArguments()[0],out var result,throwOnError)
+					:p.TryTo(type.GetGenericArguments()[0],out var result,throwOnError,transformer)
 						?result
 						:ContinueWithNext,
 			(ts,generics)=>{
@@ -55,61 +55,61 @@ internal static class RpcDataDefaults{
 
 
 		Register<DBNull>(
-			(_,_)=>new RpcDataPrimitive(),
-			(p,_)=>p.IsNull()?DBNull.Value:ContinueWithNext,
+			(_,_,_)=>new RpcDataPrimitive(),
+			(p,_,_)=>p.IsNull()?DBNull.Value:ContinueWithNext,
 			(_,_)=>"null");
 		Register<bool>(
-			(b,_)=>new RpcDataPrimitive(b),
-			(p,_)=>p.IsBool(out var b)?b:ContinueWithNext,
+			(b,_,_)=>new RpcDataPrimitive(b),
+			(p,_,_)=>p.IsBool(out var b)?b:ContinueWithNext,
 			(typescript,_)=>typescript?"boolean":"bool");
 		Register<string>(
-			(s,_)=>new RpcDataPrimitive(s),
-			(p,_)=>p.IsString(out var s)?s:p.IsNull()?null:ContinueWithNext,
+			(s,_,_)=>new RpcDataPrimitive(s),
+			(p,_,_)=>p.IsString(out var s)?s:p.IsNull()?null:ContinueWithNext,
 			(_,_)=>"string");
 		Register<char>(
-			(c,_)=>new RpcDataPrimitive(char.ToString(c)),
-			(p,_)=>p.IsString(out var s)&&s.Length==1?s[0]:ContinueWithNext,
+			(c,_,_)=>new RpcDataPrimitive(char.ToString(c)),
+			(p,_,_)=>p.IsString(out var s)&&s.Length==1?s[0]:ContinueWithNext,
 			(typescript,_)=>typescript?"string":"char");
 
 		Register<sbyte>(
-			(n,_)=>new RpcDataPrimitive(n),
-			(p,_)=>p.IsNumber(sbyte.MinValue,sbyte.MaxValue,out var n)?(sbyte)n:ContinueWithNext,
+			(n,_,_)=>new RpcDataPrimitive(n),
+			(p,_,_)=>p.IsNumber(sbyte.MinValue,sbyte.MaxValue,out var n)?(sbyte)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"sbyte");
 		Register<byte>(
-			(n,_)=>new RpcDataPrimitive(n),
-			(p,_)=>p.IsNumber(0,byte.MaxValue,out var n)?(byte)n:ContinueWithNext,
+			(n,_,_)=>new RpcDataPrimitive(n),
+			(p,_,_)=>p.IsNumber(0,byte.MaxValue,out var n)?(byte)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"byte");
 		Register<short>(
-			(n,_)=>new RpcDataPrimitive(n),
-			(p,_)=>p.IsNumber(short.MinValue,short.MaxValue,out var n)?(short)n:ContinueWithNext,
+			(n,_,_)=>new RpcDataPrimitive(n),
+			(p,_,_)=>p.IsNumber(short.MinValue,short.MaxValue,out var n)?(short)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"short");
 		Register<ushort>(
-			(n,_)=>new RpcDataPrimitive(n),
-			(p,_)=>p.IsNumber(0,ushort.MaxValue,out var n)?(ushort)n:ContinueWithNext,
+			(n,_,_)=>new RpcDataPrimitive(n),
+			(p,_,_)=>p.IsNumber(0,ushort.MaxValue,out var n)?(ushort)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"ushort");
 		Register<int>(
-			(n,_)=>new RpcDataPrimitive(n),
-			(p,_)=>p.IsNumber(int.MinValue,int.MaxValue,out var n)?(int)n:ContinueWithNext,
+			(n,_,_)=>new RpcDataPrimitive(n),
+			(p,_,_)=>p.IsNumber(int.MinValue,int.MaxValue,out var n)?(int)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"int");
 		Register<uint>(
-			(n,_)=>new RpcDataPrimitive(n),
-			(p,_)=>p.IsNumber(0,uint.MaxValue,out var n)?(uint)n:ContinueWithNext,
+			(n,_,_)=>new RpcDataPrimitive(n),
+			(p,_,_)=>p.IsNumber(0,uint.MaxValue,out var n)?(uint)n:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"uint");
 		Register<long>(
-			(n,_)=>new RpcDataPrimitive(new BigInteger(n)),
-			(p,_)=>p.IsNumber(long.MinValue,long.MaxValue,out var n)?n:ContinueWithNext,//isNumber should have better performance, and should work as well
+			(n,_,_)=>new RpcDataPrimitive(new BigInteger(n)),
+			(p,_,_)=>p.IsNumber(long.MinValue,long.MaxValue,out var n)?n:ContinueWithNext,//isNumber should have better performance, and should work as well
 			(typescript,_)=>typescript?"bigint":"long");
 		Register<ulong>(
-			(n,_)=>new RpcDataPrimitive(new BigInteger(n)),
-			(p,_)=>{
+			(n,_,_)=>new RpcDataPrimitive(new BigInteger(n)),
+			(p,_,_)=>{
 				if(p.IsBigIntegerAndNothingElse(out var n)&&n>=0&&n<=ulong.MaxValue) return (ulong)n;
 				if(p.IsNumber(0,long.MaxValue,out var l)) return (ulong)l;
 				return ContinueWithNext;
 			},
 			(typescript,_)=>typescript?"bigint":"ulong");
 		Register<BigInteger>(
-			(n,_)=>new RpcDataPrimitive(n),
-			(p,_)=>{
+			(n,_,_)=>new RpcDataPrimitive(n),
+			(p,_,_)=>{
 				if(p.IsBigIntegerAndNothingElse(out var n)) return n;
 				if(p.IsNumber(long.MinValue,long.MaxValue,out var l)) return new BigInteger(l);
 				// ReSharper disable once CompareOfFloatsByEqualityOperator
@@ -118,17 +118,17 @@ internal static class RpcDataDefaults{
 			},
 			(typescript,_)=>typescript?"bigint":"BigInteger");
 		Register<float>(
-			(f,_)=>new RpcDataPrimitive(f),
-			(p,_)=>p.IsNumber(out var d)?(float)d:ContinueWithNext,
+			(f,_,_)=>new RpcDataPrimitive(f),
+			(p,_,_)=>p.IsNumber(out var d)?(float)d:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"float");
 		Register<double>(
-			(d,_)=>new RpcDataPrimitive(d),
-			(p,_)=>p.IsNumber(out var d)?d:ContinueWithNext,
+			(d,_,_)=>new RpcDataPrimitive(d),
+			(p,_,_)=>p.IsNumber(out var d)?d:ContinueWithNext,
 			(typescript,_)=>typescript?"number":"double");
 
 		Register<object>(
 			null,
-			(p,_)=>{
+			(p,_,transformer)=>{
 				if(p.IsNull()) return null;
 				if(p.IsBool(out var b)) return b;
 				if(p.IsBigIntegerAndNothingElse(out var big)) return big;
@@ -140,12 +140,14 @@ internal static class RpcDataDefaults{
 				if(p.IsArray(out var arr,out var len)){
 					var array=p.AddAlready(new object?[len]);
 					i=0;
-					foreach(var primitive in arr) array[i++]=primitive.To<object?>();
+					//Maybe this should use TryTo instead of To, but converting to object should never fail in the first place
+					foreach(var primitive in arr) array[i++]=primitive.To<object?>(transformer);
 					return array;
 				}
 				if(p.IsObject(out var obj)){
 					IDictionary<string,object?> expando=p.AddAlready(new ExpandoObject());
-					foreach(var (key,primitive) in obj) expando.Add(key,primitive.To<object?>());
+					//Maybe this should use TryTo instead of To, but converting to object should never fail in the first place
+					foreach(var (key,primitive) in obj) expando.Add(key,primitive.To<object?>(transformer));
 					return expando;
 				}
 				if(p.IsCustom(out object custom)) return custom;
@@ -191,7 +193,7 @@ internal static class RpcDataDefaults{
 			},
 			(_,_)=>nameof(RpcFunction));
 		Register<Delegate>(
-			(func,already)=>{
+			(func,already,_)=>{
 				already.OnDispose(()=>RpcFunction.UnregisterFunction(func));
 				return already[func]=new RpcDataPrimitive(
 					       RpcFunction.RegisterFunction(func),rpcFunctionWriter,
@@ -202,15 +204,15 @@ internal static class RpcDataDefaults{
 		);
 
 		Register<ExpandoObject>(
-			(exp,already)=>already[exp]=new RpcDataPrimitive(()=>exp.Select(j=>(j.Key,From(j.Value,already)))),
-			(p,throwOnError)=>{
+			(exp,already,transformer)=>already[exp]=new RpcDataPrimitive(()=>exp.Select(j=>(j.Key,From(j.Value,already,transformer)))),
+			(p,throwOnError,transformer)=>{
 				if(p.IsNull()) return null;
 				if(p.IsAlready(out ExpandoObject already)) return already;
 				if(!p.IsObject(out var props)) return ContinueWithNext;
 				IDictionary<string,object?> expando=p.AddAlready(new ExpandoObject());
 				foreach(var (key,child) in props)
 					try{
-						if(child.TryTo(out object? o,throwOnError)) expando.Add(key,o);
+						if(child.TryTo(out object? o,throwOnError,transformer)) expando.Add(key,o);
 						else return p.RemoveAlready(expando);
 					} catch(Exception e){
 						p.RemoveAlready(expando);
@@ -220,8 +222,8 @@ internal static class RpcDataDefaults{
 			},
 			(_,_)=>"object");
 		Register<NameValueCollection>(
-			(nvc,already)=>already[nvc]=new RpcDataPrimitive(()=>nvc.Keys.Cast<string>().Select(k=>(k??"",From(nvc.Get(k),already)))),
-			(p,throwOnError)=>{
+			(nvc,already,transformer)=>already[nvc]=new RpcDataPrimitive(()=>nvc.Keys.Cast<string>().Select(k=>(k??"",From(nvc.Get(k),already,transformer)))),
+			(p,throwOnError,_)=>{
 				if(p.IsNull()) return null;
 				if(p.IsAlready(out NameValueCollection already)) return already;
 				if(!p.IsObject(out var props)) return ContinueWithNext;
@@ -242,8 +244,8 @@ internal static class RpcDataDefaults{
 
 	private static void RegisterArraysAndTuples(){
 		Register<ValueTuple>(
-			(_,_)=>new RpcDataPrimitive(()=>([],0)),
-			(p,__)=>p.IsArray(out _,out var length)&&length==0?new ValueTuple():ContinueWithNext,
+			(_,_,_)=>new RpcDataPrimitive(()=>([],0)),
+			(p,__,___)=>p.IsArray(out _,out var length)&&length==0?new ValueTuple():ContinueWithNext,
 			(typescript,_)=>typescript?"[]":"()"
 		);
 		foreach(var type in (Type[])[
@@ -259,14 +261,14 @@ internal static class RpcDataDefaults{
 		        ])
 			Register(
 				type,
-				(value,already)=>{
+				(value,already,transformer)=>{
 					//don't set it in already, as it's a value type.
 					var t=(ITuple)value;
 					return new RpcDataPrimitive(()=>(
 						                                Enumerable.Range(0,t.Length).Select(i=>
-							                                From(t[i],already)),t.Length));
+							                                From(t[i],already,transformer)),t.Length));
 				},
-				(p,t,throwOnError)=>{
+				(p,t,throwOnError,transformer)=>{
 					if(!p.IsArray(out var arr,out var len)) return ContinueWithNext;
 
 					var argsTypes=t.GetGenericArguments();
@@ -276,7 +278,7 @@ internal static class RpcDataDefaults{
 					var i=0;
 					foreach(var sub in arr)
 						try{
-							if(sub.TryTo(argsTypes[i],out var child,throwOnError)) args[i++]=child;
+							if(sub.TryTo(argsTypes[i],out var child,throwOnError,transformer)) args[i++]=child;
 							else return ContinueWithNext;
 						} catch(Exception e){
 							throw new InvalidCastException("Error converting primitive "+p+" to "+RpcTypeStringifier.FromType(t)+", due to index "+i,e);
@@ -291,10 +293,10 @@ internal static class RpcDataDefaults{
 
 		Register(
 			typeof(Array),
-			(list,already)=>already[list]=new RpcDataPrimitive(()=>(
-				                                                       ((IEnumerable)list).Cast<object>().Select(o=>From(o,already))
-				                                                       ,((IList)list).Count)),
-			(p,type,throwOnError)=>{
+			(list,already,transformer)=>already[list]=new RpcDataPrimitive(()=>(
+				                                                                   ((IEnumerable)list).Cast<object>().Select(o=>From(o,already,transformer))
+				                                                                   ,((IList)list).Count)),
+			(p,type,throwOnError,transformer)=>{
 				if(p.IsNull()) return null;
 				if(p.IsAlready(type,out var already)) return already;
 				if(!p.IsArray(out var arr,out var len)) return ContinueWithNext;
@@ -305,7 +307,7 @@ internal static class RpcDataDefaults{
 				var i=0;
 				foreach(var sub in arr)
 					try{
-						if(sub.TryTo(elementType,out var child,throwOnError)) array.SetValue(child,i++);
+						if(sub.TryTo(elementType,out var child,throwOnError,transformer)) array.SetValue(child,i++);
 						else return p.RemoveAlready(array);
 					} catch(Exception e){
 						p.RemoveAlready(array);
@@ -315,15 +317,15 @@ internal static class RpcDataDefaults{
 			},
 			(type,typescript,input,tupleName,nullability,_)=>{
 				if(type==typeof(Array)) return typescript?"any[]":"dynamic[]";
-				return RpcTypeStringifier.StringifySubType(type.GetElementType()!,typescript,input,tupleName,nullability?.ElementType)+"[]";
+				return RpcTypeStringifier.StringifySubType(type.GetElementType()!,typescript,input,tupleName,nullability?.ElementType,null)+"[]";
 			});
 
 		Register(
 			typeof(List<>),
-			(list,already)=>already[list]=new RpcDataPrimitive(()=>(
-				                                                       ((IEnumerable)list).Cast<object>().Select(o=>From(o,already))
-				                                                       ,((IList)list).Count)),
-			(p,type,throwOnError)=>{
+			(list,already,transformer)=>already[list]=new RpcDataPrimitive(()=>(
+				                                                                   ((IEnumerable)list).Cast<object>().Select(o=>From(o,already,transformer))
+				                                                                   ,((IList)list).Count)),
+			(p,type,throwOnError,transformer)=>{
 				if(p.IsNull()) return null;
 				if(p.IsAlready(type,out var already)) return already;
 				if(!p.IsArray(out var arr)) return ContinueWithNext;
@@ -331,7 +333,7 @@ internal static class RpcDataDefaults{
 				var instance=p.AddAlready((IList)Activator.CreateInstance(type)!);
 				foreach(var sub in arr)
 					try{
-						if(sub.TryTo(elementType,out var child,throwOnError)) instance.Add(child);
+						if(sub.TryTo(elementType,out var child,throwOnError,transformer)) instance.Add(child);
 						else return p.RemoveAlready(instance);
 					} catch(Exception e){
 						p.RemoveAlready(instance);
@@ -352,47 +354,47 @@ internal static class RpcDataDefaults{
 			bytes=>$"[{bytes.Join(',')}]");
 		Register(
 			typeof(ArraySegment<>),
-			(list,already)=>already[list]=
-				                list is ArraySegment<byte> bytes
-					                ?new RpcDataPrimitive(bytes.ToArray(),writeBytes,()=>$"[{bytes.Join(',')}]")
-					                :new RpcDataPrimitive(()=>(
-						                                          ((IEnumerable)list).Cast<object>().Select(o=>From(o,already))
-						                                          ,((IList)list).Count)),
-			(p,type,throwOnError)=>p.TryTo(type.GetGenericArguments()[0].MakeArrayType(),out var array,throwOnError)
-				                       ?Activator.CreateInstance(type,array)
-				                       :ContinueWithNext,
+			(list,already,transformer)=>already[list]=
+				                            list is ArraySegment<byte> bytes
+					                            ?new RpcDataPrimitive(bytes.ToArray(),writeBytes,()=>$"[{bytes.Join(',')}]")
+					                            :new RpcDataPrimitive(()=>(
+						                                                      ((IEnumerable)list).Cast<object>().Select(o=>From(o,already,transformer))
+						                                                      ,((IList)list).Count)),
+			(p,type,throwOnError,transformer)=>p.TryTo(type.GetGenericArguments()[0].MakeArrayType(),out var array,throwOnError,transformer)
+				                                   ?Activator.CreateInstance(type,array)
+				                                   :ContinueWithNext,
 			(_,generics)=>generics.Single()+"[]");
 	}
 
 	private static class Jsons{
 		public static void RegisterJson(){
 			Register<JsonNull>(
-				(_,_)=>new RpcDataPrimitive(),
-				(p,_)=>p.IsNull()?JsonNull.Null:ContinueWithNext,
+				(_,_,_)=>new RpcDataPrimitive(),
+				(p,_,_)=>p.IsNull()?JsonNull.Null:ContinueWithNext,
 				(_,_)=>"null");
 			Register<JsonBool>(
-				(b,_)=>new RpcDataPrimitive(b.Value),
-				(p,_)=>p.IsBool(out var b)?JsonBool.Get(b):ContinueWithNext,
+				(b,_,_)=>new RpcDataPrimitive(b.Value),
+				(p,_,_)=>p.IsBool(out var b)?JsonBool.Get(b):ContinueWithNext,
 				(typescript,_)=>typescript?"boolean":"bool");
 			Register<JsonNumber>(
-				(n,_)=>new RpcDataPrimitive(n.Value),
-				(p,_)=>p.IsNumber(out var d)?new JsonNumber(d):ContinueWithNext,
+				(n,_,_)=>new RpcDataPrimitive(n.Value),
+				(p,_,_)=>p.IsNumber(out var d)?new JsonNumber(d):ContinueWithNext,
 				(typescript,_)=>typescript?"number":"double");
 			Register<JsonString>(
-				(s,_)=>new RpcDataPrimitive(s.Value),
-				(p,_)=>p.IsString(out var s)?new JsonString(s):ContinueWithNext,
+				(s,_,_)=>new RpcDataPrimitive(s.Value),
+				(p,_,_)=>p.IsString(out var s)?new JsonString(s):ContinueWithNext,
 				(_,_)=>"string");
 			Register<JsonArray>(
-				(a,already)=>already[a]=new RpcDataPrimitive(()=>(a.Select(j=>From(j,already)),a.Count)),
-				(p,throwOnError)=>{
+				(a,already,transformer)=>already[a]=new RpcDataPrimitive(()=>(a.Select(j=>From(j,already,transformer)),a.Count)),
+				(p,throwOnError,_)=>{
 					if(p.IsAlready(out JsonArray already)) return already;
 					if(!p.IsArray(out var primitives)) return ContinueWithNext;
 					return ReadJsonArray(p,primitives,throwOnError)??ContinueWithNext;
 				},
 				(typescript,_)=>typescript?"any[]":"dynamic[]");
 			Register<JsonObject>(
-				(o,already)=>already[o]=new RpcDataPrimitive(()=>o.Select(j=>(j.Key,From(j.Value,already)))),
-				(p,throwOnError)=>{
+				(o,already,transformer)=>already[o]=new RpcDataPrimitive(()=>o.Select(j=>(j.Key,From(j.Value,already,transformer)))),
+				(p,throwOnError,_)=>{
 					if(p.IsAlready(out JsonObject already)) return already;
 					if(!p.IsObject(out var props)) return ContinueWithNext;
 					return ReadJsonObject(p,props,throwOnError)??ContinueWithNext;
@@ -400,7 +402,7 @@ internal static class RpcDataDefaults{
 				(_,_)=>"object");
 			Register<Json>(
 				null,
-				(p,throwOnError)=>ReadJson(p,throwOnError)??ContinueWithNext,
+				(p,throwOnError,_)=>ReadJson(p,throwOnError)??ContinueWithNext,
 				(typescript,_)=>typescript?"any":"dynamic");
 		}
 
@@ -452,7 +454,7 @@ internal static class RpcDataDefaults{
 	private static void RegisterEnums(){
 		Register(
 			typeof(Enum),
-			(value,_)=>{
+			(value,_,_)=>{
 				var convertible=(IConvertible)value;
 				return convertible.GetTypeCode() switch{
 					TypeCode.Int64=>new RpcDataPrimitive(new BigInteger(convertible.ToInt64(null))),
@@ -460,10 +462,10 @@ internal static class RpcDataDefaults{
 					_=>new RpcDataPrimitive(convertible.ToInt64(null)),
 				};
 			},
-			(p,type,throwOnError)=>{
+			(p,type,throwOnError,transformer)=>{
 				if(type==typeof(Enum)) return ContinueWithNext;
 				if(p.IsString(out var s)) return StringEnums.TryParseEnum(type,s,out var result)?result:ContinueWithNext;
-				if(p.TryTo(type.GetEnumUnderlyingType(),out var number,throwOnError)) return Enum.ToObject(type,number!);
+				if(p.TryTo(type.GetEnumUnderlyingType(),out var number,throwOnError,transformer)) return Enum.ToObject(type,number!);
 				return ContinueWithNext;
 			},
 			(type,_,_,_,_,generics)=>type==typeof(Enum)?null:RpcTypeStringifier.CombineTypeName(type,generics));

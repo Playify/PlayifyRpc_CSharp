@@ -1,4 +1,5 @@
 using System.Numerics;
+using PlayifyRpc.Types.Data;
 
 namespace PlayifyRpc.Internal.Data;
 
@@ -14,7 +15,9 @@ public readonly partial struct RpcDataPrimitive{
 	public static RpcDataPrimitive[] FromArray(object?[] values,Already already)
 		=>values.Select(v=>v is RpcDataPrimitive p?p:From(v,already)).ToArray();
 
-	public static RpcDataPrimitive From(object? value,Already? already=null){
+	public static RpcDataPrimitive From(object? value,Already? already=null,RpcDataTransformerAttribute? transformer=null){
+		if(transformer?.From(value,already) is{} transformed) return transformed;
+
 		if(value switch{
 			   null=>new RpcDataPrimitive(),
 			   true=>new RpcDataPrimitive(true),
@@ -34,6 +37,10 @@ public readonly partial struct RpcDataPrimitive{
 			   float n=>new RpcDataPrimitive(n),
 			   double n=>new RpcDataPrimitive(n),
 
+			   //When called from RpcConsumer, this correctly applies a transformer
+			   ValueTuple<object?,RpcDataTransformerAttribute?> tuple=>From(tuple.Item1,already,tuple.Item2),
+
+
 			   RpcDataPrimitive p=>p,
 			   _=>(RpcDataPrimitive?)null,
 		   } is{} simple) return simple;
@@ -45,9 +52,9 @@ public readonly partial struct RpcDataPrimitive{
 
 		var type=value.GetType();
 		if(RpcData.GetForInput(FromDictionary,type) is{} fromDict)
-			return fromDict(value,already);
+			return fromDict(value,already,transformer);
 		foreach(var func in FromList)
-			if(func(value,already) is{} primitive)
+			if(func(value,already,transformer) is{} primitive)
 				return primitive;
 		throw new InvalidCastException("Can't convert "+value+" of type "+RpcTypeStringifier.FromType(type)+" to primitive");
 	}

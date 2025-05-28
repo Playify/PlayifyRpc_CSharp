@@ -17,13 +17,11 @@ public class ProxyInvoker:Invoker{
 		_object=()=>task;
 	}
 
-	protected override object DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)=>InvokeAsync(type,method,args,ctx);
-
-	private async Task<object?> InvokeAsync(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx){
+	protected override async Task<RpcDataPrimitive> DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx){
 		try{
 			return await (await _object()).CallFunctionRaw(method,args).AsForwarded(ctx);
 		} catch(Exception e){
-			throw RpcException.WrapAndFreeze(e).Remove(((Delegate)InvokeAsync).Method);
+			throw RpcException.WrapAndFreeze(e);
 		}
 	}
 

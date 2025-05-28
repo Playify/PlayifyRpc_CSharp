@@ -9,21 +9,30 @@ namespace PlayifyRpc.Types.Invokers;
 [PublicAPI]
 public abstract partial class Invoker{
 	private static readonly ThreadLocal<string?> MetaCallType=new();
+	private static readonly Dictionary<string,RpcInvoker.MethodCandidate> MetaCache=new();
 
-	protected internal object? Invoke(string? type,string? method,RpcDataPrimitive[] args,FunctionCallContext ctx){
+	protected internal Task<RpcDataPrimitive> Invoke(string? type,string? method,RpcDataPrimitive[] args,FunctionCallContext ctx){
 		if(method!=null) return DynamicInvoke(type,method,args,ctx);
 
 		var meta=args.Length<1?null:args[0].To<string>();
 
 		MetaCallType.Value=type;
+
 		//Meta calls, using null as method
-		Delegate @delegate=meta switch{
-			"M"=>GetMethods,
-			"S"=>GetMethodSignaturesBase,
-			"V"=>GetRpcVersion,
-			_=>throw new RpcMetaMethodNotFoundException(type,meta),
-		};
-		return RpcInvoker.InvokeMeta(@delegate,type,meta,args.Skip(1).ToArray(),ctx);
+
+		RpcInvoker.MethodCandidate? candidate;
+		lock(MetaCache)
+			if(!MetaCache.TryGetValue(meta??"",out candidate))
+				MetaCache[meta??""]=
+					candidate=RpcInvoker.MethodCandidate.Create(
+						          ((Delegate)(meta switch{
+								                     "M"=>GetMethods,
+								                     "S"=>GetMethodSignaturesBase,
+								                     "V"=>GetRpcVersion,
+								                     _=>throw new RpcMetaMethodNotFoundException(type,meta),
+							                     })).Method)??throw new RpcMetaMethodNotFoundException(type,meta);
+
+		return RpcInvoker.InvokeThrow(this,[candidate],args.Skip(1).ToArray(),msg=>new RpcMetaMethodNotFoundException(type,meta,msg),ctx);
 	}
 
 	protected ValueTask<(string[] arguments,string returns)[]> GetMethodSignaturesBase(string? method,ProgrammingLanguage lang=ProgrammingLanguage.CSharp){
@@ -36,7 +45,7 @@ public abstract partial class Invoker{
 	}
 
 
-	protected abstract object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx);
+	protected abstract Task<RpcDataPrimitive> DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx);
 	protected abstract ValueTask<string[]> GetMethods();
 
 	protected virtual ValueTask<string> GetRpcVersion(){

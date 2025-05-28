@@ -1,6 +1,8 @@
+using System.Reflection;
 using PlayifyRpc;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types;
+using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
 
@@ -18,6 +20,9 @@ public static class DynamicInvoking{
 		public static bool Specific(string s)=>true;
 
 		public static bool Specific(RpcDataPrimitive s)=>false;
+
+		[return: StringEnum]
+		public static AssemblyFlags TransformerTest(AssemblyFlags x)=>x;
 	}
 
 	[SetUp]
@@ -36,6 +41,7 @@ public static class DynamicInvoking{
 		CollectionAssert.AreEquivalent(await Rpc.CallFunction<int[]>("TestClass",nameof(TestClass.Defaults),4,2,4,5),(int[])[4,2,4,5]);
 		Assert.That(await Rpc.CallFunction<bool>("TestClass",nameof(TestClass.Fcc)),Is.True,nameof(FunctionCallContext)+" arguments should be auto filled in");
 		Assert.That(await Rpc.CallFunction<bool>("TestClass",nameof(TestClass.Specific),""),Is.True,"specific types should be prefered over RpcDataPrimitive arguments");
+		Assert.That(await Rpc.CallFunction<object>("TestClass",nameof(TestClass.TransformerTest),AssemblyFlags.PublicKey),Is.EqualTo(nameof(AssemblyFlags.PublicKey)));
 
 		dynamic obj=Rpc.CreateObject("TestClass");
 		var func=obj.Func;

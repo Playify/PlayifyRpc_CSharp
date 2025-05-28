@@ -10,7 +10,7 @@ namespace PlayifyRpc.Types.Invokers;
 [PublicAPI]
 public class TypeInvoker:Invoker{
 	private readonly object? _instance;
-	private readonly Dictionary<string,List<MethodInfo>> _methods;
+	private readonly Dictionary<string,List<RpcInvoker.MethodCandidate>> _methods;
 
 	// ReSharper disable once RedundantCast
 	protected TypeInvoker():this((Type)null!){
@@ -41,13 +41,16 @@ public class TypeInvoker:Invoker{
 		             .Where(m=>!m.IsSpecialName)//Don't include getters and setters for properties
 		             .Where(m=>!m.IsDefined(typeof(RpcHiddenAttribute),true))//Don't include hidden methods
 		             .ToLookup(m=>m.GetCustomAttribute<RpcNamedAttribute>()?.Name??m.Name,StringComparer.OrdinalIgnoreCase)
-		             .ToDictionary(g=>g.Key,g=>g.ToList(),StringComparer.OrdinalIgnoreCase);
+		             .ToDictionary(g=>g.Key,g=>g
+		                                       .Select(RpcInvoker.MethodCandidate.Create)
+		                                       .NonNull()
+		                                       .ToList(),StringComparer.OrdinalIgnoreCase);
 	}
 
-	protected sealed override object? DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)
+	protected sealed override Task<RpcDataPrimitive> DynamicInvoke(string? type,string method,RpcDataPrimitive[] args,FunctionCallContext ctx)
 		=>!_methods.TryGetValue(method,out var list)
 			  ?throw new RpcMethodNotFoundException(type,method)
-			  :RpcInvoker.InvokeMethod(_instance,list,type,method,args,ctx);
+			  :RpcInvoker.InvokeThrow(_instance,list.ToArray(),args,msg=>new RpcMethodNotFoundException(type,method,msg),ctx);
 
 	protected sealed override ValueTask<string[]> GetMethods()
 		=>new(_methods.Select(g=>g.Key).ToArray());
@@ -55,7 +58,7 @@ public class TypeInvoker:Invoker{
 	protected sealed override ValueTask<(string[] parameters,string returns)[]> GetMethodSignatures(string? type,string method,ProgrammingLanguage lang)
 		=>_methods.TryGetValue(method,out var list)
 			  ?new ValueTask<(string[] parameters,string returns)[]>(
-				  list.SelectMany(m=>RpcTypeStringifier.MethodSignatures(m,lang)).ToArray())
+				  list.SelectMany(m=>RpcTypeStringifier.MethodSignatures(m.MethodInfo,lang)).ToArray())
 			  :new ValueTask<(string[] parameters,string returns)[]>(
 				  Task.FromException<(string[] parameters,string returns)[]>(
 					  new RpcMethodNotFoundException(type,method)));

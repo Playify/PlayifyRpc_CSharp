@@ -15,6 +15,7 @@ public class RpcConsumerSourceGenerator:IIncrementalGenerator{
 	private const string RpcConsumerAttribute="PlayifyRpc.Types.RpcConsumerAttribute";
 	// ReSharper disable once InconsistentNaming
 	private const string IRpcConsumer=RpcConsumerAttribute+".IRpcConsumer";
+	private const string RpcDataTransformerAttribute="PlayifyRpc.Types.Data.RpcDataTransformerAttribute";
 	private const string RpcType="RpcType";
 
 	public void Initialize(IncrementalGeneratorInitializationContext context){
@@ -121,12 +122,26 @@ public class RpcConsumerSourceGenerator:IIncrementalGenerator{
 		builder.Append(string.Join(",",method.Parameters.Select(p=>p.ToString())));
 		builder.Append(')');
 		builder.Append(GenerateTypeConstraints(method));
-		builder.Append("\r\n\t\t=>PlayifyRpc.Rpc.CallFunction");
+
+		var returnAttributes=method.GetReturnTypeAttributes().Any(FilterTransformerAttribute);
+		var parameterAttributes=method.Parameters.Select(p=>p.GetAttributes().Any(FilterTransformerAttribute)).ToArray();
+		var anyParameterAttributes=parameterAttributes.Any(b=>b);
+
+		builder.Append("{\r\n\t\t");
+		var methodVar="__"+method.Name+"_method";
+		var parametersVar="__"+method.Name+"_parameters";
+		if(returnAttributes||anyParameterAttributes)
+			builder.Append("var ").Append(methodVar).Append("=(System.Reflection.MethodInfo)System.Reflection.MethodBase.GetCurrentMethod()!;\r\n\t\t");
+		if(anyParameterAttributes)
+			builder.Append("var ").Append(parametersVar).Append('=').Append(methodVar).Append(".GetParameters();\r\n\t\t");
+
+		if(!method.ReturnsVoid) builder.Append("return ");
+		builder.Append("PlayifyRpc.Rpc.CallFunction");
 
 
 		//Calling function
-		if(returnType!=null) builder.Append("<").Append(returnType).Append(">");
-		builder.Append('(');
+		if(returnType!=null&&!returnAttributes) builder.Append("<").Append(returnType).Append(">");
+		builder.Append("(\r\n\t\t\t");
 		builder.Append(method.IsStatic?staticType:instanceType).Append(",");
 		builder.Append(method.GetAttributes()
 		                     .FirstOrDefault(a=>a.AttributeClass?.ToDisplayString()==RpcNamedAttribute)
@@ -134,23 +149,58 @@ public class RpcConsumerSourceGenerator:IIncrementalGenerator{
 			               ?attrib.ConstructorArguments[0].ToCSharpString()
 			               :SymbolDisplay.FormatLiteral(method.Name,true));
 
-
 		//Parameter passing
-		if(!method.Parameters.IsEmpty)
-			// ReSharper disable once MergeIntoPattern
-			if(method.Parameters.Length==1&&method.Parameters[0] is{Type: IArrayTypeSymbol{ElementType.SpecialType: SpecialType.System_Object}} objectArray)
-				if(objectArray.IsParams) builder.Append(",").Append(method.Parameters[0].Name);
-				else builder.Append(",new object?[]{").Append(method.Parameters[0].Name).Append("}");
-			else if(method.Parameters.Last().IsParams)
-				builder.Append(",new object?[]{")
-				       .Append(string.Join(",",method.Parameters.Take(method.Parameters.Length-1).Select(p=>p.Name)))
-				       .Append("}.Concat(").Append(method.Parameters.Last().Name).Append(".Cast<object?>()).ToArray()");
-			else
-				foreach(var parameter in method.Parameters)
-					builder.Append(",").Append(parameter.Name);
+		if(!method.Parameters.IsEmpty){
+			var useArray=!method.Parameters[0].IsParams;
+			builder.Append(useArray?",\r\n\t\t\tnew object?[]{":",\r\n\t\t\t");
+
+			var closed=false;
+			for(var i=0;i<method.Parameters.Length;i++){
+				if(!method.Parameters[i].IsParams){
+					if(i!=0) builder.Append(",");
+					builder.Append("\r\n\t\t\t");
+					if(useArray) builder.Append("\t");
+					builder.Append(Parameter(i));
+					continue;
+				}
+				closed=true;
+				if(i!=0) builder.Append("\r\n\t\t\t}.Concat(");
+				if(parameterAttributes[i])
+					builder.Append($"{RpcConsumerAttribute}.TransformArray({method.Parameters[i].Name},{parametersVar}[{i}])");
+				else{
+					builder.Append(method.Parameters[i].Name);
+					if(method.Parameters[i].Type is not IArrayTypeSymbol{ElementType.SpecialType: SpecialType.System_Object})
+						builder.Append(".Cast<object?>()");
+				}
+				if(i!=0) builder.Append(").ToArray()");
+			}
+			if(!closed) builder.Append("\r\n\t\t\t}");
+
+			string Parameter(int i,string? name=null){
+				return parameterAttributes[i]
+					       ?$"{RpcConsumerAttribute}.Transform({name??method.Parameters[i].Name},{parametersVar}[{i}])"
+					       :name??method.Parameters[i].Name;
+			}
+		}
+		builder.Append("\r\n\t\t");
 
 		//Finishing
-		builder.Append(unwrapped?");":").GetAwaiter().GetResult();");
+		builder.Append(')');
+		if(returnAttributes){
+			if(returnType!=null) builder.Append("\r\n\t\t\t.Cast<").Append(returnType).Append(">");
+			else builder.Append("\r\n\t\t\t.Void");
+			builder.Append("(System.Reflection.CustomAttributeExtensions.GetCustomAttribute<")
+			       .Append(RpcDataTransformerAttribute).Append(">(").Append(methodVar).Append(".ReturnParameter))");
+		}
+		if(!unwrapped) builder.Append(".GetAwaiter().GetResult()");
+		builder.Append(";\r\n\t}");
+	}
+
+	private static bool FilterTransformerAttribute(AttributeData attribute){
+		for(var cls=attribute.AttributeClass;cls!=null;cls=cls.BaseType)
+			if(cls.ToDisplayString()==RpcDataTransformerAttribute)
+				return true;
+		return false;
 	}
 
 	private static string GenerateAccessibility(Accessibility accessibility)=>accessibility switch{

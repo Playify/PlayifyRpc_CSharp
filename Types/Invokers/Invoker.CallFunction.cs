@@ -3,9 +3,7 @@ using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
-using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Streams.Data;
-using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Types.Invokers;
 
@@ -21,7 +19,7 @@ public abstract partial class Invoker{
 			foreach(var context in args.OfType<FunctionCallContext>()) call.AsForwarded(context);
 			return call;
 		}
-		
+
 		List<Action>? list=null;
 		var already=new RpcDataPrimitive.Already(a=>(list??=[]).Add(a));
 		var pendingCall=CallFunctionRaw(type,method,RpcDataPrimitive.FromArray(args,already));
@@ -44,7 +42,7 @@ public abstract partial class Invoker{
 
 		var rawData=new PendingCallRawData(type,method,args);
 
-		var call=new PendingCall<RpcDataPrimitive>(rawData);
+		var call=new PendingCall<RpcDataPrimitive>(rawData,null);
 
 		var buff=new DataOutputBuff();
 		int callId;
@@ -98,12 +96,13 @@ public abstract partial class Invoker{
 
 	internal static PendingCall CallLocal(Action<FunctionCallContext> a)=>CallLocal(ctx=>{
 		a(ctx);
-		return null;
-	});
+		return Task.FromResult(new RpcDataPrimitive());
+	},null,null,null);
 
-	internal static PendingCall<RpcDataPrimitive> CallLocal(Func<FunctionCallContext,object?> a)=>CallLocal(a,null,null,null);
+	internal static PendingCall<RpcDataPrimitive> CallLocal(Func<FunctionCallContext,object?> a)
+		=>CallLocal(ctx=>RpcInvoker.ObjectToTask(a(ctx),null),null,null,null);
 
-	private static PendingCall<RpcDataPrimitive> CallLocal(Func<FunctionCallContext,object?> a,string? type,string? method,RpcDataPrimitive[]? args){
+	private static PendingCall<RpcDataPrimitive> CallLocal(Func<FunctionCallContext,Task<RpcDataPrimitive>> a,string? type,string? method,RpcDataPrimitive[]? args){
 		var rawData=new PendingCallRawData(type,method,args);
 		var context=new FunctionCallContext(type,
 			method,
@@ -120,26 +119,14 @@ public abstract partial class Invoker{
 
 		var task=RunAndAwait(a,context,type,method,args);
 		TaskToCall(task,rawData);
-		return new PendingCall<RpcDataPrimitive>(rawData);
+		return new PendingCall<RpcDataPrimitive>(rawData,null);
 	}
 
 	private static readonly Type VoidTaskResult=Type.GetType("System.Threading.Tasks.VoidTaskResult")!;
 
-	internal static async Task<RpcDataPrimitive> RunAndAwait(Func<FunctionCallContext,object?> a,FunctionCallContext ctx,string? type,string? method,RpcDataPrimitive[]? args){
+	internal static async Task<RpcDataPrimitive> RunAndAwait(Func<FunctionCallContext,Task<RpcDataPrimitive>> a,FunctionCallContext ctx,string? type,string? method,RpcDataPrimitive[]? args){
 		try{
-			var result=await Task.Run(()=>a(ctx)).ConfigureAwait(false);
-			while(true)
-				if(result is VoidType or null||VoidTaskResult.IsInstanceOfType(result))
-					return new RpcDataPrimitive();
-				else if(result is ValueTask valueTask){
-					await valueTask;
-					return new RpcDataPrimitive();
-				} else if(result is Task task){
-					await task;
-					result=task.GetType().GetProperty(nameof(Task<object>.Result))?.GetValue(result);
-				} else if(result.GetType().Push(out var t).IsGenericType&&t.GetGenericTypeDefinition()==typeof(ValueTask<>))
-					result=t.GetMethod(nameof(ValueTask<object>.AsTask))?.Invoke(result,[]);
-				else return RpcDataPrimitive.From(result);
+			return await Task.Run(()=>a(ctx)).ConfigureAwait(false);
 		} catch(Exception e){
 			throw RpcException.WrapAndFreeze(e).Append(type,method,args);
 		}
