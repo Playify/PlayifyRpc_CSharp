@@ -15,7 +15,7 @@
 		<RepositoryUrl>https://github.com/Playify/PlayifyRpc_CSharp</RepositoryUrl>
 		<RepositoryType>GitHub</RepositoryType>
 		<Authors>Playify</Authors>
-		<Version>1.9.1</Version>
+		<Version>1.9.2</Version>
 
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -33,7 +33,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="PlayifyUtility" Version="1.6.1" />
+		<PackageReference Include="PlayifyUtility" Version="1.6.3" />
 	</ItemGroup>
 
 	<ItemGroup>

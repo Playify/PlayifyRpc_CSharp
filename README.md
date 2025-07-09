@@ -22,12 +22,17 @@ back ([HTTP Status Code 204](https://developer.mozilla.org/en-US/docs/Web/HTTP/S
 Using `http://127.0.0.1:4590/rpc/EXPRESSION/download=test.txt` you get the response as file download<br/>
 Using `http://127.0.0.1:4590/rpc/EXPRESSION/file=test.html` you open the response directly in the browser
 
-Using `http://127.0.0.1:4590/rpc/EXPRESSION/http` you can get a customizable http response.
-The Expression should result in an object with optional keys
 
 Using `http://127.0.0.1:4590/rpc/EXPRESSION/headers` and `http://127.0.0.1:4590/rpc/EXPRESSION/cookies` an object will
 be appended to the argument list, that contains the requested special data.
+Using `http://127.0.0.1:4590/rpc/EXPRESSION/body=binary`, `http://127.0.0.1:4590/rpc/EXPRESSION/body=string`,
+`http://127.0.0.1:4590/rpc/EXPRESSION/body=json`, `http://127.0.0.1:4590/rpc/EXPRESSION/body=auto` or
+`http://127.0.0.1:4590/rpc/EXPRESSION/body`, the body will
+be appended to the argument list, based on the specified format. If no format is specified, it gets auto-detected based
+on the Content-Type Header.
 
+Using `http://127.0.0.1:4590/rpc/EXPRESSION/http` you can get a customizable http response.
+The Expression should result in an object with optional keys:
 * status:
 	* number ⇒ represents the HTTP status code
 * headers:
@@ -39,6 +44,16 @@ be appended to the argument list, that contains the requested special data.
 	* byte[] (Uint8Array in JavaScript) ⇒ Response will have binary content
 	* any ⇒ Response will be in a json representation
 	* _missing_ ⇒ Response will be empty
+		*
+
+Using `http://127.0.0.1:4590/rpc/EXPRESSION/serve` or `http://127.0.0.1:4590/rpc/EXPRESSION/serve=html` you can directly
+use the return value as http content.
+If the content type is not chosen based on the file type parameter, it will be chosen based on the return value.
+
+* null ⇒ No Content = HTTP Status 204
+* string ⇒ Response will be a text (utf-8 encoding)
+* byte[] (Uint8Array in JavaScript) ⇒ Response will have binary content
+* any ⇒ Response will be in a json representation as text
 
 # Server
 

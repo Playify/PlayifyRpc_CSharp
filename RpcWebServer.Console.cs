@@ -78,7 +78,7 @@ public partial class RpcWebServer{
 			};
 			builder=new UriBuilder("http",endPoint.Address.ToString(),endPoint.Port,"/rpc");
 		}
-		if(!pretty.TryGet(out var prettyActual)) builder.Path+="/void";
+		if(pretty is not{} prettyActual) builder.Path+="/void";
 		else if(prettyActual) builder.Path+="/pretty";
 
 		var response=await HttpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post,builder.Uri){

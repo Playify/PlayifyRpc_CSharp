@@ -3,7 +3,6 @@ using JetBrains.Annotations;
 using PlayifyRpc.Types.Data;
 using PlayifyRpc.Types.Exceptions;
 using PlayifyRpc.Types.Functions;
-using PlayifyUtility.Utils.Extensions;
 
 namespace PlayifyRpc.Internal.Data;
 
@@ -88,7 +87,7 @@ public static partial class RpcInvoker{
 				for(var i=currentMin+1;i<candidates.Length;i++)
 					if(candidates[i] is{} newCandidate)
 						//Walk all methods looking for the most specific one
-						if(!FindMostSpecificMethod(bestCandidate,newCandidate).TryGet(out var isMoreSpecific)) ambiguous=true;
+						if(FindMostSpecificMethod(bestCandidate,newCandidate) is not{} isMoreSpecific) ambiguous=true;
 						else if(isMoreSpecific){
 							bestCandidate=newCandidate;
 							ambiguous=false;

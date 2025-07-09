@@ -1,10 +1,14 @@
 using System.Net;
+using System.Text;
 using JetBrains.Annotations;
 using PlayifyRpc.Connections;
 using PlayifyRpc.Internal;
 using PlayifyRpc.Internal.Data;
+using PlayifyRpc.Types.Data.Objects;
+using PlayifyUtility.HelperClasses;
 using PlayifyUtility.Utils.Extensions;
 using PlayifyUtility.Web;
+using PlayifyUtility.Web.Multipart;
 using PlayifyUtility.Web.Utils;
 
 namespace PlayifyRpc;
@@ -82,14 +86,64 @@ public partial class RpcWebServer:WebBase{
 		File,
 		Download,
 		Http,
+		Serve,
 	}
 
+	private enum BodyType{
+		Binary,
+		String,
+		Parse,
+		Auto,
+	}
+
+	private static async Task<RpcDataPrimitive> FromBody<T>(MultipartRequest<T> session,BodyType type,ReferenceTo<Task<byte[]>?>? bodyRef) where T : class{
+		var bytes=await (bodyRef?.Value??session.ReadByteArrayAsync());
+		string? contentType;
+
+		if(type==BodyType.Auto)
+			if(session.Headers.TryGetValue("Content-Type",out contentType))
+				if(contentType.StartsWith("application/x-www-form-urlencoded"))
+					return RpcDataPrimitive.From(WebUtils.ParseQueryString(Encoding.UTF8.GetString(bytes)));
+				else if(contentType.StartsWith("application/json")) type=BodyType.Parse;
+				else if(contentType.StartsWith("application/xml")) type=BodyType.String;
+				else if(contentType.StartsWith("application/octet-stream")) type=BodyType.Binary;
+				else if(contentType.StartsWith("text/")) type=BodyType.String;
+				else if(session.ReadMultipartAsync() is{} multipart)
+					return RpcDataPrimitive.From(await multipart.SelectAsync(async part=>new StringMap{
+						{"Filename",part.Filename},
+						{"Name",part.Name},
+						{"Content",await FromBody(part,BodyType.Auto,null)},
+					}).ToList());
+				else type=BodyType.Binary;
+			else type=BodyType.Binary;
+
+
+		if(type==BodyType.Binary) return RpcDataPrimitive.From(bytes);
+		var str=Encoding.UTF8.GetString(bytes);
+		if(type==BodyType.String) return RpcDataPrimitive.From(str);
+
+
+		//Handle parsing of urlencoding extra
+		if(type==BodyType.Parse&&session.Headers.TryGetValue("Content-Type",out contentType)
+		                       &&contentType.StartsWith("application/x-www-form-urlencoded"))
+			return RpcDataPrimitive.From(WebUtils.ParseQueryString(str));
+
+		var parsed=RpcDataPrimitive.Parse(str)??throw new InvalidCastException("Error parsing body");
+		if(type==BodyType.Parse) return parsed;
+		throw new ArgumentOutOfRangeException(nameof(type),type,"Invalid body type");
+	}
+
+
 	internal static async Task HandleWebCall(WebSession session,string s){
+
+		var usedBody=false;
+		var bodyRef=new ReferenceTo<Task<byte[]>?>();
+
 		string? postArgs=null;
 		Func<Task<string>>? postArgsProvider=session.Type is RequestType.Post or RequestType.Put
 			                                     ?async ()=>{
 				                                     if(postArgs!=null) return postArgs;
-				                                     postArgs=await session.ReadStringAsync();
+				                                     postArgs=Encoding.UTF8.GetString(await (bodyRef.Value??session.ReadByteArrayAsync()));
 				                                     if(session.Headers.TryGetValue("Content-Type",out var contentType)
 				                                        &&contentType.Contains("application/x-www-form-urlencoded"))
 					                                     postArgs=RpcDataPrimitive.From(WebUtils.ParseQueryString(postArgs)).ToString();
@@ -107,6 +161,9 @@ public partial class RpcWebServer:WebBase{
 		List<RpcDataPrimitive> appendArgs=[];
 		RpcDataPrimitive? headersPrimitive=null;
 		RpcDataPrimitive? cookiesPrimitive=null;
+		RpcDataPrimitive? bodyBytesPrimitive=null;
+		RpcDataPrimitive? bodyStringPrimitive=null;
+		RpcDataPrimitive? bodyParsePrimitive=null;
 
 
 		s="/"+s.TrimStart('/');
@@ -115,6 +172,7 @@ public partial class RpcWebServer:WebBase{
 
 			//Reset options to original values
 			prettyResponse=false;
+			usedBody=false;
 			responseType=(ResponseType.Default,null);
 			appendArgs.Clear();
 
@@ -122,23 +180,36 @@ public partial class RpcWebServer:WebBase{
 				var optionsSuccessful=true;
 				foreach(var option in s.Substring(slashPos+1).Split('/'))
 					if(option==""){
-					} else if(option=="void") responseType=(ResponseType.Void,null);
-					else if(option=="pretty") prettyResponse=true;
-					else if(option=="headers") appendArgs.Add(headersPrimitive??=RpcDataPrimitive.From(session.Headers));
-					else if(option=="cookies") appendArgs.Add(cookiesPrimitive??=RpcDataPrimitive.From(session.Cookies));
-					else if(option=="http") responseType=(ResponseType.Http,null);
-					else if(option.TryRemoveFromStartOf("file=",out var rest)) responseType=(ResponseType.File,rest);
-					else if(option.TryRemoveFromStartOf("download=",out rest)) responseType=(ResponseType.Download,rest);
+					} else if(option.Equals("void",StringComparison.OrdinalIgnoreCase)) responseType=(ResponseType.Void,null);
+					else if(option.Equals("pretty",StringComparison.OrdinalIgnoreCase)) prettyResponse=true;
+					else if(option.Equals("headers",StringComparison.OrdinalIgnoreCase)) appendArgs.Add(headersPrimitive??=RpcDataPrimitive.From(session.Headers));
+					else if(option.Equals("cookies",StringComparison.OrdinalIgnoreCase)) appendArgs.Add(cookiesPrimitive??=RpcDataPrimitive.From(session.Cookies));
+					else if(option.Equals("body=binary",StringComparison.OrdinalIgnoreCase)) appendArgs.Add(bodyBytesPrimitive??=await Body(BodyType.Binary));
+					else if(option.Equals("body=string",StringComparison.OrdinalIgnoreCase)) appendArgs.Add(bodyStringPrimitive??=await Body(BodyType.String));
+					else if(option.Equals("body=json",StringComparison.OrdinalIgnoreCase)) appendArgs.Add(bodyParsePrimitive??=await Body(BodyType.Parse));
+					else if(option.Equals("body=auto",StringComparison.OrdinalIgnoreCase)) appendArgs.Add(bodyParsePrimitive??=await Body(BodyType.Auto));
+					else if(option.Equals("body",StringComparison.OrdinalIgnoreCase)) appendArgs.Add(bodyParsePrimitive??=await Body(BodyType.Auto));
+					else if(option.Equals("http",StringComparison.OrdinalIgnoreCase)) responseType=(ResponseType.Http,null);
+					else if(option.Equals("serve",StringComparison.OrdinalIgnoreCase)) responseType=(ResponseType.Serve,null);
+					else if(option.TryRemoveFromStartOf("file=",out var rest,true)) responseType=(ResponseType.File,rest);
+					else if(option.TryRemoveFromStartOf("download=",out rest,true)) responseType=(ResponseType.Download,rest);
+					else if(option.TryRemoveFromStartOf("serve=",out rest,true)) responseType=(ResponseType.Serve,rest);
 					else{
 						optionsSuccessful=false;
 						break;
 					}
 				if(!optionsSuccessful) break;
+
+
+				Task<RpcDataPrimitive> Body(BodyType type){
+					usedBody=true;
+					return FromBody(session,type,bodyRef);
+				}
 			}
 
 
 			try{
-				pendingCall=await Evaluate.Eval(expression,postArgsProvider,true,appendArgs);
+				pendingCall=await Evaluate.Eval(expression,usedBody?null:postArgsProvider,true,appendArgs);
 				break;
 			} catch(Exception e){
 				lastError=e;
@@ -150,7 +221,7 @@ public partial class RpcWebServer:WebBase{
 				             .Cache(false)
 				             .Text(lastError.ToString(),500);
 				return;
-			} else pendingCall=await Evaluate.Eval(s.TrimStart('/'),postArgsProvider,true,appendArgs);
+			} else pendingCall=await Evaluate.Eval(s.TrimStart('/'),usedBody?null:postArgsProvider,true,appendArgs);
 
 		RpcDataPrimitive result;
 		try{
@@ -187,7 +258,10 @@ public partial class RpcWebServer:WebBase{
 				       .Header("Content-Disposition",(responseType.type==ResponseType.Download?"attachment":"inline")
 				                                     +$"; filename=\"{responseType.name?.Replace("\"","\\\"")}\";");
 
-				var mimeType=MimeMapping.GetValueOrDefault(Path.GetExtension(responseType.name??""),"application/octet-stream");
+				if(!MimeMapping.TryGetValue(Path.GetExtension(responseType.name??""),out var mimeType)
+				   &&!MimeMapping.TryGetValue(responseType.name??"",out mimeType)
+				   &&!MimeMapping.TryGetValue("."+responseType.name,out mimeType)
+				  ) mimeType="application/octet-stream";
 
 
 				if(result.TryTo(out byte[]? bytes))
@@ -196,6 +270,33 @@ public partial class RpcWebServer:WebBase{
 					await session.Send.Text(str,mimeType+"; charset=utf-8");
 				else
 					await session.Send.Text(result.ToString(prettyResponse),mimeType+"; charset=utf-8");
+				return;
+			}
+			case ResponseType.Serve:{
+				session.Send.Cache(false);
+
+				if(result.IsNull()){
+					await session.Send.NoContent();
+				} else if(responseType.name!=null){
+					if(!MimeMapping.TryGetValue(Path.GetExtension(responseType.name??""),out var mimeType)
+					   &&!MimeMapping.TryGetValue(responseType.name??"",out mimeType)
+					   &&!MimeMapping.TryGetValue("."+responseType.name,out mimeType)
+					  ) mimeType="application/octet-stream";
+
+					if(result.TryTo(out byte[]? bytes))
+						await session.Send.Data(bytes!,mimeType);
+					else if(result.IsString(out var str))
+						await session.Send.Text(str,mimeType+"; charset=utf-8");
+					else
+						await session.Send.Text(result.ToString(prettyResponse),mimeType+"; charset=utf-8");
+				} else{
+					if(result.TryTo(out byte[]? bytes))
+						await session.Send.Data(bytes!);
+					else if(result.IsString(out var str))
+						await session.Send.Text(str);
+					else
+						await session.Send.Text(result.ToString(prettyResponse));
+				}
 				return;
 			}
 			case ResponseType.Http:{
@@ -234,7 +335,9 @@ public partial class RpcWebServer:WebBase{
 					else
 						await session.Send.Text(responseBody.ToString(prettyResponse),null,status);
 
-				} else if(result.TryTo(out byte[]? bytes))
+				} else if(result.IsNull())
+					await session.Send.NoContent();
+				else if(result.TryTo(out byte[]? bytes))
 					await session.Send.Data(bytes!,null);
 				else if(result.IsString(out var str))
 					await session.Send.Text(str,null);
