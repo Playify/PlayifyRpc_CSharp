@@ -24,8 +24,14 @@ public static class RpcHelpers{
 				ex=null;
 			} catch(RpcException e){
 				ex=e;
+			} catch(Exception e){
+				ex=RpcException.WrapAndFreeze(e);
 			}
-			onError?.Invoke(ex);
+			try{
+				onError?.Invoke(ex);
+			} catch(Exception e){
+				Rpc.Logger.Critical("Error in onError of a AutoRecall: "+e);
+			}
 			await Task.Delay(retryDelay);
 		}
 	}
@@ -44,8 +50,14 @@ public static class RpcHelpers{
 				ex=null;
 			} catch(RpcException e){
 				ex=e;
+			} catch(Exception e){
+				ex=RpcException.WrapAndFreeze(e);
 			}
-			onError?.Invoke(ex);
+			try{
+				onError?.Invoke(ex);
+			} catch(Exception e){
+				Rpc.Logger.Critical("Error in onError of a AutoRecall: "+e);
+			}
 			await Task.Delay(retryDelay);
 		}
 	}
