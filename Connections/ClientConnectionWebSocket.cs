@@ -5,6 +5,7 @@ using PlayifyRpc.Types.Exceptions;
 using PlayifyUtility.Streams.Data;
 using PlayifyUtility.Utils.Extensions;
 using PlayifyUtility.Web;
+using PlayifyUtility.Web.Utils;
 
 namespace PlayifyRpc.Connections;
 
@@ -17,8 +18,12 @@ internal class ClientConnectionWebSocket:ClientConnection{
 		try{
 			var (b,len)=buff.GetBufferAndLength();
 			await _webSocket.Send(b,0,len);
+		} catch(CloseException){
+			await DisposeAsync().AsTask();//Should be already closed, but close again, just in case
+			throw new RpcConnectionException("Error sending data: Websocket connection is already closed");
 		} catch(ObjectDisposedException){
 			await DisposeAsync().AsTask();//Should be already closed, but close again, just in case
+			throw new RpcConnectionException("Error sending data: Websocket connection is already closed");
 		}
 	}
 
