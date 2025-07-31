@@ -42,7 +42,8 @@ internal class ClientConnectionWebSocket:ClientConnection{
 	internal static async Task Connect(string? name,Uri uri,NameValueCollection? headers){
 		if(IsConnecting()) throw new RpcConnectionException("Already connected");
 		StartConnect();
-		while(true)
+		while(true){
+			using var reconnectTimer=Task.Delay(TimeSpan.FromSeconds(1));
 			try{
 				if(name!=null) RegisteredTypes.Name=name;
 				var reportedName=RegisteredTypes.Name;
@@ -81,8 +82,9 @@ internal class ClientConnectionWebSocket:ClientConnection{
 			} catch(Exception e){
 				FailConnect(e);
 
-				await Task.Delay(1000);
+				await reconnectTimer;//Task starts earlier, so it reconnects faster, when a connection is broken
 			}
+		}
 		// ReSharper disable once FunctionNeverReturns
 	}
 }
