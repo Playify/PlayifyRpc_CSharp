@@ -9,14 +9,14 @@ namespace PlayifyRpc.Types;
  * Used to hide fields in RpcDataObjects or methods in registered types
  */
 [PublicAPI]
-[AttributeUsage(AttributeTargets.Field|AttributeTargets.Property|AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Field|AttributeTargets.Property|AttributeTargets.Method|AttributeTargets.Class)]
 public sealed class RpcHiddenAttribute:Attribute;
 
 /**
  * Used to rename fields/methods to names that are normally not possible in C#
  */
 [PublicAPI]
-[AttributeUsage(AttributeTargets.Field|AttributeTargets.Property|AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Field|AttributeTargets.Property|AttributeTargets.Method|AttributeTargets.Class)]
 public sealed class RpcNamedAttribute(string name):Attribute{
 	public readonly string Name=name;
 }

@@ -132,6 +132,22 @@ public class Casting{
 		Assert.That(RpcDataPrimitive.Cast<Json>(customStruct).ToString(),Is.EqualTo(json.ToString()));
 	});
 
+	public static class Test{
+		public static int A=3;
+
+		public class Sub{
+			public static int B=4;
+		}
+	}
+
+	[Test]
+	public void Statics()=>Assert.Multiple(()=>{
+		Assert.That(RpcDataObject.StaticSave(typeof(Test)).ToString(false),Is.EqualTo("""{"A":3,"Sub":{"B":4}}"""));
+		Assert.That(RpcDataObject.StaticLoad(typeof(Test),RpcDataPrimitive.Parse("""{"A":5,"Sub":{"B":7}}""")!.Value,true),Is.True);
+		Assert.That(Test.A,Is.EqualTo(5));
+		Assert.That(Test.Sub.B,Is.EqualTo(7));
+	});
+
 	[Test]
 	public void Errors()=>Assert.Multiple(()=>{
 		var obj=new StringMap{

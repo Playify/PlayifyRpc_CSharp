@@ -14,7 +14,8 @@ public class RpcConsumerSourceGenerator:IIncrementalGenerator{
 	private const string RpcNamedAttribute="PlayifyRpc.Types.RpcNamedAttribute";
 	private const string RpcConsumerAttribute="PlayifyRpc.Types.RpcConsumerAttribute";
 	// ReSharper disable once InconsistentNaming
-	private const string IRpcConsumer=RpcConsumerAttribute+".IRpcConsumer";
+	private const string IRpcConsumer_Dot=RpcConsumerAttribute+".IRpcConsumer";
+	private const string IRpcConsumer_Plus=RpcConsumerAttribute+"+IRpcConsumer";
 	private const string RpcDataTransformerAttribute="PlayifyRpc.Types.Data.RpcDataTransformerAttribute";
 	private const string RpcType="RpcType";
 
@@ -63,20 +64,35 @@ public class RpcConsumerSourceGenerator:IIncrementalGenerator{
 		builder.Append(GenerateAccessibility(classSymbol.DeclaredAccessibility));
 		if(classSymbol.IsStatic) builder.Append("static ");
 		builder.Append("partial class ").Append(classSymbol.Name);
-		if(!classSymbol.IsStatic) builder.Append(":").Append(IRpcConsumer);
+		if(!classSymbol.IsStatic) builder.Append(":").Append(IRpcConsumer_Dot);
 		builder.Append("{\r\n");
 
 
 		if(classSymbol.IsStatic){
-			if(!classSymbol.GetMembers("RpcType").IsEmpty)
+			//Check for any fallback RpcType member
+			if(classSymbol.GetMembers("RpcType").Any(m=>m is IFieldSymbol or IPropertySymbol{GetMethod: not null}))
 				builder.Append("\t//static ").Append(RpcType).Append(" is already defined\r\n");
 			else
-				builder.Append("\tstatic readonly string RpcType=").Append(type).Append(";\r\n");
-		} else if(compilation.GetTypeByMetadataName(IRpcConsumer)?.GetMembers(RpcType).FirstOrDefault() is{} rpcTypeProperty
-		          &&classSymbol.FindImplementationForInterfaceMember(rpcTypeProperty)!=null)
-			builder.Append("\t//").Append(IRpcConsumer).Append(".").Append(RpcType).Append(" is already defined\r\n");
-		else
-			builder.Append("\tstring ").Append(IRpcConsumer).Append(".").Append(RpcType).Append("=>").Append(type).Append(";\r\n");
+				builder.Append("\tstatic readonly string ").Append(RpcType).Append('=').Append(type).Append(";\r\n");
+		} else{
+			//Check if property is implemented (without implementing IRpcConsumer yet)
+			if(classSymbol.GetMembers(IRpcConsumer_Dot+"."+RpcType)
+			              .Any(m=>m is IFieldSymbol or IPropertySymbol{GetMethod: not null}))
+				builder.Append("\t//").Append(IRpcConsumer_Dot).Append(".").Append(RpcType).Append(" is already defined\r\n");
+			//Check if property is implemeneted (already implementing IRpcConsumer)
+			else if(classSymbol.GetMembers(RpcType)
+			                   .Where(m=>m is IPropertySymbol p&&p.ExplicitInterfaceImplementations.Any(e=>e.Name==RpcType&&e.ContainingType.ToDisplayString()==IRpcConsumer_Dot))
+			                   .Any(m=>m is IFieldSymbol or IPropertySymbol{GetMethod: not null}))
+				builder.Append("\t//").Append(IRpcConsumer_Dot).Append(".").Append(RpcType).Append(" is already defined (defined using interface)\r\n");
+			//Check for any fallback RpcType member
+			else if(classSymbol.GetMembers(RpcType)
+			                   .Any(m=>m is IFieldSymbol or IPropertySymbol{GetMethod: not null}))
+				builder.Append("\t//").Append(RpcType).Append(" is already defined (using that in the interface)\r\n")
+				       .Append("\tstring ").Append(IRpcConsumer_Dot).Append(".").Append(RpcType).Append("=>").Append(RpcType).Append(";\r\n");
+			//Implement based on Attribute argument
+			else
+				builder.Append("\tstring ").Append(IRpcConsumer_Dot).Append(".").Append(RpcType).Append("=>").Append(type).Append(";\r\n");
+		}
 
 
 		if(classSymbol.IsStatic) type="RpcType";
@@ -88,7 +104,7 @@ public class RpcConsumerSourceGenerator:IIncrementalGenerator{
 	}
 
 	private static void GenerateMember(StringBuilder builder,ISymbol member,string staticType){
-		const string instanceType="(("+IRpcConsumer+")this)."+RpcType;
+		const string instanceType="(("+IRpcConsumer_Dot+")this)."+RpcType;
 
 		if(member is not IMethodSymbol method) return;
 		if(!method.CanBeReferencedByName) return;

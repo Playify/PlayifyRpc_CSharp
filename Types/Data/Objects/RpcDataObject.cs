@@ -19,4 +19,15 @@ public abstract partial class RpcDataObject:IRpcDataObject,ICloneable{
 
 	// ReSharper disable once InvokeAsExtensionMethod
 	object ICloneable.Clone()=>RpcHelpers.Clone(this);
+
+
+	public static bool StaticLoad(Type type,RpcDataPrimitive primitive,bool throwOnError,RpcDataTransformerAttribute? transformer=null){
+		if(primitive.IsObject(out var entries)) return Reflection.SetProps(type,entries,throwOnError,transformer,primitive);
+		return throwOnError?throw new InvalidCastException("Error converting primitive "+primitive+" to static "+RpcTypeStringifier.FromType(type)):false;
+	}
+
+	public static RpcDataPrimitive StaticSave(Type type,RpcDataPrimitive.Already? already=null,RpcDataTransformerAttribute? transformer=null){
+		already??=new RpcDataPrimitive.Already(_=>{});
+		return new RpcDataPrimitive(()=>Reflection.GetProps(type,already,transformer));
+	}
 }
